@@ -1,98 +1,326 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
+import React, { useState } from 'react';
+import {
+  View,
+  Text,
+  TextInput,
+  Button,
+  StyleSheet,
+  Alert,
+  FlatList,
+  TouchableOpacity,
+} from 'react-native';
 
-import { HelloWave } from '@/components/hello-wave';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Link } from 'expo-router';
+const BASE_URL = 'http://192.168.1.75:8080';
+
+type Student = {
+  id: number;
+  name: string;
+  className: string;
+  section: string;
+};
+
+type AttendanceMap = {
+  [studentId: number]: string;
+};
 
 export default function HomeScreen() {
-  return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <Link href="/modal">
-          <Link.Trigger>
-            <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-          </Link.Trigger>
-          <Link.Preview />
-          <Link.Menu>
-            <Link.MenuAction title="Action" icon="cube" onPress={() => alert('Action pressed')} />
-            <Link.MenuAction
-              title="Share"
-              icon="square.and.arrow.up"
-              onPress={() => alert('Share pressed')}
-            />
-            <Link.Menu title="More" icon="ellipsis">
-              <Link.MenuAction
-                title="Delete"
-                icon="trash"
-                destructive
-                onPress={() => alert('Delete pressed')}
-              />
-            </Link.Menu>
-          </Link.Menu>
-        </Link>
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [token, setToken] = useState('');
+  const [students, setStudents] = useState<Student[]>([]);
+  const [attendanceDate, setAttendanceDate] = useState('2026-04-24');
+  const [attendance, setAttendance] = useState<AttendanceMap>({});
+  const [summary, setSummary] = useState<{
+    present: number;
+    absent: number;
+    late: number;
+  } | null>(null);
 
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+  const handleLogin = async () => {
+    try {
+      const response = await fetch(`${BASE_URL}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setToken(data.token);
+        Alert.alert('Success', 'Login successful!');
+      } else {
+        Alert.alert('Login Failed', 'Invalid username or password');
+      }
+    } catch {
+      Alert.alert('Error', 'Server not reachable');
+    }
+  };
+
+  const fetchStudents = async () => {
+    try {
+      const response = await fetch(`${BASE_URL}/students`, {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: 'application/json',
+        },
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setStudents(data);
+
+        const defaultAttendance: AttendanceMap = {};
+        data.forEach((student: Student) => {
+          defaultAttendance[student.id] = 'PRESENT';
+        });
+        setAttendance(defaultAttendance);
+
+        Alert.alert('Students Loaded', `Count: ${data.length}`);
+      } else {
+        Alert.alert('Error', `Unable to fetch students. Status: ${response.status}`);
+      }
+    } catch {
+      Alert.alert('Error', 'Failed to connect to server');
+    }
+  };
+
+  const setStudentStatus = (studentId: number, status: string) => {
+    setAttendance((prev) => ({
+      ...prev,
+      [studentId]: status,
+    }));
+  };
+
+  const submitAttendance = async () => {
+    if (students.length === 0) {
+      Alert.alert('Error', 'Load students first');
+      return;
+    }
+
+    const attendanceList = students.map((student) => ({
+      studentId: student.id,
+      attendanceDate,
+      status: attendance[student.id] || 'PRESENT',
+    }));
+
+    try {
+      const response = await fetch(`${BASE_URL}/attendance/bulk`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ attendanceList }),
+      });
+
+      if (response.ok) {
+        Alert.alert('Success', 'Attendance submitted successfully!');
+      } else {
+        const text = await response.text();
+        Alert.alert('Error', `Failed to submit attendance: ${text}`);
+      }
+    } catch {
+      Alert.alert('Error', 'Failed to connect to server');
+    }
+  };
+  const fetchDateSummary = async () => {
+    try {
+      const response = await fetch(
+          `${BASE_URL}/attendance/summary/date?date=${attendanceDate}`,
+          {
+            method: 'GET',
+            headers: {
+              Authorization: `Bearer ${token}`,
+              Accept: 'application/json',
+            },
+          }
+      );
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setSummary(data);
+      } else {
+        Alert.alert('Error', 'Unable to fetch summary');
+      }
+    } catch {
+      Alert.alert('Error', 'Failed to connect to server');
+    }
+  };
+  const renderStatusButton = (studentId: number, status: string) => {
+    const selected = attendance[studentId] === status;
+
+    return (
+        <TouchableOpacity
+            style={[styles.statusButton, selected && styles.selectedButton]}
+            onPress={() => setStudentStatus(studentId, status)}
+        >
+          <Text style={selected ? styles.selectedText : styles.statusText}>
+            {status}
+          </Text>
+        </TouchableOpacity>
+    );
+  };
+
+  return (
+      <View style={styles.container}>
+        <Text style={styles.title}>Attendance App</Text>
+
+        {!token ? (
+            <>
+              <TextInput
+                  style={styles.input}
+                  placeholder="Username"
+                  value={username}
+                  onChangeText={setUsername}
+              />
+
+              <TextInput
+                  style={styles.input}
+                  placeholder="Password"
+                  placeholderTextColor="#999"   // 👈 placeholder color
+                  secureTextEntry
+                  value={password}
+                  onChangeText={setPassword}
+              />
+
+              <Button title="Login" onPress={handleLogin} />
+            </>
+        ) : (
+            <>
+              <Text style={styles.success}>Logged in successfully</Text>
+
+              <TextInput
+                  style={styles.input}
+                  placeholder="Attendance Date YYYY-MM-DD"
+                  value={attendanceDate}
+                  onChangeText={setAttendanceDate}
+              />
+
+              <Button title="Load Students" onPress={fetchStudents} />
+
+              <Text style={styles.count}>Total Students: {students.length}</Text>
+
+              <FlatList
+                  data={students}
+                  keyExtractor={(item) => item.id.toString()}
+                  contentContainerStyle={{ paddingBottom: 100 }}
+                  renderItem={({ item }) => (
+                      <View style={styles.card}>
+                        <Text style={styles.name}>{item.name}</Text>
+                        <Text>Class: {item.className}</Text>
+                        <Text>Section: {item.section}</Text>
+
+                        <View style={styles.statusRow}>
+                          {renderStatusButton(item.id, 'PRESENT')}
+                          {renderStatusButton(item.id, 'ABSENT')}
+                          {renderStatusButton(item.id, 'LATE')}
+                        </View>
+                      </View>
+                  )}
+              />
+
+              <View style={styles.submitContainer}>
+                <Button title="Submit Attendance" onPress={submitAttendance} />
+              </View>
+
+              <Button title="Load Date Summary" onPress={fetchDateSummary} />
+
+              {summary && (
+                  <View style={styles.summaryCard}>
+                    <Text style={styles.summaryTitle}>Summary for {attendanceDate}</Text>
+                    <Text>Present: {summary.present}</Text>
+                    <Text>Absent: {summary.absent}</Text>
+                    <Text>Late: {summary.late}</Text>
+                  </View>
+              )}
+            </>
+        )}
+      </View>
   );
 }
 
 const styles = StyleSheet.create({
-  titleContainer: {
+  container: {
+    flex: 1,
+    padding: 20,
+    marginTop: 40,
+  },
+  title: {
+    fontSize: 26,
+    marginBottom: 20,
+    textAlign: 'center',
+    fontWeight: 'bold',
+  },
+  input: {
+    borderWidth: 1,
+    padding: 12,
+    marginBottom: 12,
+    borderRadius: 6,
+    backgroundColor: '#f5f5f5',
+    color: '#000'
+  },
+  success: {
+    fontSize: 18,
+    marginBottom: 15,
+    color: 'green',
+    textAlign: 'center',
+  },
+  count: {
+    fontSize: 16,
+    marginTop: 15,
+    marginBottom: 5,
+    textAlign: 'center',
+    fontWeight: 'bold',
+  },
+  card: {
+    padding: 12,
+    marginTop: 10,
+    borderWidth: 1,
+    borderRadius: 8,
+    backgroundColor: '#f9f9f9',
+  },
+  name: {
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  statusRow: {
     flexDirection: 'row',
-    alignItems: 'center',
+    marginTop: 10,
     gap: 8,
   },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
+  statusButton: {
+    padding: 8,
+    borderWidth: 1,
+    borderRadius: 6,
   },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
+  selectedButton: {
+    backgroundColor: '#222',
+  },
+  statusText: {
+    color: '#222',
+  },
+  selectedText: {
+    color: '#fff',
+    fontWeight: 'bold',
+  },
+  submitContainer: {
+    marginTop: 10,
+    marginBottom: 10,
+  },
+  summaryCard: {
+    padding: 12,
+    marginTop: 12,
+    borderWidth: 1,
+    borderRadius: 8,
+    backgroundColor: '#eef',
+  },
+  summaryTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 6,
   },
 });
