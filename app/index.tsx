@@ -5,15 +5,56 @@ import {
     TextInput,
     TouchableOpacity,
     StyleSheet,
+    Alert,
+    ActivityIndicator,
 } from 'react-native';
 import { router } from 'expo-router';
+import { API_ENDPOINTS } from '../src/services/api';
 
 export default function LoginScreen() {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
+    const [loading, setLoading] = useState(false);
 
-    const handleLogin = () => {
-        router.push('/home' as any);
+    const handleLogin = async () => {
+        if (!username || !password) {
+            Alert.alert('Validation', 'Enter Teacher Name and Password');
+            return;
+        }
+
+        try {
+            setLoading(true);
+
+            const response = await fetch(API_ENDPOINTS.authLogin, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    username,
+                    password,
+                }),
+            });
+
+            if (!response.ok) {
+                throw new Error('Login failed');
+            }
+
+            const data = await response.json();
+
+            router.push({
+                pathname: '/home',
+                params: {
+                    teacherId: data.teacherId,
+                    teacherName: data.teacherName,
+                },
+            } as any);
+        } catch (error) {
+            console.log(error);
+            Alert.alert('Login Failed', 'Invalid username or password');
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
@@ -22,7 +63,7 @@ export default function LoginScreen() {
 
             <TextInput
                 style={styles.input}
-                placeholder="Enter Username"
+                placeholder="Enter Teacher Name"
                 value={username}
                 onChangeText={setUsername}
                 autoCapitalize="none"
@@ -36,8 +77,16 @@ export default function LoginScreen() {
                 secureTextEntry
             />
 
-            <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
-                <Text style={styles.loginButtonText}>Login</Text>
+            <TouchableOpacity
+                style={styles.loginButton}
+                onPress={handleLogin}
+                disabled={loading}
+            >
+                {loading ? (
+                    <ActivityIndicator color="#fff" />
+                ) : (
+                    <Text style={styles.loginButtonText}>Login</Text>
+                )}
             </TouchableOpacity>
 
             <TouchableOpacity>

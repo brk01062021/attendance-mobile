@@ -11,7 +11,7 @@ import {
 import { useLocalSearchParams } from 'expo-router';
 import { API_ENDPOINTS } from '../src/services/api';
 
-type AttendanceStatus = 'Present' | 'Absent';
+type AttendanceStatus = 'Present' | 'Absent' | 'Late';
 
 type Student = {
     id: number;
@@ -60,18 +60,17 @@ export default function AttendanceScreen() {
 
     const handleSubmitAttendance = async () => {
         try {
+            const attendanceDate = new Date().toISOString().split('T')[0];
+
             const payload = {
-                className,
-                section,
-                attendanceDate: new Date().toISOString().split('T')[0],
-                records: students.map((student) => ({
+                attendanceList: students.map((student) => ({
                     studentId: student.id,
-                    studentName: student.name,
+                    attendanceDate,
                     status: attendance[student.id] || 'Absent',
                 })),
             };
 
-            const response = await fetch(API_ENDPOINTS.submitAttendance, {
+            const response = await fetch(`${API_ENDPOINTS.submitAttendance}/bulk`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -123,7 +122,15 @@ export default function AttendanceScreen() {
                             >
                                 <Text style={styles.statusText}>Present</Text>
                             </TouchableOpacity>
-
+                            <TouchableOpacity
+                                style={[
+                                    styles.statusButton,
+                                    attendance[student.id] === 'Late' && styles.lateSelected,
+                                ]}
+                                onPress={() => markAttendance(student.id, 'Late')}
+                            >
+                                <Text style={styles.statusText}>Late</Text>
+                            </TouchableOpacity>
                             <TouchableOpacity
                                 style={[
                                     styles.statusButton,
@@ -203,6 +210,9 @@ const styles = StyleSheet.create({
     },
     presentSelected: {
         backgroundColor: '#22c55e',
+    },
+    lateSelected: {
+        backgroundColor: '#f59e0b',
     },
     absentSelected: {
         backgroundColor: '#ef4444',
