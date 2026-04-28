@@ -61,17 +61,21 @@ export default function LoginScreen() {
         <View style={styles.container}>
             <Text style={styles.title}>School Attendance App</Text>
 
+            <Text style={styles.label}>Teacher Name</Text>
             <TextInput
                 style={styles.input}
                 placeholder="Enter Teacher Name"
+                placeholderTextColor="#9ca3af"
                 value={username}
                 onChangeText={setUsername}
                 autoCapitalize="none"
             />
 
+            <Text style={styles.label}>Password</Text>
             <TextInput
                 style={styles.input}
                 placeholder="Enter Password"
+                placeholderTextColor="#9ca3af"
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry
@@ -114,14 +118,22 @@ const styles = StyleSheet.create({
         marginBottom: 40,
         color: '#1e3a8a',
     },
+    label: {
+        fontSize: 16,
+        fontWeight: '700',
+        color: '#374151',
+        marginBottom: 8,
+        marginLeft: 4,
+    },
     input: {
         borderWidth: 1,
         borderColor: '#d1d5db',
         borderRadius: 10,
         padding: 14,
         fontSize: 16,
-        marginBottom: 16,
+        marginBottom: 18,
         backgroundColor: '#f9fafb',
+        color: '#111827',
     },
     loginButton: {
         backgroundColor: '#2563eb',
