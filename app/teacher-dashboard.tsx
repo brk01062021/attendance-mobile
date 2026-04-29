@@ -6,6 +6,7 @@ import {
     StyleSheet,
     Alert,
     Modal,
+    ScrollView,
 } from 'react-native';
 import { Calendar } from 'react-native-calendars';
 import { useLocalSearchParams } from 'expo-router';
@@ -17,23 +18,26 @@ export default function TeacherDashboardScreen() {
     const [date, setDate] = useState('2026-04-27');
     const [selectedDate, setSelectedDate] = useState('2026-04-27');
     const [showCalendarModal, setShowCalendarModal] = useState(false);
-    const [dashboard, setDashboard] = useState<any>(null);
+
+    const [dashboardCards, setDashboardCards] = useState<any[]>([]);
+    const [sortBy, setSortBy] = useState('Highest Attendance First');
+    const [showSortModal, setShowSortModal] = useState(false);
 
     const loadDashboard = async () => {
         try {
             const response = await fetch(
-                `${API_ENDPOINTS.teacherDashboard}?teacherId=${teacherId}&date=${date}`
+                `${API_ENDPOINTS.teacherClassDashboard}?teacherId=${teacherId}&date=${date}`
             );
 
             if (!response.ok) {
-                throw new Error('Failed to load teacher dashboard');
+                throw new Error('Failed to load dashboard');
             }
 
             const data = await response.json();
-            setDashboard(data);
+            setDashboardCards(data);
         } catch (error) {
             console.log(error);
-            Alert.alert('Error', 'Unable to load teacher dashboard');
+            Alert.alert('Error', 'Unable to load dashboard');
         }
     };
 
@@ -42,9 +46,50 @@ export default function TeacherDashboardScreen() {
         setShowCalendarModal(false);
     };
 
+    const getSortedCards = () => {
+        const cards = [...dashboardCards];
+
+        if (sortBy === 'Highest Attendance First') {
+            cards.sort((a, b) => b.attendancePercentage - a.attendancePercentage);
+        } else if (sortBy === 'Lowest Attendance First') {
+            cards.sort((a, b) => a.attendancePercentage - b.attendancePercentage);
+        } else {
+            cards.sort((a, b) =>
+                `${a.className}-${a.section}`.localeCompare(`${b.className}-${b.section}`)
+            );
+        }
+
+        return cards;
+    };
+
+    const totalStudents = dashboardCards.reduce(
+        (sum, item) => sum + item.totalStudents,
+        0
+    );
+
+    const totalPresent = dashboardCards.reduce(
+        (sum, item) => sum + item.present,
+        0
+    );
+
+    const totalAbsent = dashboardCards.reduce(
+        (sum, item) => sum + item.absent,
+        0
+    );
+
+    const totalLate = dashboardCards.reduce(
+        (sum, item) => sum + item.late,
+        0
+    );
+
+    const overallAttendance =
+        totalStudents === 0
+            ? 0
+            : ((totalPresent + totalLate) / totalStudents) * 100;
+
     return (
-        <View style={styles.container}>
-            <Text style={styles.title}>Professional Dashboard</Text>
+        <ScrollView style={styles.container}>
+            <Text style={styles.title}>Dashboard</Text>
             <Text style={styles.subtitle}>{teacherName}</Text>
 
             <Text style={styles.label}>Date</Text>
@@ -63,20 +108,127 @@ export default function TeacherDashboardScreen() {
                 <Text style={styles.buttonText}>Load Dashboard</Text>
             </TouchableOpacity>
 
-            {dashboard && (
-                <View style={styles.card}>
-                    <Text style={styles.cardTitle}>Summary</Text>
-                    <Text style={styles.cardText}>Teacher ID: {dashboard.teacherId}</Text>
-                    <Text style={styles.cardText}>Teacher Name: {dashboard.teacherName}</Text>
-                    <Text style={styles.cardText}>Total Students: {dashboard.totalStudents}</Text>
-                    <Text style={styles.cardText}>Present: {dashboard.present}</Text>
-                    <Text style={styles.cardText}>Absent: {dashboard.absent}</Text>
-                    <Text style={styles.cardText}>Late: {dashboard.late}</Text>
-                    <Text style={styles.percentage}>
-                        Attendance: {dashboard.attendancePercentage.toFixed(2)}%
+            {dashboardCards.length > 0 && (
+                <TouchableOpacity
+                    style={styles.sortButton}
+                    onPress={() => setShowSortModal(true)}
+                >
+                    <Text style={styles.sortButtonText}>
+                        Sort By: {sortBy}
+                    </Text>
+                </TouchableOpacity>
+            )}
+
+            {dashboardCards.length > 0 && (
+                <View style={styles.summaryCard}>
+                    <Text style={styles.summaryTitle}>Today&apos;s Summary</Text>
+
+                    <View style={styles.summaryGrid}>
+                        <View style={styles.summaryBox}>
+                            <Text style={styles.summaryNumber}>{dashboardCards.length}</Text>
+                            <Text style={styles.summaryLabel}>Classes</Text>
+                        </View>
+
+                        <View style={styles.summaryBox}>
+                            <Text style={styles.summaryNumber}>{totalStudents}</Text>
+                            <Text style={styles.summaryLabel}>Students</Text>
+                        </View>
+
+                        <View style={styles.summaryBox}>
+                            <Text style={styles.summaryNumber}>{totalPresent}</Text>
+                            <Text style={styles.summaryLabel}>Present</Text>
+                        </View>
+
+                        <View style={styles.summaryBox}>
+                            <Text style={styles.summaryNumber}>{totalAbsent}</Text>
+                            <Text style={styles.summaryLabel}>Absent</Text>
+                        </View>
+
+                        <View style={styles.summaryBox}>
+                            <Text style={styles.summaryNumber}>{totalLate}</Text>
+                            <Text style={styles.summaryLabel}>Late</Text>
+                        </View>
+                    </View>
+
+                    <Text style={styles.overallPercentage}>
+                        Overall Attendance: {overallAttendance.toFixed(2)}%
                     </Text>
                 </View>
             )}
+
+            {getSortedCards().map((item, index) => {
+                const status =
+                    item.attendancePercentage >= 80
+                        ? 'Excellent'
+                        : item.attendancePercentage >= 60
+                            ? 'Good'
+                            : 'Needs Attention';
+
+                return (
+                    <View key={index} style={styles.card}>
+                        <Text style={styles.cardTitle}>
+                            Class {item.className} - Section {item.section}
+                        </Text>
+
+                        <Text style={styles.subject}>Subject: {item.subjectName}</Text>
+
+                        <Text style={styles.cardText}>
+                            Total Students: {item.totalStudents}
+                        </Text>
+
+                        <Text style={styles.present}>Present: {item.present}</Text>
+                        <Text style={styles.absent}>Absent: {item.absent}</Text>
+                        <Text style={styles.late}>Late: {item.late}</Text>
+
+                        <Text style={styles.percentage}>
+                            Attendance: {item.attendancePercentage.toFixed(2)}%
+                        </Text>
+
+                        <View style={styles.progressBarBackground}>
+                            <View
+                                style={[
+                                    styles.progressBarFill,
+                                    { width: `${item.attendancePercentage}%` },
+                                ]}
+                            />
+                        </View>
+
+                        <Text style={styles.statusText}>Status: {status}</Text>
+                    </View>
+                );
+            })}
+
+            <Modal visible={showSortModal} transparent animationType="fade">
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalBox}>
+                        <Text style={styles.modalTitle}>Sort Dashboard</Text>
+
+                        {[
+                            'Highest Attendance First',
+                            'Lowest Attendance First',
+                            'Class Name',
+                        ].map((option) => (
+                            <TouchableOpacity
+                                key={option}
+                                style={styles.optionButton}
+                                onPress={() => {
+                                    setSortBy(option);
+                                    setShowSortModal(false);
+                                }}
+                            >
+                                <Text style={styles.optionText}>{option}</Text>
+                            </TouchableOpacity>
+                        ))}
+
+                        <TouchableOpacity
+                            style={styles.closeSortButton}
+                            onPress={() => setShowSortModal(false)}
+                        >
+                            <Text style={styles.modalButtonText}>Close</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
 
             <Modal visible={showCalendarModal} transparent animationType="fade">
                 <View style={styles.modalOverlay}>
@@ -84,15 +236,14 @@ export default function TeacherDashboardScreen() {
                         <Text style={styles.modalTitle}>Select Dashboard Date</Text>
 
                         <Text style={styles.modalLabel}>Dashboard Date</Text>
+
                         <View style={styles.selectedDateBox}>
                             <Text style={styles.selectedDateText}>{selectedDate}</Text>
                         </View>
 
                         <Calendar
                             current={selectedDate}
-                            onDayPress={(day) => {
-                                setSelectedDate(day.dateString);
-                            }}
+                            onDayPress={(day) => setSelectedDate(day.dateString)}
                             markedDates={{
                                 [selectedDate]: {
                                     selected: true,
@@ -119,7 +270,7 @@ export default function TeacherDashboardScreen() {
                     </View>
                 </View>
             </Modal>
-        </View>
+        </ScrollView>
     );
 }
 
@@ -130,14 +281,14 @@ const styles = StyleSheet.create({
         padding: 25,
     },
     title: {
-        fontSize: 28,
+        fontSize: 34,
         fontWeight: 'bold',
         color: '#1e3a8a',
         marginBottom: 8,
     },
     subtitle: {
-        fontSize: 18,
-        fontWeight: '600',
+        fontSize: 22,
+        fontWeight: '700',
         color: '#374151',
         marginBottom: 25,
     },
@@ -164,36 +315,152 @@ const styles = StyleSheet.create({
         padding: 15,
         borderRadius: 10,
         alignItems: 'center',
-        marginBottom: 25,
+        marginBottom: 20,
     },
     buttonText: {
         color: '#fff',
         fontSize: 17,
         fontWeight: 'bold',
     },
+    sortButton: {
+        backgroundColor: '#f3f4f6',
+        padding: 14,
+        borderRadius: 10,
+        marginBottom: 20,
+        borderWidth: 1,
+        borderColor: '#d1d5db',
+    },
+    sortButtonText: {
+        fontSize: 16,
+        fontWeight: '700',
+        color: '#111827',
+        textAlign: 'center',
+    },
+    summaryCard: {
+        backgroundColor: '#eff6ff',
+        borderRadius: 14,
+        padding: 18,
+        borderWidth: 1,
+        borderColor: '#bfdbfe',
+        marginBottom: 20,
+    },
+    summaryTitle: {
+        fontSize: 22,
+        fontWeight: 'bold',
+        color: '#1e3a8a',
+        marginBottom: 14,
+    },
+    summaryGrid: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 10,
+    },
+    summaryBox: {
+        backgroundColor: '#fff',
+        borderRadius: 10,
+        padding: 12,
+        minWidth: '30%',
+        alignItems: 'center',
+    },
+    summaryNumber: {
+        fontSize: 22,
+        fontWeight: 'bold',
+        color: '#111827',
+    },
+    summaryLabel: {
+        fontSize: 13,
+        color: '#6b7280',
+        marginTop: 4,
+    },
+    overallPercentage: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        color: '#16a34a',
+        marginTop: 16,
+    },
     card: {
         backgroundColor: '#f9fafb',
-        borderRadius: 12,
+        borderRadius: 14,
         padding: 18,
         borderWidth: 1,
         borderColor: '#e5e7eb',
+        marginBottom: 18,
     },
     cardTitle: {
         fontSize: 22,
         fontWeight: 'bold',
-        marginBottom: 12,
         color: '#111827',
+        marginBottom: 10,
+    },
+    subject: {
+        fontSize: 18,
+        fontWeight: '600',
+        color: '#2563eb',
+        marginBottom: 12,
     },
     cardText: {
-        fontSize: 16,
+        fontSize: 17,
         marginBottom: 8,
         color: '#374151',
     },
+    present: {
+        fontSize: 17,
+        marginBottom: 8,
+        color: '#16a34a',
+        fontWeight: '600',
+    },
+    absent: {
+        fontSize: 17,
+        marginBottom: 8,
+        color: '#dc2626',
+        fontWeight: '600',
+    },
+    late: {
+        fontSize: 17,
+        marginBottom: 8,
+        color: '#d97706',
+        fontWeight: '600',
+    },
     percentage: {
-        fontSize: 20,
+        fontSize: 22,
         fontWeight: 'bold',
         marginTop: 10,
-        color: '#16a34a',
+        color: '#1e3a8a',
+    },
+    progressBarBackground: {
+        height: 10,
+        backgroundColor: '#e5e7eb',
+        borderRadius: 10,
+        marginTop: 10,
+        overflow: 'hidden',
+    },
+    progressBarFill: {
+        height: '100%',
+        backgroundColor: '#16a34a',
+        borderRadius: 10,
+    },
+    statusText: {
+        fontSize: 17,
+        fontWeight: 'bold',
+        marginTop: 10,
+        color: '#1e3a8a',
+    },
+    optionButton: {
+        padding: 16,
+        borderBottomWidth: 1,
+        borderBottomColor: '#e5e7eb',
+    },
+    optionText: {
+        fontSize: 17,
+        fontWeight: '600',
+        color: '#111827',
+    },
+    closeSortButton: {
+        backgroundColor: '#6b7280',
+        padding: 14,
+        borderRadius: 10,
+        alignItems: 'center',
+        marginTop: 18,
     },
     modalOverlay: {
         flex: 1,
