@@ -7,7 +7,7 @@ export const API_ENDPOINTS = {
     submitAttendance: `${BASE_URL}/attendance`,
     dateSummary: `${BASE_URL}/attendance/date-summary`,
     attendanceReport: `${BASE_URL}/attendance/report`,
-
+    teacherDashboard: `${BASE_URL}/attendance/dashboard/teacher`,
     teacherSubjects: `${BASE_URL}/teacher-assignments/subjects`,
     teacherClasses: `${BASE_URL}/teacher-assignments/classes`,
     teacherSections: `${BASE_URL}/teacher-assignments/sections`,

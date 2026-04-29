@@ -24,6 +24,7 @@ export default function HomeScreen() {
 
     const [loading, setLoading] = useState(false);
 
+    const [showMenuModal, setShowMenuModal] = useState(false);
     const [showSubjectModal, setShowSubjectModal] = useState(false);
     const [showClassModal, setShowClassModal] = useState(false);
     const [showSectionModal, setShowSectionModal] = useState(false);
@@ -112,6 +113,47 @@ export default function HomeScreen() {
         } as any);
     };
 
+    const navigateToTeacherDashboard = () => {
+        setShowMenuModal(false);
+
+        router.push({
+            pathname: '/teacher-dashboard',
+            params: {
+                teacherId,
+                teacherName,
+            },
+        } as any);
+    };
+
+    const navigateToDateSummary = () => {
+        setShowMenuModal(false);
+
+        router.push({
+            pathname: '/date-summary',
+            params: {
+                teacherId,
+                teacherName,
+            },
+        } as any);
+    };
+
+    const navigateToAttendanceReport = () => {
+        setShowMenuModal(false);
+
+        router.push({
+            pathname: '/attendance-report',
+            params: {
+                teacherId,
+                teacherName,
+            },
+        } as any);
+    };
+
+    const handleLogout = () => {
+        setShowMenuModal(false);
+        router.replace('/' as any);
+    };
+
     if (loading) {
         return (
             <View style={styles.center}>
@@ -123,21 +165,14 @@ export default function HomeScreen() {
 
     return (
         <View style={styles.container}>
-            <Text style={styles.welcome}>Welcome, {teacherName}</Text>
-
-            <View style={styles.menuContainer}>
-                <TouchableOpacity
-                    style={styles.menuButton}
-                    onPress={() => router.push('/date-summary' as any)}
-                >
-                    <Text style={styles.menuText}>Load Date Summary</Text>
-                </TouchableOpacity>
+            <View style={styles.headerRow}>
+                <Text style={styles.welcome}>Welcome, {teacherName}</Text>
 
                 <TouchableOpacity
-                    style={styles.menuButton}
-                    onPress={() => router.push('/attendance-report' as any)}
+                    style={styles.menuIconButton}
+                    onPress={() => setShowMenuModal(true)}
                 >
-                    <Text style={styles.menuText}>Load Attendance Report</Text>
+                    <Text style={styles.menuIcon}>☰</Text>
                 </TouchableOpacity>
             </View>
 
@@ -179,7 +214,32 @@ export default function HomeScreen() {
                 <Text style={styles.loadButtonText}>Load Students</Text>
             </TouchableOpacity>
 
-            {/* Subject Modal */}
+            <Modal visible={showMenuModal} transparent animationType="fade">
+                <TouchableOpacity
+                    style={styles.menuOverlay}
+                    activeOpacity={1}
+                    onPress={() => setShowMenuModal(false)}
+                >
+                    <View style={styles.menuBox}>
+                        <TouchableOpacity style={styles.menuItem} onPress={navigateToTeacherDashboard}>
+                            <Text style={styles.menuItemText}>Teacher Dashboard</Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity style={styles.menuItem} onPress={navigateToDateSummary}>
+                            <Text style={styles.menuItemText}>Load Date Summary</Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity style={styles.menuItem} onPress={navigateToAttendanceReport}>
+                            <Text style={styles.menuItemText}>Attendance Report</Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity style={styles.menuItem} onPress={handleLogout}>
+                            <Text style={styles.logoutText}>Logout</Text>
+                        </TouchableOpacity>
+                    </View>
+                </TouchableOpacity>
+            </Modal>
+
             <Modal visible={showSubjectModal} transparent animationType="slide">
                 <View style={styles.modalBackground}>
                     <View style={styles.modalBox}>
@@ -208,7 +268,6 @@ export default function HomeScreen() {
                 </View>
             </Modal>
 
-            {/* Class Modal */}
             <Modal visible={showClassModal} transparent animationType="slide">
                 <View style={styles.modalBackground}>
                     <View style={styles.modalBox}>
@@ -237,7 +296,6 @@ export default function HomeScreen() {
                 </View>
             </Modal>
 
-            {/* Section Modal */}
             <Modal visible={showSectionModal} transparent animationType="slide">
                 <View style={styles.modalBackground}>
                     <View style={styles.modalBox}>
@@ -280,30 +338,32 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
     },
-    welcome: {
+    headerRow: {
         marginTop: 20,
-        fontSize: 24,
+        marginBottom: 30,
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+    },
+    welcome: {
+        fontSize: 36,
         fontWeight: 'bold',
         color: '#1e3a8a',
-        marginBottom: 20,
+        flex: 1,
     },
-    menuContainer: {
-        marginBottom: 35,
+    menuIconButton: {
+        padding: 8,
+        borderRadius: 8,
+        backgroundColor: '#eff6ff',
     },
-    menuButton: {
-        backgroundColor: '#e0ecff',
-        padding: 14,
-        borderRadius: 10,
-        marginBottom: 12,
-    },
-    menuText: {
-        fontSize: 16,
-        fontWeight: '600',
+    menuIcon: {
+        fontSize: 28,
+        fontWeight: 'bold',
         color: '#1e3a8a',
     },
     title: {
-        fontSize: 28,
-        fontWeight: 'bold',
+        fontSize: 22,
+        fontWeight: '700',
         marginBottom: 25,
         color: '#111827',
     },
@@ -340,6 +400,38 @@ const styles = StyleSheet.create({
         color: '#fff',
         fontSize: 17,
         fontWeight: 'bold',
+    },
+    menuOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.15)',
+        alignItems: 'flex-end',
+        paddingTop: 70,
+        paddingRight: 20,
+    },
+    menuBox: {
+        width: 250,
+        backgroundColor: '#fff',
+        borderRadius: 12,
+        paddingVertical: 8,
+        shadowColor: '#000',
+        shadowOpacity: 0.2,
+        shadowRadius: 8,
+        elevation: 5,
+    },
+    menuItem: {
+        padding: 15,
+        borderBottomWidth: 1,
+        borderBottomColor: '#e5e7eb',
+    },
+    menuItemText: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: '#111827',
+    },
+    logoutText: {
+        fontSize: 16,
+        fontWeight: '700',
+        color: '#dc2626',
     },
     modalBackground: {
         flex: 1,

@@ -26,6 +26,13 @@ export default function RootLayout() {
             />
 
             <Stack.Screen
+                name="teacher-dashboard"
+                options={{
+                    title: 'Teacher Dashboard',
+                }}
+            />
+
+            <Stack.Screen
                 name="date-summary"
                 options={{
                     title: 'Date Summary',
