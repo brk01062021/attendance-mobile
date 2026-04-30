@@ -7,6 +7,7 @@ import {
     Alert,
     Modal,
     ScrollView,
+    ActivityIndicator,
 } from 'react-native';
 import { Calendar } from 'react-native-calendars';
 import { useLocalSearchParams } from 'expo-router';
@@ -22,9 +23,14 @@ export default function TeacherDashboardScreen() {
     const [dashboardCards, setDashboardCards] = useState<any[]>([]);
     const [sortBy, setSortBy] = useState('Highest Attendance First');
     const [showSortModal, setShowSortModal] = useState(false);
+    const [loading, setLoading] = useState(false);
+    const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
 
     const loadDashboard = async () => {
         try {
+            setLoading(true);
+            setHasLoadedOnce(true);
+
             const response = await fetch(
                 `${API_ENDPOINTS.teacherClassDashboard}?teacherId=${teacherId}&date=${date}`
             );
@@ -34,10 +40,18 @@ export default function TeacherDashboardScreen() {
             }
 
             const data = await response.json();
-            setDashboardCards(data);
+
+            if (Array.isArray(data)) {
+                setDashboardCards(data);
+            } else {
+                setDashboardCards([]);
+            }
         } catch (error) {
             console.log(error);
+            setDashboardCards([]);
             Alert.alert('Error', 'Unable to load dashboard');
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -104,11 +118,33 @@ export default function TeacherDashboardScreen() {
                 <Text style={styles.dateText}>{date}</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.button} onPress={loadDashboard}>
-                <Text style={styles.buttonText}>Load Dashboard</Text>
+            <TouchableOpacity
+                style={[styles.button, loading && styles.disabledButton]}
+                onPress={loadDashboard}
+                disabled={loading}
+            >
+                <Text style={styles.buttonText}>
+                    {loading ? 'Loading...' : 'Load Dashboard'}
+                </Text>
             </TouchableOpacity>
 
-            {dashboardCards.length > 0 && (
+            {loading && (
+                <View style={styles.loadingContainer}>
+                    <ActivityIndicator size="large" />
+                    <Text style={styles.loadingText}>Loading dashboard...</Text>
+                </View>
+            )}
+
+            {!loading && hasLoadedOnce && dashboardCards.length === 0 && (
+                <View style={styles.noDataContainer}>
+                    <Text style={styles.noDataTitle}>No Data Found</Text>
+                    <Text style={styles.noDataText}>
+                        No attendance dashboard data found for selected date.
+                    </Text>
+                </View>
+            )}
+
+            {!loading && dashboardCards.length > 0 && (
                 <TouchableOpacity
                     style={styles.sortButton}
                     onPress={() => setShowSortModal(true)}
@@ -119,7 +155,7 @@ export default function TeacherDashboardScreen() {
                 </TouchableOpacity>
             )}
 
-            {dashboardCards.length > 0 && (
+            {!loading && dashboardCards.length > 0 && (
                 <View style={styles.summaryCard}>
                     <Text style={styles.summaryTitle}>Today&apos;s Summary</Text>
 
@@ -156,47 +192,48 @@ export default function TeacherDashboardScreen() {
                 </View>
             )}
 
-            {getSortedCards().map((item, index) => {
-                const status =
-                    item.attendancePercentage >= 80
-                        ? 'Excellent'
-                        : item.attendancePercentage >= 60
-                            ? 'Good'
-                            : 'Needs Attention';
+            {!loading &&
+                getSortedCards().map((item, index) => {
+                    const status =
+                        item.attendancePercentage >= 80
+                            ? 'Excellent'
+                            : item.attendancePercentage >= 60
+                                ? 'Good'
+                                : 'Needs Attention';
 
-                return (
-                    <View key={index} style={styles.card}>
-                        <Text style={styles.cardTitle}>
-                            Class {item.className} - Section {item.section}
-                        </Text>
+                    return (
+                        <View key={index} style={styles.card}>
+                            <Text style={styles.cardTitle}>
+                                Class {item.className} - Section {item.section}
+                            </Text>
 
-                        <Text style={styles.subject}>Subject: {item.subjectName}</Text>
+                            <Text style={styles.subject}>Subject: {item.subjectName}</Text>
 
-                        <Text style={styles.cardText}>
-                            Total Students: {item.totalStudents}
-                        </Text>
+                            <Text style={styles.cardText}>
+                                Total Students: {item.totalStudents}
+                            </Text>
 
-                        <Text style={styles.present}>Present: {item.present}</Text>
-                        <Text style={styles.absent}>Absent: {item.absent}</Text>
-                        <Text style={styles.late}>Late: {item.late}</Text>
+                            <Text style={styles.present}>Present: {item.present}</Text>
+                            <Text style={styles.absent}>Absent: {item.absent}</Text>
+                            <Text style={styles.late}>Late: {item.late}</Text>
 
-                        <Text style={styles.percentage}>
-                            Attendance: {item.attendancePercentage.toFixed(2)}%
-                        </Text>
+                            <Text style={styles.percentage}>
+                                Attendance: {item.attendancePercentage.toFixed(2)}%
+                            </Text>
 
-                        <View style={styles.progressBarBackground}>
-                            <View
-                                style={[
-                                    styles.progressBarFill,
-                                    { width: `${item.attendancePercentage}%` },
-                                ]}
-                            />
+                            <View style={styles.progressBarBackground}>
+                                <View
+                                    style={[
+                                        styles.progressBarFill,
+                                        { width: `${item.attendancePercentage}%` },
+                                    ]}
+                                />
+                            </View>
+
+                            <Text style={styles.statusText}>Status: {status}</Text>
                         </View>
-
-                        <Text style={styles.statusText}>Status: {status}</Text>
-                    </View>
-                );
-            })}
+                    );
+                })}
 
             <Modal visible={showSortModal} transparent animationType="fade">
                 <View style={styles.modalOverlay}>
@@ -317,10 +354,46 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         marginBottom: 20,
     },
+    disabledButton: {
+        backgroundColor: '#93c5fd',
+    },
     buttonText: {
         color: '#fff',
         fontSize: 17,
         fontWeight: 'bold',
+    },
+    loadingContainer: {
+        marginTop: 10,
+        marginBottom: 20,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    loadingText: {
+        marginTop: 10,
+        fontSize: 16,
+        fontWeight: '600',
+        color: '#374151',
+    },
+    noDataContainer: {
+        backgroundColor: '#fef3c7',
+        borderRadius: 14,
+        padding: 18,
+        borderWidth: 1,
+        borderColor: '#fcd34d',
+        marginBottom: 20,
+        alignItems: 'center',
+    },
+    noDataTitle: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        color: '#92400e',
+        marginBottom: 6,
+    },
+    noDataText: {
+        fontSize: 16,
+        color: '#92400e',
+        textAlign: 'center',
+        fontWeight: '600',
     },
     sortButton: {
         backgroundColor: '#f3f4f6',

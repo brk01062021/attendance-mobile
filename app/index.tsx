@@ -18,7 +18,7 @@ export default function LoginScreen() {
 
     const handleLogin = async () => {
         if (!username || !password) {
-            Alert.alert('Validation', 'Enter Teacher Name and Password');
+            Alert.alert('Validation', 'Enter Username and Password');
             return;
         }
 
@@ -45,8 +45,9 @@ export default function LoginScreen() {
             router.push({
                 pathname: '/home',
                 params: {
-                    teacherId: data.teacherId,
-                    teacherName: data.teacherName,
+                    teacherId: data.teacherId ?? '',
+                    teacherName: data.teacherName ?? data.username ?? 'User',
+                    role: data.role ?? 'TEACHER',
                 },
             } as any);
         } catch (error) {
@@ -61,10 +62,10 @@ export default function LoginScreen() {
         <View style={styles.container}>
             <Text style={styles.title}>School Attendance App</Text>
 
-            <Text style={styles.label}>Teacher Name</Text>
+            <Text style={styles.label}>Username</Text>
             <TextInput
                 style={styles.input}
-                placeholder="Enter Teacher Name"
+                placeholder="Enter Username"
                 placeholderTextColor="#9ca3af"
                 value={username}
                 onChangeText={setUsername}
@@ -82,7 +83,7 @@ export default function LoginScreen() {
             />
 
             <TouchableOpacity
-                style={styles.loginButton}
+                style={[styles.loginButton, loading && styles.disabledButton]}
                 onPress={handleLogin}
                 disabled={loading}
             >
@@ -142,6 +143,9 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         marginTop: 8,
         marginBottom: 25,
+    },
+    disabledButton: {
+        backgroundColor: '#93c5fd',
     },
     loginButtonText: {
         color: '#ffffff',

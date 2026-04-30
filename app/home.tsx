@@ -7,12 +7,16 @@ import {
     Modal,
     ActivityIndicator,
     Alert,
+    ScrollView,
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { API_ENDPOINTS } from '../src/services/api';
 
 export default function HomeScreen() {
-    const { teacherId, teacherName } = useLocalSearchParams();
+    const { teacherId, teacherName, role } = useLocalSearchParams();
+
+    const userRole = String(role || 'TEACHER').toUpperCase();
+    const isAdmin = userRole === 'ADMIN';
 
     const [subject, setSubject] = useState('');
     const [className, setClassName] = useState('');
@@ -29,12 +33,41 @@ export default function HomeScreen() {
     const [showClassModal, setShowClassModal] = useState(false);
     const [showSectionModal, setShowSectionModal] = useState(false);
 
+    const today = new Date();
+    const todayString = today.toISOString().split('T')[0];
+
+    const [attendanceDate, setAttendanceDate] = useState(todayString);
+    const [selectedAdminDate, setSelectedAdminDate] = useState(todayString);
+    const [showAdminDateModal, setShowAdminDateModal] = useState(false);
+    const [dashboardLoaded, setDashboardLoaded] = useState(false);
+
+    const [adminDashboard, setAdminDashboard] = useState({
+        attendanceDate: '',
+        totalStudents: 0,
+        presentStudents: 0,
+        absentStudents: 0,
+        lateStudents: 0,
+        attendancePercentage: 0,
+    });
+
+    const [calendarMonth, setCalendarMonth] = useState(today.getMonth());
+    const [calendarYear, setCalendarYear] = useState(today.getFullYear());
+
+    const monthNames = [
+        'January', 'February', 'March', 'April', 'May', 'June',
+        'July', 'August', 'September', 'October', 'November', 'December',
+    ];
+
+    const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
     useEffect(() => {
-        loadSubjects();
+        if (!isAdmin) {
+            loadSubjects();
+        }
     }, []);
 
     useEffect(() => {
-        if (subject) {
+        if (!isAdmin && subject) {
             loadClasses();
             setClassName('');
             setSection('');
@@ -43,11 +76,118 @@ export default function HomeScreen() {
     }, [subject]);
 
     useEffect(() => {
-        if (subject && className) {
+        if (!isAdmin && subject && className) {
             loadSections();
             setSection('');
         }
     }, [className]);
+
+    const formatDate = (date: Date) => {
+        return date.toISOString().split('T')[0];
+    };
+
+    const getCalendarDays = () => {
+        const firstDay = new Date(calendarYear, calendarMonth, 1);
+        const lastDay = new Date(calendarYear, calendarMonth + 1, 0);
+        const startDay = firstDay.getDay();
+        const totalDays = lastDay.getDate();
+
+        const previousMonthLastDay = new Date(calendarYear, calendarMonth, 0).getDate();
+
+        const days: {
+            day: number;
+            date: string;
+            currentMonth: boolean;
+        }[] = [];
+
+        for (let i = startDay - 1; i >= 0; i--) {
+            const day = previousMonthLastDay - i;
+            const date = new Date(calendarYear, calendarMonth - 1, day);
+
+            days.push({
+                day,
+                date: formatDate(date),
+                currentMonth: false,
+            });
+        }
+
+        for (let day = 1; day <= totalDays; day++) {
+            const date = new Date(calendarYear, calendarMonth, day);
+
+            days.push({
+                day,
+                date: formatDate(date),
+                currentMonth: true,
+            });
+        }
+
+        const nextDays = 42 - days.length;
+
+        for (let day = 1; day <= nextDays; day++) {
+            const date = new Date(calendarYear, calendarMonth + 1, day);
+
+            days.push({
+                day,
+                date: formatDate(date),
+                currentMonth: false,
+            });
+        }
+
+        return days;
+    };
+
+    const goToPreviousMonth = () => {
+        if (calendarMonth === 0) {
+            setCalendarMonth(11);
+            setCalendarYear(calendarYear - 1);
+        } else {
+            setCalendarMonth(calendarMonth - 1);
+        }
+    };
+
+    const goToNextMonth = () => {
+        if (calendarMonth === 11) {
+            setCalendarMonth(0);
+            setCalendarYear(calendarYear + 1);
+        } else {
+            setCalendarMonth(calendarMonth + 1);
+        }
+    };
+
+    const openAdminDateModal = () => {
+        const currentDate = new Date(attendanceDate);
+
+        setSelectedAdminDate(attendanceDate);
+        setCalendarMonth(currentDate.getMonth());
+        setCalendarYear(currentDate.getFullYear());
+        setShowAdminDateModal(true);
+    };
+
+    const confirmAdminDate = () => {
+        setAttendanceDate(selectedAdminDate);
+        setShowAdminDateModal(false);
+        loadAdminDashboard(selectedAdminDate);
+    };
+
+    const loadAdminDashboard = async (date: string) => {
+        try {
+            setLoading(true);
+
+            const response = await fetch(
+                `${API_ENDPOINTS.adminDashboard}?date=${date}`
+            );
+
+            const data = await response.json();
+
+            setAdminDashboard(data);
+            setDashboardLoaded(true);
+        } catch (error) {
+            console.log(error);
+            Alert.alert('Error', 'Unable to load admin student dashboard');
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const loadSubjects = async () => {
         try {
@@ -109,6 +249,7 @@ export default function HomeScreen() {
                 subject,
                 className,
                 section,
+                role: userRole,
             },
         } as any);
     };
@@ -121,6 +262,7 @@ export default function HomeScreen() {
             params: {
                 teacherId,
                 teacherName,
+                role: userRole,
             },
         } as any);
     };
@@ -133,6 +275,7 @@ export default function HomeScreen() {
             params: {
                 teacherId,
                 teacherName,
+                role: userRole,
             },
         } as any);
     };
@@ -145,8 +288,44 @@ export default function HomeScreen() {
             params: {
                 teacherId,
                 teacherName,
+                role: userRole,
             },
         } as any);
+    };
+
+    const navigateToAdminTeacherDashboard = () => {
+        setShowMenuModal(false);
+        router.push('/admin-teacher-dashboard' as any);
+    };
+
+    const navigateToAdminParentDashboard = () => {
+        setShowMenuModal(false);
+        router.push('/admin-parent-dashboard' as any);
+    };
+
+    const navigateToImportSchoolData = () => {
+        setShowMenuModal(false);
+        router.push('/import-school-data' as any);
+    };
+
+    const navigateToRegisterTeacher = () => {
+        setShowMenuModal(false);
+        router.push('/register-teacher' as any);
+    };
+
+    const navigateToRegisterParent = () => {
+        setShowMenuModal(false);
+        router.push('/register-parent' as any);
+    };
+
+    const navigateToRegisterStudent = () => {
+        setShowMenuModal(false);
+        router.push('/register-student' as any);
+    };
+
+    const navigateToTeacherAssignments = () => {
+        setShowMenuModal(false);
+        router.push('/teacher-assignments' as any);
     };
 
     const handleLogout = () => {
@@ -164,55 +343,144 @@ export default function HomeScreen() {
     }
 
     return (
-        <View style={styles.container}>
-            <View style={styles.headerRow}>
-                <Text style={styles.welcome}>Welcome, {teacherName}</Text>
+        <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
+            {isAdmin ? (
+                <View style={styles.adminHeaderRow}>
+                    <View style={styles.adminTitleBox}>
+                        <Text style={styles.adminDashboardTitle}>Admin Student Dashboard</Text>
+                        <Text style={styles.adminWelcomeText}>Welcome, Principal</Text>
+                    </View>
 
-                <TouchableOpacity
-                    style={styles.menuIconButton}
-                    onPress={() => setShowMenuModal(true)}
-                >
-                    <Text style={styles.menuIcon}>☰</Text>
-                </TouchableOpacity>
-            </View>
+                    <TouchableOpacity
+                        style={styles.menuIconButton}
+                        onPress={() => setShowMenuModal(true)}
+                    >
+                        <Text style={styles.menuIcon}>☰</Text>
+                    </TouchableOpacity>
+                </View>
+            ) : (
+                <View style={styles.headerRow}>
+                    <Text style={styles.welcome}>
+                        Welcome, {teacherName || 'Teacher'}
+                    </Text>
 
-            <Text style={styles.title}>Load Students</Text>
+                    <TouchableOpacity
+                        style={styles.menuIconButton}
+                        onPress={() => setShowMenuModal(true)}
+                    >
+                        <Text style={styles.menuIcon}>☰</Text>
+                    </TouchableOpacity>
+                </View>
+            )}
 
-            <Text style={styles.label}>Subject</Text>
-            <TouchableOpacity
-                style={styles.selectBox}
-                onPress={() => setShowSubjectModal(true)}
-            >
-                <Text style={subject ? styles.selectText : styles.placeholderText}>
-                    {subject || 'Select Subject'}
-                </Text>
-            </TouchableOpacity>
+            {!isAdmin && (
+                <>
+                    <Text style={styles.title}>Load Students</Text>
 
-            <Text style={styles.label}>Class</Text>
-            <TouchableOpacity
-                style={styles.selectBox}
-                disabled={!subject}
-                onPress={() => setShowClassModal(true)}
-            >
-                <Text style={className ? styles.selectText : styles.placeholderText}>
-                    {className || 'Select Class'}
-                </Text>
-            </TouchableOpacity>
+                    <Text style={styles.label}>Subject</Text>
+                    <TouchableOpacity
+                        style={styles.selectBox}
+                        onPress={() => setShowSubjectModal(true)}
+                    >
+                        <Text style={subject ? styles.selectText : styles.placeholderText}>
+                            {subject || 'Select Subject'}
+                        </Text>
+                    </TouchableOpacity>
 
-            <Text style={styles.label}>Section</Text>
-            <TouchableOpacity
-                style={styles.selectBox}
-                disabled={!className}
-                onPress={() => setShowSectionModal(true)}
-            >
-                <Text style={section ? styles.selectText : styles.placeholderText}>
-                    {section || 'Select Section'}
-                </Text>
-            </TouchableOpacity>
+                    <Text style={styles.label}>Class</Text>
+                    <TouchableOpacity
+                        style={styles.selectBox}
+                        disabled={!subject}
+                        onPress={() => setShowClassModal(true)}
+                    >
+                        <Text style={className ? styles.selectText : styles.placeholderText}>
+                            {className || 'Select Class'}
+                        </Text>
+                    </TouchableOpacity>
 
-            <TouchableOpacity style={styles.loadButton} onPress={handleLoadStudents}>
-                <Text style={styles.loadButtonText}>Load Students</Text>
-            </TouchableOpacity>
+                    <Text style={styles.label}>Section</Text>
+                    <TouchableOpacity
+                        style={styles.selectBox}
+                        disabled={!className}
+                        onPress={() => setShowSectionModal(true)}
+                    >
+                        <Text style={section ? styles.selectText : styles.placeholderText}>
+                            {section || 'Select Section'}
+                        </Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity style={styles.loadButton} onPress={handleLoadStudents}>
+                        <Text style={styles.loadButtonText}>Load Students</Text>
+                    </TouchableOpacity>
+                </>
+            )}
+
+            {isAdmin && (
+                <>
+                    <Text style={styles.label}>Attendance Date</Text>
+
+                    <TouchableOpacity
+                        style={styles.dateInputBox}
+                        onPress={openAdminDateModal}
+                    >
+                        <Text style={styles.dateInputText}>{attendanceDate}</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                        style={styles.loadDashboardButton}
+                        onPress={openAdminDateModal}
+                    >
+                        <Text style={styles.loadDashboardButtonText}>Load Dashboard</Text>
+                    </TouchableOpacity>
+
+                    {dashboardLoaded && (
+                        <View style={styles.dashboardResultBox}>
+                            <Text style={styles.dashboardResultTitle}>
+                                Student Dashboard Loaded
+                            </Text>
+
+                            <Text style={styles.dashboardResultText}>
+                                Attendance Date: {adminDashboard.attendanceDate || attendanceDate}
+                            </Text>
+
+                            <View style={styles.summaryCard}>
+                                <Text style={styles.summaryTitle}>Total Students</Text>
+                                <Text style={styles.summaryValue}>
+                                    {adminDashboard.totalStudents}
+                                </Text>
+                            </View>
+
+                            <View style={styles.summaryCard}>
+                                <Text style={styles.summaryTitle}>Present Students</Text>
+                                <Text style={styles.summaryValue}>
+                                    {adminDashboard.presentStudents}
+                                </Text>
+                            </View>
+
+                            <View style={styles.summaryCard}>
+                                <Text style={styles.summaryTitle}>Absent Students</Text>
+                                <Text style={styles.summaryValue}>
+                                    {adminDashboard.absentStudents}
+                                </Text>
+                            </View>
+
+                            <View style={styles.summaryCard}>
+                                <Text style={styles.summaryTitle}>Late Students</Text>
+                                <Text style={styles.summaryValue}>
+                                    {adminDashboard.lateStudents}
+                                </Text>
+                            </View>
+
+                            <View style={styles.summaryCard}>
+                                <Text style={styles.summaryTitle}>Attendance Percentage</Text>
+                                <Text style={styles.summaryValue}>
+                                    {adminDashboard.attendancePercentage.toFixed(2)}%
+                                </Text>
+                            </View>
+                        </View>
+                    )}
+                </>
+            )}
 
             <Modal visible={showMenuModal} transparent animationType="fade">
                 <TouchableOpacity
@@ -221,23 +489,140 @@ export default function HomeScreen() {
                     onPress={() => setShowMenuModal(false)}
                 >
                     <View style={styles.menuBox}>
-                        <TouchableOpacity style={styles.menuItem} onPress={navigateToTeacherDashboard}>
-                            <Text style={styles.menuItemText}>Teacher Dashboard</Text>
-                        </TouchableOpacity>
+                        {isAdmin ? (
+                            <>
+                                <TouchableOpacity style={styles.menuItem} onPress={navigateToAdminTeacherDashboard}>
+                                    <Text style={styles.menuItemText}>Admin Teacher Dashboard</Text>
+                                </TouchableOpacity>
 
-                        <TouchableOpacity style={styles.menuItem} onPress={navigateToDateSummary}>
-                            <Text style={styles.menuItemText}>Load Date Summary</Text>
-                        </TouchableOpacity>
+                                <TouchableOpacity style={styles.menuItem} onPress={navigateToAdminParentDashboard}>
+                                    <Text style={styles.menuItemText}>Admin Parent Dashboard</Text>
+                                </TouchableOpacity>
 
-                        <TouchableOpacity style={styles.menuItem} onPress={navigateToAttendanceReport}>
-                            <Text style={styles.menuItemText}>Attendance Report</Text>
-                        </TouchableOpacity>
+                                <TouchableOpacity style={styles.menuItem} onPress={navigateToAttendanceReport}>
+                                    <Text style={styles.menuItemText}>Attendance Report</Text>
+                                </TouchableOpacity>
+
+                                <TouchableOpacity style={styles.menuItem} onPress={navigateToImportSchoolData}>
+                                    <Text style={styles.menuItemText}>Import School Data</Text>
+                                </TouchableOpacity>
+
+                                <TouchableOpacity style={styles.menuItem} onPress={navigateToRegisterTeacher}>
+                                    <Text style={styles.menuItemText}>Register Teacher</Text>
+                                </TouchableOpacity>
+
+                                <TouchableOpacity style={styles.menuItem} onPress={navigateToRegisterParent}>
+                                    <Text style={styles.menuItemText}>Register Parent</Text>
+                                </TouchableOpacity>
+
+                                <TouchableOpacity style={styles.menuItem} onPress={navigateToRegisterStudent}>
+                                    <Text style={styles.menuItemText}>Register Student</Text>
+                                </TouchableOpacity>
+
+                                <TouchableOpacity style={styles.menuItem} onPress={navigateToTeacherAssignments}>
+                                    <Text style={styles.menuItemText}>Teacher Assignments</Text>
+                                </TouchableOpacity>
+                            </>
+                        ) : (
+                            <>
+                                <TouchableOpacity style={styles.menuItem} onPress={navigateToTeacherDashboard}>
+                                    <Text style={styles.menuItemText}>Teacher Dashboard</Text>
+                                </TouchableOpacity>
+
+                                <TouchableOpacity style={styles.menuItem} onPress={navigateToDateSummary}>
+                                    <Text style={styles.menuItemText}>Load Date Summary</Text>
+                                </TouchableOpacity>
+
+                                <TouchableOpacity style={styles.menuItem} onPress={navigateToAttendanceReport}>
+                                    <Text style={styles.menuItemText}>Attendance Report</Text>
+                                </TouchableOpacity>
+                            </>
+                        )}
 
                         <TouchableOpacity style={styles.menuItem} onPress={handleLogout}>
                             <Text style={styles.logoutText}>Logout</Text>
                         </TouchableOpacity>
                     </View>
                 </TouchableOpacity>
+            </Modal>
+
+            <Modal visible={showAdminDateModal} transparent animationType="fade">
+                <View style={styles.calendarOverlay}>
+                    <View style={styles.calendarModalBox}>
+                        <Text style={styles.calendarTitle}>Select Dashboard Date</Text>
+
+                        <Text style={styles.calendarLabel}>Dashboard Date</Text>
+
+                        <View style={styles.selectedDateBox}>
+                            <Text style={styles.selectedDateText}>{selectedAdminDate}</Text>
+                        </View>
+
+                        <View style={styles.monthRow}>
+                            <TouchableOpacity onPress={goToPreviousMonth}>
+                                <Text style={styles.monthArrow}>‹</Text>
+                            </TouchableOpacity>
+
+                            <Text style={styles.monthTitle}>
+                                {monthNames[calendarMonth]} {calendarYear}
+                            </Text>
+
+                            <TouchableOpacity onPress={goToNextMonth}>
+                                <Text style={styles.monthArrow}>›</Text>
+                            </TouchableOpacity>
+                        </View>
+
+                        <View style={styles.weekRow}>
+                            {weekDays.map((day) => (
+                                <Text key={day} style={styles.weekDayText}>
+                                    {day}
+                                </Text>
+                            ))}
+                        </View>
+
+                        <View style={styles.daysGrid}>
+                            {getCalendarDays().map((item, index) => {
+                                const isSelected = item.date === selectedAdminDate;
+
+                                return (
+                                    <TouchableOpacity
+                                        key={`${item.date}-${index}`}
+                                        style={[
+                                            styles.dayButton,
+                                            isSelected && styles.selectedDayButton,
+                                        ]}
+                                        onPress={() => setSelectedAdminDate(item.date)}
+                                    >
+                                        <Text
+                                            style={[
+                                                styles.dayText,
+                                                !item.currentMonth && styles.otherMonthDayText,
+                                                isSelected && styles.selectedDayText,
+                                            ]}
+                                        >
+                                            {item.day}
+                                        </Text>
+                                    </TouchableOpacity>
+                                );
+                            })}
+                        </View>
+
+                        <View style={styles.calendarButtonRow}>
+                            <TouchableOpacity
+                                style={styles.cancelDateButton}
+                                onPress={() => setShowAdminDateModal(false)}
+                            >
+                                <Text style={styles.calendarButtonText}>Cancel</Text>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity
+                                style={styles.confirmDateButton}
+                                onPress={confirmAdminDate}
+                            >
+                                <Text style={styles.calendarButtonText}>Confirm Date</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
             </Modal>
 
             <Modal visible={showSubjectModal} transparent animationType="slide">
@@ -323,7 +708,7 @@ export default function HomeScreen() {
                     </View>
                 </View>
             </Modal>
-        </View>
+        </ScrollView>
     );
 }
 
@@ -331,7 +716,10 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#fff',
+    },
+    scrollContent: {
         padding: 25,
+        paddingBottom: 60,
     },
     center: {
         flex: 1,
@@ -340,16 +728,40 @@ const styles = StyleSheet.create({
     },
     headerRow: {
         marginTop: 20,
-        marginBottom: 30,
+        marginBottom: 35,
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
     },
     welcome: {
-        fontSize: 36,
-        fontWeight: 'bold',
+        fontSize: 28,
+        fontWeight: '700',
         color: '#1e3a8a',
         flex: 1,
+        textAlign: 'left',
+    },
+    adminHeaderRow: {
+        marginTop: 20,
+        marginBottom: 35,
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'flex-start',
+    },
+    adminTitleBox: {
+        flex: 1,
+    },
+    adminDashboardTitle: {
+        fontSize: 34,
+        fontWeight: 'bold',
+        color: '#1e3a8a',
+        textAlign: 'left',
+        marginBottom: 18,
+    },
+    adminWelcomeText: {
+        fontSize: 28,
+        fontWeight: '700',
+        color: '#1e3a8a',
+        textAlign: 'left',
     },
     menuIconButton: {
         padding: 8,
@@ -371,7 +783,7 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontWeight: '700',
         marginBottom: 8,
-        color: '#374151',
+        color: '#111827',
     },
     selectBox: {
         borderWidth: 1,
@@ -389,6 +801,18 @@ const styles = StyleSheet.create({
         fontSize: 16,
         color: '#6b7280',
     },
+    dateInputBox: {
+        borderWidth: 1,
+        borderColor: '#93c5fd',
+        borderRadius: 10,
+        padding: 16,
+        marginBottom: 25,
+        backgroundColor: '#eff6ff',
+    },
+    dateInputText: {
+        fontSize: 20,
+        color: '#111827',
+    },
     loadButton: {
         backgroundColor: '#16a34a',
         padding: 15,
@@ -401,6 +825,50 @@ const styles = StyleSheet.create({
         fontSize: 17,
         fontWeight: 'bold',
     },
+    loadDashboardButton: {
+        backgroundColor: '#2563eb',
+        padding: 17,
+        borderRadius: 10,
+        alignItems: 'center',
+    },
+    loadDashboardButtonText: {
+        color: '#fff',
+        fontSize: 20,
+        fontWeight: 'bold',
+    },
+    dashboardResultBox: {
+        marginTop: 25,
+    },
+    dashboardResultTitle: {
+        fontSize: 22,
+        fontWeight: 'bold',
+        color: '#1e3a8a',
+        marginBottom: 8,
+    },
+    dashboardResultText: {
+        fontSize: 16,
+        color: '#374151',
+        marginBottom: 15,
+    },
+    summaryCard: {
+        backgroundColor: '#eff6ff',
+        borderWidth: 1,
+        borderColor: '#bfdbfe',
+        borderRadius: 12,
+        padding: 16,
+        marginBottom: 12,
+    },
+    summaryTitle: {
+        fontSize: 16,
+        fontWeight: '700',
+        color: '#374151',
+    },
+    summaryValue: {
+        fontSize: 28,
+        fontWeight: 'bold',
+        color: '#1e3a8a',
+        marginTop: 5,
+    },
     menuOverlay: {
         flex: 1,
         backgroundColor: 'rgba(0,0,0,0.15)',
@@ -409,7 +877,7 @@ const styles = StyleSheet.create({
         paddingRight: 20,
     },
     menuBox: {
-        width: 250,
+        width: 285,
         backgroundColor: '#fff',
         borderRadius: 12,
         paddingVertical: 8,
@@ -466,6 +934,119 @@ const styles = StyleSheet.create({
     },
     closeButtonText: {
         color: '#fff',
+        fontWeight: 'bold',
+    },
+    calendarOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.4)',
+        justifyContent: 'center',
+        padding: 25,
+    },
+    calendarModalBox: {
+        backgroundColor: '#fff',
+        borderRadius: 22,
+        padding: 22,
+    },
+    calendarTitle: {
+        fontSize: 26,
+        fontWeight: 'bold',
+        color: '#111827',
+        marginBottom: 22,
+    },
+    calendarLabel: {
+        fontSize: 18,
+        fontWeight: '700',
+        color: '#374151',
+        marginBottom: 10,
+    },
+    selectedDateBox: {
+        backgroundColor: '#e5e7eb',
+        borderRadius: 12,
+        padding: 15,
+        alignItems: 'center',
+        marginBottom: 22,
+    },
+    selectedDateText: {
+        fontSize: 24,
+        fontWeight: 'bold',
+        color: '#111827',
+    },
+    monthRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 12,
+    },
+    monthArrow: {
+        fontSize: 38,
+        color: '#0ea5e9',
+        fontWeight: 'bold',
+        paddingHorizontal: 15,
+    },
+    monthTitle: {
+        fontSize: 20,
+        color: '#334155',
+    },
+    weekRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginBottom: 8,
+    },
+    weekDayText: {
+        width: 40,
+        textAlign: 'center',
+        fontSize: 15,
+        color: '#94a3b8',
+        fontWeight: '600',
+    },
+    daysGrid: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        marginBottom: 20,
+    },
+    dayButton: {
+        width: '14.28%',
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: 9,
+        borderRadius: 30,
+    },
+    selectedDayButton: {
+        backgroundColor: '#0ea5e9',
+    },
+    dayText: {
+        fontSize: 18,
+        color: '#334155',
+    },
+    otherMonthDayText: {
+        color: '#cbd5e1',
+    },
+    selectedDayText: {
+        color: '#fff',
+        fontWeight: 'bold',
+    },
+    calendarButtonRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        gap: 12,
+    },
+    cancelDateButton: {
+        flex: 1,
+        backgroundColor: '#6b7280',
+        padding: 15,
+        borderRadius: 10,
+        alignItems: 'center',
+    },
+    confirmDateButton: {
+        flex: 1,
+        backgroundColor: '#16a34a',
+        padding: 15,
+        borderRadius: 10,
+        alignItems: 'center',
+    },
+    calendarButtonText: {
+        color: '#fff',
+        fontSize: 16,
         fontWeight: 'bold',
     },
 });
