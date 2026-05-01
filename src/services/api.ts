@@ -9,9 +9,12 @@ export const API_ENDPOINTS = {
     attendanceReport: `${BASE_URL}/attendance/report`,
 
     adminDashboard: `${BASE_URL}/attendance/dashboard/admin`,
+    adminStudentDashboard: `${BASE_URL}/attendance/dashboard/admin/students`,
 
     teacherDashboard: `${BASE_URL}/attendance/dashboard/teacher`,
     teacherClassDashboard: `${BASE_URL}/attendance/dashboard/teacher/classes`,
+    teacherSchedules: `${BASE_URL}/teacher-schedules`,
+    availableReplacementTeachers: `${BASE_URL}/teacher-schedules/available-replacements`,
 
     teacherSubjects: `${BASE_URL}/teacher-assignments/subjects`,
     teacherClasses: `${BASE_URL}/teacher-assignments/classes`,

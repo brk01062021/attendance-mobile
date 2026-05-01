@@ -280,7 +280,17 @@ export default function TeacherDashboardScreen() {
 
                         <Calendar
                             current={selectedDate}
-                            onDayPress={(day) => setSelectedDate(day.dateString)}
+                            maxDate={new Date().toISOString().split('T')[0]}
+                            onDayPress={(day) => {
+                                const todayString = new Date().toISOString().split('T')[0];
+
+                                if (day.dateString > todayString) {
+                                    Alert.alert('Invalid Date', 'Future dates are not allowed.');
+                                    return;
+                                }
+
+                                setSelectedDate(day.dateString);
+                            }}
                             markedDates={{
                                 [selectedDate]: {
                                     selected: true,

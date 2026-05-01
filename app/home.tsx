@@ -12,6 +12,17 @@ import {
 import { router, useLocalSearchParams } from 'expo-router';
 import { API_ENDPOINTS } from '../src/services/api';
 
+type AdminStudentAttendance = {
+    studentId: number;
+    studentName: string;
+    className: string;
+    section: string;
+    subjectName: string;
+    status: string;
+    attendanceDate: string;
+    alertReason?: string;
+};
+
 export default function HomeScreen() {
     const { teacherId, teacherName, role } = useLocalSearchParams();
 
@@ -40,6 +51,20 @@ export default function HomeScreen() {
     const [selectedAdminDate, setSelectedAdminDate] = useState(todayString);
     const [showAdminDateModal, setShowAdminDateModal] = useState(false);
     const [dashboardLoaded, setDashboardLoaded] = useState(false);
+
+    const [adminClassName, setAdminClassName] = useState('');
+    const [adminSection, setAdminSection] = useState('');
+    const [adminSubject, setAdminSubject] = useState('');
+
+    const [showAdminClassModal, setShowAdminClassModal] = useState(false);
+    const [showAdminSectionModal, setShowAdminSectionModal] = useState(false);
+    const [showAdminSubjectModal, setShowAdminSubjectModal] = useState(false);
+
+    const adminClassOptions = ['All', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'];
+    const adminSectionOptions = ['All', 'A', 'B', 'C', 'D'];
+    const adminSubjectOptions = ['All', 'English', 'Hindi', 'Telugu', 'Math', 'Maths', 'Science', 'Social'];
+
+    const [adminStudentAttendance, setAdminStudentAttendance] = useState<AdminStudentAttendance[]>([]);
 
     const [adminDashboard, setAdminDashboard] = useState({
         attendanceDate: '',
@@ -169,17 +194,133 @@ export default function HomeScreen() {
         loadAdminDashboard(selectedAdminDate);
     };
 
+    const getAdminStudentAttendanceUrl = (date: string) => {
+        const params = new URLSearchParams();
+
+        if (date) {
+            params.append('date', date);
+        }
+
+        if (adminClassName) {
+            params.append('className', adminClassName);
+        }
+
+        if (adminSection) {
+            params.append('section', adminSection);
+        }
+
+        if (adminSubject) {
+            params.append('subjectName', adminSubject);
+        }
+
+        return `${API_ENDPOINTS.adminStudentDashboard}?${params.toString()}`;
+    };
+    const getAdminStudentAttendanceUrlWithoutDate = () => {
+        const params = new URLSearchParams();
+
+        if (adminClassName) {
+            params.append('className', adminClassName);
+        }
+
+        if (adminSection) {
+            params.append('section', adminSection);
+        }
+
+        if (adminSubject) {
+            params.append('subjectName', adminSubject);
+        }
+
+        return `${API_ENDPOINTS.adminStudentDashboard}?${params.toString()}`;
+    };
+
     const loadAdminDashboard = async (date: string) => {
         try {
             setLoading(true);
 
-            const response = await fetch(
+            const dashboardResponse = await fetch(
                 `${API_ENDPOINTS.adminDashboard}?date=${date}`
             );
 
-            const data = await response.json();
+            const dashboardData = await dashboardResponse.json();
 
-            setAdminDashboard(data);
+            const studentResponse = await fetch(getAdminStudentAttendanceUrl(date));
+            const studentData = await studentResponse.json();
+
+            const filteredTotal = studentData.length;
+
+            const filteredPresent = studentData.filter(
+                (item: AdminStudentAttendance) => item.status === 'PRESENT'
+            ).length;
+
+            const filteredAbsent = studentData.filter(
+                (item: AdminStudentAttendance) => item.status === 'ABSENT'
+            ).length;
+
+            const filteredLate = studentData.filter(
+                (item: AdminStudentAttendance) => item.status === 'LATE'
+            ).length;
+
+            const filteredAttended = filteredPresent + filteredLate;
+
+            const filteredPercentage =
+                filteredTotal === 0 ? 0 : (filteredAttended / filteredTotal) * 100;
+
+            setAdminDashboard({
+                attendanceDate: date,
+                totalStudents: filteredTotal,
+                presentStudents: filteredPresent,
+                absentStudents: filteredAbsent,
+                lateStudents: filteredLate,
+                attendancePercentage: filteredPercentage,
+            });
+
+            const selectedDateObj = new Date(date);
+            const fiveDaysAgo = new Date(selectedDateObj);
+            fiveDaysAgo.setDate(selectedDateObj.getDate() - 4);
+
+            const allRecordsResponse = await fetch(getAdminStudentAttendanceUrlWithoutDate());
+            const allRecordsData = await allRecordsResponse.json();
+
+            const absentStudents = studentData
+                .filter((item: AdminStudentAttendance) => item.status === 'ABSENT')
+                .map((item: AdminStudentAttendance) => ({
+                    ...item,
+                    alertReason: 'Absent on selected date',
+                }));
+
+            const lastFiveDaysLateRecords = allRecordsData.filter((item: AdminStudentAttendance) => {
+                const itemDate = new Date(item.attendanceDate);
+
+                return (
+                    item.status === 'LATE' &&
+                    itemDate >= fiveDaysAgo &&
+                    itemDate <= selectedDateObj
+                );
+            });
+
+            const lateCountMap: Record<number, number> = {};
+
+            lastFiveDaysLateRecords.forEach((item: AdminStudentAttendance) => {
+                lateCountMap[item.studentId] = (lateCountMap[item.studentId] || 0) + 1;
+            });
+
+            const repeatedLateStudents = lastFiveDaysLateRecords
+                .filter((item: AdminStudentAttendance) => lateCountMap[item.studentId] >= 2)
+                .map((item: AdminStudentAttendance) => ({
+                    ...item,
+                    alertReason: `Late ${lateCountMap[item.studentId]} times in last 5 days`,
+                }));
+
+            const attentionNeededStudents = [
+                ...absentStudents,
+                ...repeatedLateStudents,
+            ].filter((item, index, self) =>
+                    index === self.findIndex(
+                        (s) => s.studentId === item.studentId && s.alertReason === item.alertReason
+                    )
+            );
+
+            setAdminStudentAttendance(attentionNeededStudents);
             setDashboardLoaded(true);
         } catch (error) {
             console.log(error);
@@ -333,6 +474,22 @@ export default function HomeScreen() {
         router.replace('/' as any);
     };
 
+    const getStatusStyle = (status: string) => {
+        if (status === 'PRESENT') {
+            return styles.presentStatus;
+        }
+
+        if (status === 'ABSENT') {
+            return styles.absentStatus;
+        }
+
+        if (status === 'LATE') {
+            return styles.lateStatus;
+        }
+
+        return styles.defaultStatus;
+    };
+
     if (loading) {
         return (
             <View style={styles.center}>
@@ -347,7 +504,7 @@ export default function HomeScreen() {
             {isAdmin ? (
                 <View style={styles.adminHeaderRow}>
                     <View style={styles.adminTitleBox}>
-                        <Text style={styles.adminDashboardTitle}>Admin Student Dashboard</Text>
+                        <Text style={styles.adminDashboardTitle}>Admin’s Students Dashboard</Text>
                         <Text style={styles.adminWelcomeText}>Welcome, Principal</Text>
                     </View>
 
@@ -426,9 +583,39 @@ export default function HomeScreen() {
                         <Text style={styles.dateInputText}>{attendanceDate}</Text>
                     </TouchableOpacity>
 
+                    <Text style={styles.label}>Class</Text>
+                    <TouchableOpacity
+                        style={styles.selectBox}
+                        onPress={() => setShowAdminClassModal(true)}
+                    >
+                        <Text style={adminClassName ? styles.selectText : styles.placeholderText}>
+                            {adminClassName || 'Select Class'}
+                        </Text>
+                    </TouchableOpacity>
+
+                    <Text style={styles.label}>Section</Text>
+                    <TouchableOpacity
+                        style={styles.selectBox}
+                        onPress={() => setShowAdminSectionModal(true)}
+                    >
+                        <Text style={adminSection ? styles.selectText : styles.placeholderText}>
+                            {adminSection || 'Select Section'}
+                        </Text>
+                    </TouchableOpacity>
+
+                    <Text style={styles.label}>Subject</Text>
+                    <TouchableOpacity
+                        style={styles.selectBox}
+                        onPress={() => setShowAdminSubjectModal(true)}
+                    >
+                        <Text style={adminSubject ? styles.selectText : styles.placeholderText}>
+                            {adminSubject || 'Select Subject'}
+                        </Text>
+                    </TouchableOpacity>
+
                     <TouchableOpacity
                         style={styles.loadDashboardButton}
-                        onPress={openAdminDateModal}
+                        onPress={() => loadAdminDashboard(attendanceDate)}
                     >
                         <Text style={styles.loadDashboardButtonText}>Load Dashboard</Text>
                     </TouchableOpacity>
@@ -436,7 +623,7 @@ export default function HomeScreen() {
                     {dashboardLoaded && (
                         <View style={styles.dashboardResultBox}>
                             <Text style={styles.dashboardResultTitle}>
-                                Student Dashboard Loaded
+                                Filtered Attendance Dashboard
                             </Text>
 
                             <Text style={styles.dashboardResultText}>
@@ -477,6 +664,52 @@ export default function HomeScreen() {
                                     {adminDashboard.attendancePercentage.toFixed(2)}%
                                 </Text>
                             </View>
+
+                            <Text style={styles.studentListTitle}>
+                                Attention Needed Students
+                            </Text>
+
+                            {adminStudentAttendance.length === 0 ? (
+                                <View style={styles.emptyBox}>
+                                    <Text style={styles.emptyText}>
+                                        No absent or repeated late students found.
+                                    </Text>
+                                </View>
+                            ) : (
+                                adminStudentAttendance.map((item, index) => (
+                                    <View
+                                        key={`${item.studentId}-${item.subjectName}-${item.attendanceDate}-${index}`}
+                                        style={styles.studentAttendanceCard}
+                                    >
+                                        <View style={styles.studentCardHeader}>
+                                            <Text style={styles.studentName}>
+                                                {item.studentName}
+                                            </Text>
+
+                                            <Text style={[styles.statusBadge, getStatusStyle(item.status)]}>
+                                                {item.status}
+                                            </Text>
+                                        </View>
+
+                                        <Text style={styles.studentDetail}>
+                                            Class {item.className} - Section {item.section}
+                                        </Text>
+
+                                        <Text style={styles.studentDetail}>
+                                            Subject: {item.subjectName}
+                                        </Text>
+
+                                        <Text style={styles.studentDetail}>
+                                            Date: {item.attendanceDate}
+                                        </Text>
+                                        {item.alertReason && (
+                                            <Text style={styles.alertReasonText}>
+                                                Reason: {item.alertReason}
+                                            </Text>
+                                        )}
+                                    </View>
+                                ))
+                            )}
                         </View>
                     )}
                 </>
@@ -582,6 +815,7 @@ export default function HomeScreen() {
                         <View style={styles.daysGrid}>
                             {getCalendarDays().map((item, index) => {
                                 const isSelected = item.date === selectedAdminDate;
+                                const isFutureDate = item.date > todayString;
 
                                 return (
                                     <TouchableOpacity
@@ -589,13 +823,20 @@ export default function HomeScreen() {
                                         style={[
                                             styles.dayButton,
                                             isSelected && styles.selectedDayButton,
+                                            isFutureDate && styles.disabledDayButton,
                                         ]}
-                                        onPress={() => setSelectedAdminDate(item.date)}
+                                        disabled={isFutureDate}
+                                        onPress={() => {
+                                            if (!isFutureDate) {
+                                                setSelectedAdminDate(item.date);
+                                            }
+                                        }}
                                     >
                                         <Text
                                             style={[
                                                 styles.dayText,
                                                 !item.currentMonth && styles.otherMonthDayText,
+                                                isFutureDate && styles.futureDayText,
                                                 isSelected && styles.selectedDayText,
                                             ]}
                                         >
@@ -621,6 +862,96 @@ export default function HomeScreen() {
                                 <Text style={styles.calendarButtonText}>Confirm Date</Text>
                             </TouchableOpacity>
                         </View>
+                    </View>
+                </View>
+            </Modal>
+
+            <Modal visible={showAdminClassModal} transparent animationType="slide">
+                <View style={styles.modalBackground}>
+                    <View style={styles.modalBox}>
+                        <Text style={styles.modalTitle}>Select Class</Text>
+
+                        {adminClassOptions.map((item) => (
+                            <TouchableOpacity
+                                key={item}
+                                style={styles.optionButton}
+                                onPress={() => {
+                                    setAdminClassName(item === 'All' ? '' : item);
+                                    setShowAdminClassModal(false);
+                                }}
+                            >
+                                <Text style={styles.optionText}>
+                                    {item === 'All' ? 'All Classes' : `Class ${item}`}
+                                </Text>
+                            </TouchableOpacity>
+                        ))}
+
+                        <TouchableOpacity
+                            style={styles.closeButton}
+                            onPress={() => setShowAdminClassModal(false)}
+                        >
+                            <Text style={styles.closeButtonText}>Close</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
+
+            <Modal visible={showAdminSectionModal} transparent animationType="slide">
+                <View style={styles.modalBackground}>
+                    <View style={styles.modalBox}>
+                        <Text style={styles.modalTitle}>Select Section</Text>
+
+                        {adminSectionOptions.map((item) => (
+                            <TouchableOpacity
+                                key={item}
+                                style={styles.optionButton}
+                                onPress={() => {
+                                    setAdminSection(item === 'All' ? '' : item);
+                                    setShowAdminSectionModal(false);
+                                }}
+                            >
+                                <Text style={styles.optionText}>
+                                    {item === 'All' ? 'All Sections' : `Section ${item}`}
+                                </Text>
+                            </TouchableOpacity>
+                        ))}
+
+                        <TouchableOpacity
+                            style={styles.closeButton}
+                            onPress={() => setShowAdminSectionModal(false)}
+                        >
+                            <Text style={styles.closeButtonText}>Close</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
+
+            <Modal visible={showAdminSubjectModal} transparent animationType="slide">
+                <View style={styles.modalBackground}>
+                    <View style={styles.modalBox}>
+                        <Text style={styles.modalTitle}>Select Subject</Text>
+
+                        {adminSubjectOptions.map((item) => (
+                            <TouchableOpacity
+                                key={item}
+                                style={styles.optionButton}
+                                onPress={() => {
+                                    setAdminSubject(item === 'All' ? '' : item);
+                                    setShowAdminSubjectModal(false);
+                                }}
+                            >
+                                <Text style={styles.optionText}>
+                                    {item === 'All' ? 'All Subjects' : item}
+                                </Text>
+                            </TouchableOpacity>
+                        ))}
+
+                        <TouchableOpacity
+                            style={styles.closeButton}
+                            onPress={() => setShowAdminSubjectModal(false)}
+                        >
+                            <Text style={styles.closeButtonText}>Close</Text>
+                        </TouchableOpacity>
                     </View>
                 </View>
             </Modal>
@@ -806,12 +1137,18 @@ const styles = StyleSheet.create({
         borderColor: '#93c5fd',
         borderRadius: 10,
         padding: 16,
-        marginBottom: 25,
+        marginBottom: 18,
         backgroundColor: '#eff6ff',
     },
     dateInputText: {
         fontSize: 20,
         color: '#111827',
+    },
+    disabledDayButton: {
+        opacity: 0.35,
+    },
+    futureDayText: {
+        color: '#cbd5e1',
     },
     loadButton: {
         backgroundColor: '#16a34a',
@@ -830,6 +1167,7 @@ const styles = StyleSheet.create({
         padding: 17,
         borderRadius: 10,
         alignItems: 'center',
+        marginTop: 5,
     },
     loadDashboardButtonText: {
         color: '#fff',
@@ -868,6 +1206,81 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         color: '#1e3a8a',
         marginTop: 5,
+    },
+    studentListTitle: {
+        fontSize: 22,
+        fontWeight: 'bold',
+        color: '#111827',
+        marginTop: 20,
+        marginBottom: 12,
+    },
+    emptyBox: {
+        backgroundColor: '#f9fafb',
+        borderWidth: 1,
+        borderColor: '#e5e7eb',
+        borderRadius: 12,
+        padding: 18,
+    },
+    emptyText: {
+        fontSize: 16,
+        color: '#6b7280',
+        textAlign: 'center',
+    },
+    studentAttendanceCard: {
+        backgroundColor: '#f8fafc',
+        borderWidth: 1,
+        borderColor: '#dbeafe',
+        borderRadius: 12,
+        padding: 15,
+        marginBottom: 12,
+    },
+    studentCardHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 8,
+    },
+    studentName: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: '#111827',
+        flex: 1,
+        marginRight: 10,
+    },
+    studentDetail: {
+        fontSize: 15,
+        color: '#374151',
+        marginTop: 3,
+    },
+    alertReasonText: {
+        fontSize: 15,
+        color: '#dc2626',
+        fontWeight: '700',
+        marginTop: 6,
+    },
+    statusBadge: {
+        fontSize: 13,
+        fontWeight: 'bold',
+        paddingHorizontal: 10,
+        paddingVertical: 5,
+        borderRadius: 20,
+        overflow: 'hidden',
+    },
+    presentStatus: {
+        backgroundColor: '#dcfce7',
+        color: '#166534',
+    },
+    absentStatus: {
+        backgroundColor: '#fee2e2',
+        color: '#991b1b',
+    },
+    lateStatus: {
+        backgroundColor: '#fef3c7',
+        color: '#92400e',
+    },
+    defaultStatus: {
+        backgroundColor: '#e5e7eb',
+        color: '#374151',
     },
     menuOverlay: {
         flex: 1,
