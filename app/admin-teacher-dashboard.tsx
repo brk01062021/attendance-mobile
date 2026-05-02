@@ -27,11 +27,6 @@ type TeacherSchedule = {
     replacementTeacherName?: string | null;
 };
 
-type TeacherOption = {
-    teacherId: number;
-    teacherName: string;
-};
-
 export default function AdminTeacherDashboardScreen() {
     const todayString = new Date().toISOString().split('T')[0];
 
@@ -48,7 +43,6 @@ export default function AdminTeacherDashboardScreen() {
     const [selectedSubject, setSelectedSubject] = useState('ALL');
     const [selectedStatus, setSelectedStatus] = useState('ALL');
     const [selectedTimePeriod, setSelectedTimePeriod] = useState('ALL');
-    const [selectedTeacherId, setSelectedTeacherId] = useState<number | 'ALL'>('ALL');
 
     const [showReplacementModal, setShowReplacementModal] = useState(false);
     const [selectedSchedule, setSelectedSchedule] = useState<TeacherSchedule | null>(null);
@@ -77,8 +71,7 @@ export default function AdminTeacherDashboardScreen() {
 
             const data = await response.json();
             setSchedules(Array.isArray(data) ? data : []);
-            setSelectedTimePeriod('ALL');
-            setSelectedTeacherId('ALL');
+            resetFilters();
         } catch (error) {
             console.log(error);
             Alert.alert('Error', 'Unable to load teacher schedules');
@@ -158,58 +151,6 @@ export default function AdminTeacherDashboardScreen() {
         }
     };
 
-    const markFullDayLeave = async (status: 'PLANNED_LEAVE' | 'UNPLANNED_LEAVE') => {
-        if (selectedTeacherId === 'ALL') {
-            Alert.alert('Select Teacher', 'Please select a teacher before marking full-day leave.');
-            return;
-        }
-
-        try {
-            setLoading(true);
-
-            const response = await fetch(
-                `${API_ENDPOINTS.teacherSchedules}/teacher/${selectedTeacherId}/full-day-leave?date=${date}&status=${status}`,
-                { method: 'PUT' }
-            );
-
-            if (!response.ok) {
-                throw new Error('Failed to mark full-day leave');
-            }
-
-            await loadSchedules();
-
-            Alert.alert(
-                'Success',
-                status === 'PLANNED_LEAVE'
-                    ? 'Teacher marked as full-day planned leave.'
-                    : 'Teacher marked as full-day unplanned leave.'
-            );
-        } catch (error) {
-            console.log(error);
-            Alert.alert('Error', 'Unable to mark full-day leave');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const confirmFullDayLeave = (status: 'PLANNED_LEAVE' | 'UNPLANNED_LEAVE') => {
-        const teacher = teacherOptions.find((item) => item.teacherId === selectedTeacherId);
-
-        Alert.alert(
-            'Confirm Full-Day Leave',
-            `Mark ${teacher?.teacherName || 'selected teacher'} as ${
-                status === 'PLANNED_LEAVE' ? 'Planned Leave' : 'Unplanned Leave'
-            } for ${date}?`,
-            [
-                { text: 'Cancel', style: 'cancel' },
-                {
-                    text: 'Confirm',
-                    onPress: () => markFullDayLeave(status),
-                },
-            ]
-        );
-    };
-
     const confirmDate = () => {
         setDate(selectedDate);
         setShowCalendarModal(false);
@@ -227,29 +168,6 @@ export default function AdminTeacherDashboardScreen() {
         if (status === 'ALL') return 'All Status';
         return status.replace('_', ' ');
     };
-
-    const teacherOptions = useMemo<TeacherOption[]>(() => {
-        const map = new Map<number, string>();
-
-        schedules.forEach((item) => {
-            map.set(item.teacherId, item.teacherName);
-        });
-
-        return Array.from(map.entries())
-            .map(([teacherId, teacherName]) => ({
-                teacherId,
-                teacherName,
-            }))
-            .sort((a, b) => a.teacherName.localeCompare(b.teacherName));
-    }, [schedules]);
-
-    const selectedTeacherSchedules = useMemo(() => {
-        if (selectedTeacherId === 'ALL') {
-            return schedules;
-        }
-
-        return schedules.filter((item) => item.teacherId === selectedTeacherId);
-    }, [schedules, selectedTeacherId]);
 
     const classOptions = useMemo(() => {
         const values = Array.from(new Set(schedules.map((item) => item.className)))
@@ -343,7 +261,6 @@ export default function AdminTeacherDashboardScreen() {
                     selectedTimePeriod === 'ALL' ||
                     `${item.startTime} - ${item.endTime}` === selectedTimePeriod
             )
-            .filter((item) => selectedTeacherId === 'ALL' || item.teacherId === selectedTeacherId)
             .sort((a, b) => {
                 const classCompare = Number(b.className) - Number(a.className);
                 if (classCompare !== 0) return classCompare;
@@ -366,7 +283,6 @@ export default function AdminTeacherDashboardScreen() {
         selectedSubject,
         selectedStatus,
         selectedTimePeriod,
-        selectedTeacherId,
     ]);
 
     const conflictKeys = useMemo(() => {
@@ -391,7 +307,6 @@ export default function AdminTeacherDashboardScreen() {
         setSelectedSubject('ALL');
         setSelectedStatus('ALL');
         setSelectedTimePeriod('ALL');
-        setSelectedTeacherId('ALL');
     };
 
     const renderFilterChips = (
@@ -424,29 +339,21 @@ export default function AdminTeacherDashboardScreen() {
                                 setSelectedSubject('ALL');
                                 setSelectedStatus('ALL');
                                 setSelectedTimePeriod('ALL');
-                                setSelectedTeacherId('ALL');
                             }
 
                             if (title === 'Section') {
                                 setSelectedSubject('ALL');
                                 setSelectedStatus('ALL');
                                 setSelectedTimePeriod('ALL');
-                                setSelectedTeacherId('ALL');
                             }
 
                             if (title === 'Subject') {
                                 setSelectedStatus('ALL');
                                 setSelectedTimePeriod('ALL');
-                                setSelectedTeacherId('ALL');
                             }
 
                             if (title === 'Status') {
                                 setSelectedTimePeriod('ALL');
-                                setSelectedTeacherId('ALL');
-                            }
-
-                            if (title === 'Time Period') {
-                                setSelectedTeacherId('ALL');
                             }
                         }}
                     >
@@ -461,56 +368,6 @@ export default function AdminTeacherDashboardScreen() {
                                 : option === 'ALL'
                                     ? allLabel
                                     : option}
-                        </Text>
-                    </TouchableOpacity>
-                ))}
-            </ScrollView>
-        </View>
-    );
-
-    const renderTeacherFilterChips = () => (
-        <View style={styles.filterContainer}>
-            <Text style={styles.filterTitle}>Teacher</Text>
-
-            <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                style={styles.filterScroll}
-            >
-                <TouchableOpacity
-                    style={[
-                        styles.filterChip,
-                        selectedTeacherId === 'ALL' && styles.activeFilterChip,
-                    ]}
-                    onPress={() => setSelectedTeacherId('ALL')}
-                >
-                    <Text
-                        style={[
-                            styles.filterChipText,
-                            selectedTeacherId === 'ALL' && styles.activeFilterChipText,
-                        ]}
-                    >
-                        All Teachers
-                    </Text>
-                </TouchableOpacity>
-
-                {teacherOptions.map((teacher) => (
-                    <TouchableOpacity
-                        key={teacher.teacherId}
-                        style={[
-                            styles.filterChip,
-                            selectedTeacherId === teacher.teacherId && styles.activeFilterChip,
-                        ]}
-                        onPress={() => setSelectedTeacherId(teacher.teacherId)}
-                    >
-                        <Text
-                            style={[
-                                styles.filterChipText,
-                                selectedTeacherId === teacher.teacherId &&
-                                styles.activeFilterChipText,
-                            ]}
-                        >
-                            {teacher.teacherName}
                         </Text>
                     </TouchableOpacity>
                 ))}
@@ -595,52 +452,6 @@ export default function AdminTeacherDashboardScreen() {
                         selectedTimePeriod,
                         setSelectedTimePeriod,
                         'All Time Periods'
-                    )}
-
-                    {renderTeacherFilterChips()}
-
-                    {selectedTeacherId !== 'ALL' && selectedTeacherSchedules.length > 0 && (
-                        <View style={styles.fullDayLeaveBox}>
-                            <Text style={styles.fullDayLeaveTitle}>
-                                Full-Day Leave Planning
-                            </Text>
-
-                            <Text style={styles.fullDayLeaveText}>
-                                Selected Teacher: {selectedTeacherSchedules[0].teacherName}
-                            </Text>
-
-                            <Text style={styles.fullDayLeaveText}>
-                                Date: {date}
-                            </Text>
-
-                            <Text style={styles.fullDayLeaveText}>
-                                Periods today: {selectedTeacherSchedules.length}
-                            </Text>
-
-                            <View style={styles.actionRow}>
-                                <TouchableOpacity
-                                    style={styles.leaveButton}
-                                    onPress={() => confirmFullDayLeave('PLANNED_LEAVE')}
-                                >
-                                    <Text style={styles.actionButtonText}>
-                                        Mark Full Day Planned Leave
-                                    </Text>
-                                </TouchableOpacity>
-
-                                <TouchableOpacity
-                                    style={styles.absentButton}
-                                    onPress={() => confirmFullDayLeave('UNPLANNED_LEAVE')}
-                                >
-                                    <Text style={styles.actionButtonText}>
-                                        Mark Full Day Unplanned Leave
-                                    </Text>
-                                </TouchableOpacity>
-                            </View>
-
-                            <Text style={styles.fullDayNoteText}>
-                                After marking full-day leave, assign replacement teachers for each period below.
-                            </Text>
-                        </View>
                     )}
                 </>
             )}
@@ -1009,33 +820,6 @@ const styles = StyleSheet.create({
     },
     activeFilterChipText: {
         color: '#fff',
-    },
-    fullDayLeaveBox: {
-        backgroundColor: '#eef2ff',
-        borderRadius: 14,
-        padding: 16,
-        borderWidth: 1,
-        borderColor: '#c7d2fe',
-        marginBottom: 20,
-    },
-    fullDayLeaveTitle: {
-        fontSize: 20,
-        fontWeight: 'bold',
-        color: '#1e3a8a',
-        marginBottom: 8,
-    },
-    fullDayLeaveText: {
-        fontSize: 15,
-        color: '#374151',
-        fontWeight: '700',
-        marginBottom: 5,
-    },
-    fullDayNoteText: {
-        fontSize: 14,
-        color: '#4b5563',
-        fontWeight: '600',
-        marginTop: 10,
-        lineHeight: 20,
     },
     conflictWarningBox: {
         backgroundColor: '#fee2e2',

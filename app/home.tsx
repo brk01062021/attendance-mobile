@@ -439,6 +439,11 @@ export default function HomeScreen() {
         router.push('/admin-teacher-dashboard' as any);
     };
 
+    const navigateToTeacherLeavePlanning = () => {
+        setShowMenuModal(false);
+        router.push('/teacher-leave-planning' as any);
+    };
+
     const navigateToAdminParentDashboard = () => {
         setShowMenuModal(false);
         router.push('/admin-parent-dashboard' as any);
@@ -726,6 +731,10 @@ export default function HomeScreen() {
                             <>
                                 <TouchableOpacity style={styles.menuItem} onPress={navigateToAdminTeacherDashboard}>
                                     <Text style={styles.menuItemText}>Admin Teacher Dashboard</Text>
+                                </TouchableOpacity>
+
+                                <TouchableOpacity style={styles.menuItem} onPress={navigateToTeacherLeavePlanning}>
+                                    <Text style={styles.menuItemText}>Teacher Leave Planning</Text>
                                 </TouchableOpacity>
 
                                 <TouchableOpacity style={styles.menuItem} onPress={navigateToAdminParentDashboard}>
