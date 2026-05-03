@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
     View,
     Text,
@@ -51,6 +51,8 @@ type DurationType = 'ONE_DAY' | 'MULTI_DAY';
 type DateField = 'FROM' | 'TO';
 type ReplacementTab = 'BEST_MATCH' | 'SAME_CLASS' | 'OTHERS';
 
+const MAX_VISIBLE_PERIOD_CARDS = 10;
+
 export default function TeacherLeavePlanningScreen() {
     const todayString = new Date().toISOString().split('T')[0];
 
@@ -64,12 +66,16 @@ export default function TeacherLeavePlanningScreen() {
     const [durationType, setDurationType] = useState<DurationType>('ONE_DAY');
 
     const [schedules, setSchedules] = useState<TeacherSchedule[]>([]);
-    const [selectedTeacherId, setSelectedTeacherId] = useState<string>('ALL');
+    const [teacherList, setTeacherList] = useState<{ teacherId: number; teacherName: string }[]>([]);
+    const [selectedTeacherId, setSelectedTeacherId] = useState<string>('');
+    const [currentBatchStartIndex, setCurrentBatchStartIndex] = useState(0);
 
     const [loading, setLoading] = useState(false);
     const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
 
     const [showReplacementModal, setShowReplacementModal] = useState(false);
+    const [showApplyConfirmModal, setShowApplyConfirmModal] = useState(false);
+
     const [selectedLeaveSchedule, setSelectedLeaveSchedule] =
         useState<TeacherSchedule | null>(null);
 
@@ -87,50 +93,141 @@ export default function TeacherLeavePlanningScreen() {
     const [selectedReplacementTeacherId, setSelectedReplacementTeacherId] =
         useState<number | 'NO_REPLACEMENT' | null>(null);
 
+    useEffect(() => {
+        loadTeacherOptions(todayString);
+    }, []);
+
+    const loadTeacherOptions = async (dateToLoad: string) => {
+        try {
+            let response = await fetch(`${API_ENDPOINTS.teacherSchedules}/teachers`);
+
+            let data = [];
+
+            if (response.ok) {
+                data = await response.json();
+            }
+
+            if (!Array.isArray(data) || data.length === 0) {
+                response = await fetch(`${API_ENDPOINTS.teacherSchedules}?date=${dateToLoad}`);
+
+                if (response.ok) {
+                    data = await response.json();
+                }
+            }
+
+            if (!Array.isArray(data)) {
+                setTeacherList([]);
+                setSelectedTeacherId('');
+                return;
+            }
+
+            const map = new Map<number, string>();
+
+            data.forEach((item: any) => {
+                const teacherId = item.teacherId ?? item.id ?? item.teacher_id;
+                const teacherName = item.teacherName ?? item.name ?? item.teacher_name;
+
+                if (teacherId && teacherName) {
+                    map.set(Number(teacherId), String(teacherName));
+                }
+            });
+
+            const teachers = Array.from(map.entries())
+                .sort((a, b) => a[1].localeCompare(b[1]))
+                .map(([teacherId, teacherName]) => ({
+                    teacherId,
+                    teacherName,
+                }));
+
+            setTeacherList(teachers);
+
+            if (teachers.length > 0) {
+                setSelectedTeacherId(String(teachers[0].teacherId));
+            } else {
+                setSelectedTeacherId('');
+            }
+        } catch (error) {
+            console.log('loadTeacherOptions error:', error);
+            setTeacherList([]);
+            setSelectedTeacherId('');
+        }
+    };
+
     const teacherOptions = useMemo(() => {
-        const map = new Map<number, string>();
-
-        schedules.forEach((item) => {
-            map.set(item.teacherId, item.teacherName);
-        });
-
-        return Array.from(map.entries())
-            .sort((a, b) => a[1].localeCompare(b[1]))
-            .map(([teacherId, teacherName]) => ({
-                teacherId,
-                teacherName,
-            }));
-    }, [schedules]);
+        return teacherList;
+    }, [teacherList]);
 
     const filteredSchedules = useMemo(() => {
         return [...schedules]
             .filter((item) =>
-                selectedTeacherId === 'ALL'
+                selectedTeacherId === ''
                     ? true
                     : item.teacherId === Number(selectedTeacherId)
             )
             .sort((a, b) => {
                 const dateCompare = a.scheduleDate.localeCompare(b.scheduleDate);
                 if (dateCompare !== 0) return dateCompare;
-
-                const teacherCompare = a.teacherName.localeCompare(b.teacherName);
-                if (teacherCompare !== 0) return teacherCompare;
-
                 return a.startTime.localeCompare(b.startTime);
             });
     }, [schedules, selectedTeacherId]);
 
+    const visibleSchedules = useMemo(() => {
+        return filteredSchedules.slice(
+            currentBatchStartIndex,
+            currentBatchStartIndex + MAX_VISIBLE_PERIOD_CARDS
+        );
+    }, [filteredSchedules, currentBatchStartIndex]);
+
+    const currentBatchNumber = Math.floor(currentBatchStartIndex / MAX_VISIBLE_PERIOD_CARDS) + 1;
+
+    const totalBatchCount = Math.max(
+        1,
+        Math.ceil(filteredSchedules.length / MAX_VISIBLE_PERIOD_CARDS)
+    );
+
+
+    const groupedSchedulesByDate = useMemo(() => {
+        const grouped = new Map<string, TeacherSchedule[]>();
+
+        visibleSchedules.forEach((item) => {
+            if (!grouped.has(item.scheduleDate)) {
+                grouped.set(item.scheduleDate, []);
+            }
+
+            grouped.get(item.scheduleDate)?.push(item);
+        });
+
+        return Array.from(grouped.entries());
+    }, [visibleSchedules]);
+
     const selectedReplacementList = useMemo(() => {
-        if (activeReplacementTab === 'BEST_MATCH') {
-            return groupedReplacements.bestMatch;
-        }
-
-        if (activeReplacementTab === 'SAME_CLASS') {
-            return groupedReplacements.sameClass;
-        }
-
+        if (activeReplacementTab === 'BEST_MATCH') return groupedReplacements.bestMatch;
+        if (activeReplacementTab === 'SAME_CLASS') return groupedReplacements.sameClass;
         return groupedReplacements.others;
     }, [activeReplacementTab, groupedReplacements]);
+
+    const hasReplacementAssigned = (item: TeacherSchedule) => {
+        return (
+            item.replacementTeacherId !== null &&
+            item.replacementTeacherId !== undefined &&
+            item.replacementTeacherName !== null &&
+            item.replacementTeacherName !== undefined &&
+            item.replacementTeacherName.trim() !== '' &&
+            item.replacementTeacherName !== 'No replacement assigned'
+        );
+    };
+
+    const replacementAssignedCount = useMemo(() => {
+        return visibleSchedules.filter((item) => hasReplacementAssigned(item)).length;
+    }, [visibleSchedules]);
+
+    const replacementNotAssignedCount = useMemo(() => {
+        return visibleSchedules.length - replacementAssignedCount;
+    }, [visibleSchedules.length, replacementAssignedCount]);
+
+    const getStatusLabel = (status: string) => {
+        return status.replace(/_/g, ' ');
+    };
 
     const openCalendar = (field: DateField) => {
         setActiveDateField(field);
@@ -145,37 +242,44 @@ export default function TeacherLeavePlanningScreen() {
             if (durationType === 'ONE_DAY') {
                 setToDate(selectedCalendarDate);
             }
+
+            loadTeacherOptions(selectedCalendarDate);
         } else {
             setToDate(selectedCalendarDate);
         }
 
+        setSchedules([]);
+        setCurrentBatchStartIndex(0);
+        setHasLoadedOnce(false);
         setShowCalendarModal(false);
+    };
+
+    const onLeaveTypeChange = (type: LeaveType) => {
+        setLeaveType(type);
+
+        if (type === 'UNPLANNED_LEAVE') {
+            setDurationType('ONE_DAY');
+            setToDate(fromDate);
+        }
+
+        setSchedules([]);
+        setCurrentBatchStartIndex(0);
+        setHasLoadedOnce(false);
+        loadTeacherOptions(fromDate);
     };
 
     const loadSchedules = async () => {
         try {
             setLoading(true);
             setHasLoadedOnce(true);
-            setSelectedTeacherId('ALL');
-
-            if (durationType === 'ONE_DAY') {
-                const response = await fetch(`${API_ENDPOINTS.teacherSchedules}?date=${fromDate}`);
-
-                if (!response.ok) {
-                    throw new Error('Failed to load schedules');
-                }
-
-                const data = await response.json();
-                setSchedules(Array.isArray(data) ? data : []);
-                return;
-            }
 
             const start = new Date(fromDate);
-            const end = new Date(toDate);
+            const end = new Date(durationType === 'ONE_DAY' ? fromDate : toDate);
 
             if (start > end) {
                 Alert.alert('Invalid Date Range', 'From Date cannot be after To Date.');
                 setSchedules([]);
+                setCurrentBatchStartIndex(0);
                 return;
             }
 
@@ -184,7 +288,6 @@ export default function TeacherLeavePlanningScreen() {
 
             while (current <= end) {
                 const dateString = current.toISOString().split('T')[0];
-
                 const response = await fetch(`${API_ENDPOINTS.teacherSchedules}?date=${dateString}`);
 
                 if (response.ok) {
@@ -196,66 +299,114 @@ export default function TeacherLeavePlanningScreen() {
 
                 current.setDate(current.getDate() + 1);
             }
-
+            setCurrentBatchStartIndex(0);
             setSchedules(allSchedules);
+
+            if (!selectedTeacherId && allSchedules.length > 0) {
+                setSelectedTeacherId(String(allSchedules[0].teacherId));
+            }
         } catch (error) {
             console.log(error);
             Alert.alert('Error', 'Unable to load teacher schedules');
             setSchedules([]);
+            setCurrentBatchStartIndex(0);
         } finally {
             setLoading(false);
         }
     };
 
-    const updateStatus = async (scheduleId: number, status: LeaveType) => {
+    const loadSchedulesWithoutReset = async () => {
         try {
-            setLoading(true);
+            const start = new Date(fromDate);
+            const end = new Date(durationType === 'ONE_DAY' ? fromDate : toDate);
 
-            const url = `${API_ENDPOINTS.teacherSchedules}/${scheduleId}/status?status=${status}`;
+            const allSchedules: TeacherSchedule[] = [];
+            const current = new Date(start);
 
-            const response = await fetch(url, {
-                method: 'PUT',
-            });
+            while (current <= end) {
+                const dateString = current.toISOString().split('T')[0];
+                const response = await fetch(
+                    `${API_ENDPOINTS.teacherSchedules}?date=${dateString}`
+                );
 
-            if (!response.ok) {
-                throw new Error('Failed to update leave status');
+                if (response.ok) {
+                    const data = await response.json();
+
+                    if (Array.isArray(data)) {
+                        allSchedules.push(...data);
+                    }
+                }
+
+                current.setDate(current.getDate() + 1);
             }
 
-            await loadSchedules();
+            setSchedules(allSchedules);
         } catch (error) {
             console.log(error);
-            Alert.alert('Error', 'Unable to mark leave');
-        } finally {
-            setLoading(false);
+            Alert.alert('Error', 'Unable to refresh teacher schedules');
         }
     };
 
-    const markAllFilteredAsLeave = async () => {
-        if (filteredSchedules.length === 0) {
+    const openApplyConfirmModal = () => {
+        if (selectedTeacherId === '') {
+            Alert.alert('Select Teacher', 'Please select one teacher first.');
+            return;
+        }
+
+        if (visibleSchedules.length === 0) {
+            Alert.alert('No Records', 'No schedule records found for selected teacher/date.');
+            return;
+        }
+
+        setShowApplyConfirmModal(true);
+    };
+
+    const markSelectedTeacherLeave = async () => {
+        if (selectedTeacherId === '') {
+            Alert.alert('Select Teacher', 'Please select one teacher first.');
+            return;
+        }
+
+        if (visibleSchedules.length === 0) {
             Alert.alert('No Records', 'No schedule records found for selected teacher/date.');
             return;
         }
 
         try {
+            setShowApplyConfirmModal(false);
             setLoading(true);
 
-            for (const item of filteredSchedules) {
-                const url = `${API_ENDPOINTS.teacherSchedules}/${item.id}/status?status=${leaveType}`;
-
-                const response = await fetch(url, {
-                    method: 'PUT',
-                });
+            for (const item of visibleSchedules) {
+                const response = await fetch(
+                    `${API_ENDPOINTS.teacherSchedules}/${item.id}/status?status=${leaveType}`,
+                    { method: 'PUT' }
+                );
 
                 if (!response.ok) {
                     throw new Error(`Failed to update schedule id ${item.id}`);
                 }
             }
 
-            await loadSchedules();
-            Alert.alert('Success', 'Leave applied to selected schedule records.');
+            const nextBatchStartIndex = currentBatchStartIndex + MAX_VISIBLE_PERIOD_CARDS;
+            const remainingPeriods = Math.max(filteredSchedules.length - nextBatchStartIndex, 0);
+
+            await loadSchedulesWithoutReset();
+
+            if (remainingPeriods > 0) {
+                setCurrentBatchStartIndex(nextBatchStartIndex);
+            } else {
+                setCurrentBatchStartIndex(0);
+            }
+
+            Alert.alert(
+                'Success',
+                remainingPeriods > 0
+                    ? `${visibleSchedules.length} period(s) updated. ${remainingPeriods} period(s) still pending. Next batch is ready.`
+                    : `${getStatusLabel(leaveType)} applied successfully.`
+            );
         } catch (error) {
             console.log(error);
-            Alert.alert('Error', 'Unable to apply leave to all records');
+            Alert.alert('Error', 'Unable to apply leave');
         } finally {
             setLoading(false);
         }
@@ -284,11 +435,23 @@ export default function TeacherLeavePlanningScreen() {
 
             const data = await response.json();
 
+            const bestMatch = Array.isArray(data.bestMatch) ? data.bestMatch : [];
+            const sameClass = Array.isArray(data.sameClass) ? data.sameClass : [];
+            const others = Array.isArray(data.others) ? data.others : [];
+
             setGroupedReplacements({
-                bestMatch: Array.isArray(data.bestMatch) ? data.bestMatch : [],
-                sameClass: Array.isArray(data.sameClass) ? data.sameClass : [],
-                others: Array.isArray(data.others) ? data.others : [],
+                bestMatch,
+                sameClass,
+                others,
             });
+
+            if (bestMatch.length > 0) {
+                setActiveReplacementTab('BEST_MATCH');
+            } else if (sameClass.length > 0) {
+                setActiveReplacementTab('SAME_CLASS');
+            } else {
+                setActiveReplacementTab('OTHERS');
+            }
         } catch (error) {
             console.log(error);
             Alert.alert('Error', 'Unable to load available replacement teachers');
@@ -312,16 +475,12 @@ export default function TeacherLeavePlanningScreen() {
             if (selectedReplacementTeacherId === 'NO_REPLACEMENT') {
                 response = await fetch(
                     `${API_ENDPOINTS.teacherSchedules}/${selectedLeaveSchedule.id}/status?status=${selectedLeaveSchedule.status}`,
-                    {
-                        method: 'PUT',
-                    }
+                    { method: 'PUT' }
                 );
             } else {
                 response = await fetch(
                     `${API_ENDPOINTS.teacherSchedules}/${selectedLeaveSchedule.id}/assign-replacement?replacementTeacherId=${selectedReplacementTeacherId}`,
-                    {
-                        method: 'PUT',
-                    }
+                    { method: 'PUT' }
                 );
             }
 
@@ -332,13 +491,8 @@ export default function TeacherLeavePlanningScreen() {
             setShowReplacementModal(false);
             setSelectedLeaveSchedule(null);
             setSelectedReplacementTeacherId(null);
-            setGroupedReplacements({
-                bestMatch: [],
-                sameClass: [],
-                others: [],
-            });
 
-            await loadSchedules();
+            await loadSchedulesWithoutReset();
 
             Alert.alert('Success', 'Replacement updated successfully.');
         } catch (error) {
@@ -349,271 +503,308 @@ export default function TeacherLeavePlanningScreen() {
         }
     };
 
-    const canAssignReplacement = (status: string) => {
-        return status === 'PLANNED_LEAVE' || status === 'UNPLANNED_LEAVE';
-    };
+    const applyButtonText = useMemo(() => {
+        const count = visibleSchedules.length;
 
-    const getStatusStyle = (status: string) => {
-        if (status === 'AVAILABLE') return styles.availableStatus;
-        if (status === 'PLANNED_LEAVE') return styles.leaveStatus;
-        if (status === 'UNPLANNED_LEAVE') return styles.absentStatus;
-        if (status === 'REPLACED') return styles.replacedStatus;
-        return styles.defaultStatus;
-    };
+        if (leaveType === 'PLANNED_LEAVE') {
+            return count > 0
+                ? `Apply Planned Leave for ${count} Period(s)`
+                : 'Apply Planned Leave';
+        }
 
-    const getStatusLabel = (status: string) => {
-        return status.replace('_', ' ');
-    };
+        return count > 0
+            ? `Apply Unplanned Leave for ${count} Period(s)`
+            : 'Apply Unplanned Leave';
+    }, [leaveType, visibleSchedules.length]);
 
     return (
-        <ScrollView style={styles.container}>
-            <Text style={styles.title}>Teacher Leave Planning</Text>
-            <Text style={styles.subtitle}>Full-Day & Multi-Day Leave Management</Text>
-
-            <Text style={styles.label}>Leave Type</Text>
-            <View style={styles.optionRow}>
-                <TouchableOpacity
-                    style={[
-                        styles.optionChip,
-                        leaveType === 'PLANNED_LEAVE' && styles.activeOptionChip,
-                    ]}
-                    onPress={() => setLeaveType('PLANNED_LEAVE')}
-                >
-                    <Text
-                        style={[
-                            styles.optionChipText,
-                            leaveType === 'PLANNED_LEAVE' && styles.activeOptionChipText,
-                        ]}
-                    >
-                        Planned Leave
-                    </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                    style={[
-                        styles.optionChip,
-                        leaveType === 'UNPLANNED_LEAVE' && styles.activeOptionChip,
-                    ]}
-                    onPress={() => setLeaveType('UNPLANNED_LEAVE')}
-                >
-                    <Text
-                        style={[
-                            styles.optionChipText,
-                            leaveType === 'UNPLANNED_LEAVE' && styles.activeOptionChipText,
-                        ]}
-                    >
-                        Unplanned Leave
-                    </Text>
-                </TouchableOpacity>
-            </View>
-
-            <Text style={styles.label}>Leave Duration</Text>
-            <View style={styles.optionRow}>
-                <TouchableOpacity
-                    style={[
-                        styles.optionChip,
-                        durationType === 'ONE_DAY' && styles.activeOptionChip,
-                    ]}
-                    onPress={() => {
-                        setDurationType('ONE_DAY');
-                        setToDate(fromDate);
-                    }}
-                >
-                    <Text
-                        style={[
-                            styles.optionChipText,
-                            durationType === 'ONE_DAY' && styles.activeOptionChipText,
-                        ]}
-                    >
-                        One Day
-                    </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                    style={[
-                        styles.optionChip,
-                        durationType === 'MULTI_DAY' && styles.activeOptionChip,
-                    ]}
-                    onPress={() => setDurationType('MULTI_DAY')}
-                >
-                    <Text
-                        style={[
-                            styles.optionChipText,
-                            durationType === 'MULTI_DAY' && styles.activeOptionChipText,
-                        ]}
-                    >
-                        Multiple Days
-                    </Text>
-                </TouchableOpacity>
-            </View>
-
-            <Text style={styles.label}>
-                {durationType === 'ONE_DAY' ? 'Leave Date' : 'From Date'}
-            </Text>
-
-            <TouchableOpacity style={styles.dateBox} onPress={() => openCalendar('FROM')}>
-                <Text style={styles.dateText}>{fromDate}</Text>
-            </TouchableOpacity>
-
-            {durationType === 'MULTI_DAY' && (
-                <>
-                    <Text style={styles.label}>To Date</Text>
-
-                    <TouchableOpacity style={styles.dateBox} onPress={() => openCalendar('TO')}>
-                        <Text style={styles.dateText}>{toDate}</Text>
-                    </TouchableOpacity>
-                </>
-            )}
-
-            <TouchableOpacity
-                style={[styles.button, loading && styles.disabledButton]}
-                onPress={loadSchedules}
-                disabled={loading}
+        <View style={styles.screen}>
+            <ScrollView
+                style={styles.container}
+                contentContainerStyle={styles.scrollContent}
+                showsVerticalScrollIndicator={false}
             >
-                <Text style={styles.buttonText}>
-                    {loading ? 'Loading...' : 'Load Teacher Schedule'}
-                </Text>
-            </TouchableOpacity>
+                <Text style={styles.title}>Teacher Leave Planning</Text>
+                <Text style={styles.subtitle}>Planned & Unplanned Leave Workflow</Text>
 
-            {loading && (
-                <View style={styles.loadingContainer}>
-                    <ActivityIndicator size="large" />
-                    <Text style={styles.loadingText}>Loading...</Text>
-                </View>
-            )}
-
-            {!loading && schedules.length > 0 && (
-                <>
-                    <View style={styles.summaryBox}>
-                        <Text style={styles.summaryText}>
-                            Showing {filteredSchedules.length} of {schedules.length} schedule records
-                        </Text>
-                    </View>
-
-                    <Text style={styles.label}>Teacher</Text>
-                    <ScrollView
-                        horizontal
-                        showsHorizontalScrollIndicator={false}
-                        style={styles.filterScroll}
+                <Text style={styles.label}>Leave Type</Text>
+                <View style={styles.optionRow}>
+                    <TouchableOpacity
+                        style={[
+                            styles.optionChip,
+                            leaveType === 'PLANNED_LEAVE' && styles.activeOptionChip,
+                        ]}
+                        onPress={() => onLeaveTypeChange('PLANNED_LEAVE')}
                     >
+                        <Text
+                            style={[
+                                styles.optionChipText,
+                                leaveType === 'PLANNED_LEAVE' && styles.activeOptionChipText,
+                            ]}
+                        >
+                            Planned Leave
+                        </Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                        style={[
+                            styles.optionChip,
+                            leaveType === 'UNPLANNED_LEAVE' && styles.activeOptionChip,
+                        ]}
+                        onPress={() => onLeaveTypeChange('UNPLANNED_LEAVE')}
+                    >
+                        <Text
+                            style={[
+                                styles.optionChipText,
+                                leaveType === 'UNPLANNED_LEAVE' && styles.activeOptionChipText,
+                            ]}
+                        >
+                            Unplanned Leave
+                        </Text>
+                    </TouchableOpacity>
+                </View>
+
+                <Text style={styles.label}>Leave Duration</Text>
+                <View style={styles.optionRow}>
+                    <TouchableOpacity
+                        style={[
+                            styles.optionChip,
+                            durationType === 'ONE_DAY' && styles.activeOptionChip,
+                        ]}
+                        onPress={() => {
+                            setDurationType('ONE_DAY');
+                            setToDate(fromDate);
+                            setSchedules([]);
+                            setCurrentBatchStartIndex(0);
+                            setHasLoadedOnce(false);
+                            loadTeacherOptions(fromDate);
+                        }}
+                    >
+                        <Text
+                            style={[
+                                styles.optionChipText,
+                                durationType === 'ONE_DAY' && styles.activeOptionChipText,
+                            ]}
+                        >
+                            One Day
+                        </Text>
+                    </TouchableOpacity>
+
+                    {leaveType === 'PLANNED_LEAVE' && (
                         <TouchableOpacity
                             style={[
-                                styles.filterChip,
-                                selectedTeacherId === 'ALL' && styles.activeFilterChip,
+                                styles.optionChip,
+                                durationType === 'MULTI_DAY' && styles.activeOptionChip,
                             ]}
-                            onPress={() => setSelectedTeacherId('ALL')}
+                            onPress={() => {
+                                setDurationType('MULTI_DAY');
+                                setSchedules([]);
+                                setCurrentBatchStartIndex(0);
+                                setHasLoadedOnce(false);
+                                loadTeacherOptions(fromDate);
+                            }}
                         >
                             <Text
                                 style={[
-                                    styles.filterChipText,
-                                    selectedTeacherId === 'ALL' && styles.activeFilterChipText,
+                                    styles.optionChipText,
+                                    durationType === 'MULTI_DAY' && styles.activeOptionChipText,
                                 ]}
                             >
-                                All Teachers
+                                Multiple Days
                             </Text>
                         </TouchableOpacity>
-
-                        {teacherOptions.map((teacher) => (
-                            <TouchableOpacity
-                                key={teacher.teacherId}
-                                style={[
-                                    styles.filterChip,
-                                    selectedTeacherId === String(teacher.teacherId) &&
-                                    styles.activeFilterChip,
-                                ]}
-                                onPress={() => setSelectedTeacherId(String(teacher.teacherId))}
-                            >
-                                <Text
-                                    style={[
-                                        styles.filterChipText,
-                                        selectedTeacherId === String(teacher.teacherId) &&
-                                        styles.activeFilterChipText,
-                                    ]}
-                                >
-                                    {teacher.teacherName}
-                                </Text>
-                            </TouchableOpacity>
-                        ))}
-                    </ScrollView>
-
-                    <TouchableOpacity
-                        style={[
-                            styles.fullDayButton,
-                            (selectedTeacherId === 'ALL' || loading) && styles.disabledButton,
-                        ]}
-                        onPress={markAllFilteredAsLeave}
-                        disabled={selectedTeacherId === 'ALL' || loading}
-                    >
-                        <Text style={styles.buttonText}>
-                            Mark Selected Teacher Leave
-                        </Text>
-                    </TouchableOpacity>
-
-                    {selectedTeacherId === 'ALL' && (
-                        <Text style={styles.helperText}>
-                            Select one teacher to apply full-day or multi-day leave.
-                        </Text>
                     )}
-                </>
-            )}
-
-            {!loading && hasLoadedOnce && schedules.length === 0 && (
-                <View style={styles.noDataContainer}>
-                    <Text style={styles.noDataTitle}>No Schedule Found</Text>
-                    <Text style={styles.noDataText}>
-                        No teacher schedule found for selected date range.
-                    </Text>
                 </View>
-            )}
 
-            {!loading && filteredSchedules.map((item) => (
-                <View key={item.id} style={styles.card}>
-                    <View style={styles.cardHeader}>
-                        <Text style={styles.teacherName}>{item.teacherName}</Text>
-                        <Text style={[styles.statusBadge, getStatusStyle(item.status)]}>
-                            {getStatusLabel(item.status)}
+                {teacherOptions.length > 0 && (
+                    <>
+                        <Text style={styles.label}>Teacher Name</Text>
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterScroll}>
+                            {teacherOptions.map((teacher) => (
+                                <TouchableOpacity
+                                    key={teacher.teacherId}
+                                    style={[
+                                        styles.filterChip,
+                                        selectedTeacherId === String(teacher.teacherId) &&
+                                        styles.activeFilterChip,
+                                    ]}
+                                    onPress={() => setSelectedTeacherId(String(teacher.teacherId))}
+                                >
+                                    <Text
+                                        style={[
+                                            styles.filterChipText,
+                                            selectedTeacherId === String(teacher.teacherId) &&
+                                            styles.activeFilterChipText,
+                                        ]}
+                                    >
+                                        {teacher.teacherName}
+                                    </Text>
+                                </TouchableOpacity>
+                            ))}
+                        </ScrollView>
+                    </>
+                )}
+
+                <Text style={styles.label}>
+                    {durationType === 'ONE_DAY' ? 'Leave Date' : 'From Date'}
+                </Text>
+
+                <TouchableOpacity style={styles.dateBox} onPress={() => openCalendar('FROM')}>
+                    <Text style={styles.dateText}>{fromDate}</Text>
+                </TouchableOpacity>
+
+                {durationType === 'MULTI_DAY' && (
+                    <>
+                        <Text style={styles.label}>To Date</Text>
+                        <TouchableOpacity style={styles.dateBox} onPress={() => openCalendar('TO')}>
+                            <Text style={styles.dateText}>{toDate}</Text>
+                        </TouchableOpacity>
+                    </>
+                )}
+
+                <TouchableOpacity
+                    style={[styles.button, loading && styles.disabledButton]}
+                    onPress={loadSchedules}
+                    disabled={loading}
+                >
+                    <Text style={styles.buttonText}>
+                        {loading ? 'Loading...' : 'Load Teacher Schedule'}
+                    </Text>
+                </TouchableOpacity>
+
+                {loading && (
+                    <View style={styles.loadingContainer}>
+                        <ActivityIndicator size="large" />
+                        <Text style={styles.loadingText}>Loading...</Text>
+                    </View>
+                )}
+
+                {!loading && schedules.length > 0 && (
+                    <View style={styles.summaryBox}>
+                        <Text style={styles.summaryText}>
+                            Total Periods: {filteredSchedules.length}
+                        </Text>
+                        <Text style={styles.summarySubText}>
+                            Batch {currentBatchNumber} of {totalBatchCount} — Showing {visibleSchedules.length} of {filteredSchedules.length} period card(s)
+                        </Text>
+                        <Text style={styles.summarySubText}>
+                            Replacement Assigned: {replacementAssignedCount}
+                        </Text>
+                        <Text style={styles.summarySubText}>
+                            Replacement Not Assigned: {replacementNotAssignedCount}
+                        </Text>
+
+                        {filteredSchedules.length > MAX_VISIBLE_PERIOD_CARDS && (
+                            <Text style={styles.summaryWarning}>
+                                {filteredSchedules.length - visibleSchedules.length} pending period(s). Complete this batch, then continue next batch.
+                            </Text>
+                        )}
+                    </View>
+                )}
+
+                {!loading && hasLoadedOnce && schedules.length === 0 && (
+                    <View style={styles.noDataContainer}>
+                        <Text style={styles.noDataTitle}>No Schedule Found</Text>
+                        <Text style={styles.noDataText}>
+                            No teacher schedule found for selected date.
                         </Text>
                     </View>
+                )}
 
-                    <Text style={styles.cardText}>Date: {item.scheduleDate}</Text>
+                {!loading && groupedSchedulesByDate.map(([date, dateSchedules]) => (
+                    <View key={date}>
+                        {durationType === 'MULTI_DAY' && (
+                            <View style={styles.dateGroupHeader}>
+                                <Text style={styles.dateGroupTitle}>{date}</Text>
+                                <Text style={styles.dateGroupSubtitle}>{dateSchedules.length} period(s)</Text>
+                            </View>
+                        )}
 
-                    <Text style={styles.cardText}>
-                        Class {item.className} - Section {item.section}
-                    </Text>
+                        {dateSchedules.map((item) => (
+                            <View key={item.id} style={styles.card}>
+                                <Text style={styles.teacherName}>{item.teacherName}</Text>
 
-                    <Text style={styles.cardText}>Subject: {item.subjectName}</Text>
+                                <Text style={styles.cardText}>Subject: {item.subjectName}</Text>
 
-                    <Text style={styles.cardText}>
-                        Time: {item.startTime} - {item.endTime}
-                    </Text>
+                                <Text style={styles.cardText}>
+                                    Time: {item.startTime} - {item.endTime}
+                                </Text>
 
-                    {item.replacementTeacherName && (
-                        <Text style={styles.replacementText}>
-                            Replacement: {item.replacementTeacherName}
-                        </Text>
-                    )}
+                                <TouchableOpacity
+                                    style={styles.assignReplacementButton}
+                                    onPress={() => openReplacementModal(item)}
+                                >
+                                    <Text style={styles.actionButtonText}>Replacement Options</Text>
+                                </TouchableOpacity>
 
+                                {hasReplacementAssigned(item) ? (
+                                    <Text style={styles.replacementText}>
+                                        Replacement: {item.replacementTeacherName}
+                                    </Text>
+                                ) : (
+                                    <Text style={styles.noReplacementText}>
+                                        Replacement: No replacement assigned
+                                    </Text>
+                                )}
+                            </View>
+                        ))}
+                    </View>
+                ))}
+            </ScrollView>
+
+            {schedules.length > 0 && selectedTeacherId !== '' && (
+                <View style={styles.bottomActionContainer}>
                     <TouchableOpacity
-                        style={styles.periodLeaveButton}
-                        onPress={() => updateStatus(item.id, leaveType)}
+                        style={[styles.bottomApplyButton, loading && styles.disabledBottomButton]}
+                        onPress={openApplyConfirmModal}
+                        disabled={loading}
                     >
-                        <Text style={styles.actionButtonText}>
-                            Mark This Period as {getStatusLabel(leaveType)}
-                        </Text>
+                        <Text style={styles.bottomApplyButtonText}>{applyButtonText}</Text>
                     </TouchableOpacity>
-
-                    {canAssignReplacement(item.status) && (
-                        <TouchableOpacity
-                            style={styles.assignReplacementButton}
-                            onPress={() => openReplacementModal(item)}
-                        >
-                            <Text style={styles.actionButtonText}>
-                                Assign Replacement
-                            </Text>
-                        </TouchableOpacity>
-                    )}
                 </View>
-            ))}
+            )}
+
+            <Modal visible={showApplyConfirmModal} transparent animationType="fade">
+                <View style={styles.modalOverlay}>
+                    <View style={styles.applyConfirmModalBox}>
+                        <Text style={styles.modalTitle}>Confirm Leave</Text>
+
+                        <View style={styles.applySummaryBox}>
+                            <Text style={styles.applySummaryText}>
+                                Total Visible Periods: {visibleSchedules.length}
+                            </Text>
+                            <Text style={styles.applySummaryText}>
+                                Replacement Assigned: {replacementAssignedCount}
+                            </Text>
+                            <Text style={styles.applyWarningText}>
+                                Replacement Not Assigned: {replacementNotAssignedCount}
+                            </Text>
+                        </View>
+
+                        {replacementNotAssignedCount > 0 && (
+                            <Text style={styles.applyWarningNote}>
+                                Some periods do not have replacement teachers. You can apply leave anyway and use Admin Teacher Dashboard replacement filter later.
+                            </Text>
+                        )}
+
+                        <View style={styles.modalButtonRow}>
+                            <TouchableOpacity
+                                style={styles.cancelButton}
+                                onPress={() => setShowApplyConfirmModal(false)}
+                            >
+                                <Text style={styles.modalButtonText}>Review Replacements</Text>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity
+                                style={styles.confirmButton}
+                                onPress={markSelectedTeacherLeave}
+                            >
+                                <Text style={styles.modalButtonText}>Apply Anyway</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
 
             <Modal visible={showCalendarModal} transparent animationType="fade">
                 <View style={styles.modalOverlay}>
@@ -632,7 +823,7 @@ export default function TeacherLeavePlanningScreen() {
                             markedDates={{
                                 [selectedCalendarDate]: {
                                     selected: true,
-                                    selectedColor: '#0ea5e9',
+                                    selectedColor: '#c69214',
                                 },
                             }}
                         />
@@ -656,7 +847,7 @@ export default function TeacherLeavePlanningScreen() {
             <Modal visible={showReplacementModal} transparent animationType="fade">
                 <View style={styles.modalOverlay}>
                     <View style={styles.replacementModalBox}>
-                        <Text style={styles.modalTitle}>Select Replacement Teacher</Text>
+                        <Text style={styles.modalTitle}>Replacement Options</Text>
 
                         {selectedLeaveSchedule && (
                             <View style={styles.leaveInfoBox}>
@@ -664,13 +855,10 @@ export default function TeacherLeavePlanningScreen() {
                                     {selectedLeaveSchedule.teacherName}
                                 </Text>
                                 <Text style={styles.leaveInfoText}>
-                                    {selectedLeaveSchedule.scheduleDate}
+                                    Subject: {selectedLeaveSchedule.subjectName}
                                 </Text>
                                 <Text style={styles.leaveInfoText}>
-                                    Class {selectedLeaveSchedule.className} - Section {selectedLeaveSchedule.section}
-                                </Text>
-                                <Text style={styles.leaveInfoText}>
-                                    {selectedLeaveSchedule.subjectName} | {selectedLeaveSchedule.startTime} - {selectedLeaveSchedule.endTime}
+                                    Time: {selectedLeaveSchedule.startTime} - {selectedLeaveSchedule.endTime}
                                 </Text>
                             </View>
                         )}
@@ -738,7 +926,7 @@ export default function TeacherLeavePlanningScreen() {
                         {!replacementLoading && selectedReplacementList.length === 0 && (
                             <View style={styles.noReplacementBox}>
                                 <Text style={styles.noReplacementTitle}>No Teachers</Text>
-                                <Text style={styles.noReplacementText}>
+                                <Text style={styles.noReplacementBoxText}>
                                     No teachers available in this category.
                                 </Text>
                             </View>
@@ -759,8 +947,21 @@ export default function TeacherLeavePlanningScreen() {
                                         <Text style={styles.groupedReplacementName}>
                                             {teacher.teacherName}
                                         </Text>
+
                                         <Text style={styles.groupedReplacementType}>
                                             {teacher.matchType || activeReplacementTab}
+                                        </Text>
+
+                                        <Text style={styles.groupedReplacementDetails}>
+                                            Class: {teacher.className} - Section {teacher.section}
+                                        </Text>
+
+                                        <Text style={styles.groupedReplacementDetails}>
+                                            Subject: {teacher.subjectName}
+                                        </Text>
+
+                                        <Text style={styles.groupedReplacementDetails}>
+                                            Workload: {teacher.dailyWorkload ?? 0}
                                         </Text>
                                     </TouchableOpacity>
                                 ))}
@@ -785,11 +986,6 @@ export default function TeacherLeavePlanningScreen() {
                                     setShowReplacementModal(false);
                                     setSelectedLeaveSchedule(null);
                                     setSelectedReplacementTeacherId(null);
-                                    setGroupedReplacements({
-                                        bestMatch: [],
-                                        sameClass: [],
-                                        others: [],
-                                    });
                                 }}
                             >
                                 <Text style={styles.modalButtonText}>Cancel</Text>
@@ -810,20 +1006,27 @@ export default function TeacherLeavePlanningScreen() {
                     </View>
                 </View>
             </Modal>
-        </ScrollView>
+        </View>
     );
 }
 
 const styles = StyleSheet.create({
+    screen: {
+        flex: 1,
+        backgroundColor: '#fffdf7',
+    },
     container: {
         flex: 1,
-        backgroundColor: '#fff',
+        backgroundColor: '#fffdf7',
         padding: 25,
+    },
+    scrollContent: {
+        paddingBottom: 130,
     },
     title: {
         fontSize: 32,
         fontWeight: 'bold',
-        color: '#1e3a8a',
+        color: '#7a4f01',
         marginBottom: 8,
     },
     subtitle: {
@@ -845,22 +1048,22 @@ const styles = StyleSheet.create({
     },
     optionChip: {
         flex: 1,
-        backgroundColor: '#e5e7eb',
+        backgroundColor: '#fff7df',
         paddingVertical: 12,
         paddingHorizontal: 12,
         borderRadius: 12,
         alignItems: 'center',
         borderWidth: 1,
-        borderColor: '#d1d5db',
+        borderColor: '#f0d58a',
     },
     activeOptionChip: {
-        backgroundColor: '#2563eb',
-        borderColor: '#2563eb',
+        backgroundColor: '#c69214',
+        borderColor: '#c69214',
     },
     optionChipText: {
         fontSize: 14,
         fontWeight: '700',
-        color: '#374151',
+        color: '#7a4f01',
         textAlign: 'center',
     },
     activeOptionChipText: {
@@ -868,25 +1071,25 @@ const styles = StyleSheet.create({
     },
     dateBox: {
         borderWidth: 1,
-        borderColor: '#93c5fd',
+        borderColor: '#f0d58a',
         borderRadius: 10,
         padding: 14,
         marginBottom: 18,
-        backgroundColor: '#eff6ff',
+        backgroundColor: '#fff8e7',
     },
     dateText: {
         fontSize: 16,
         color: '#111827',
     },
     button: {
-        backgroundColor: '#2563eb',
+        backgroundColor: '#c69214',
         padding: 15,
         borderRadius: 10,
         alignItems: 'center',
         marginBottom: 20,
     },
     disabledButton: {
-        backgroundColor: '#93c5fd',
+        backgroundColor: '#d8bd72',
     },
     buttonText: {
         color: '#fff',
@@ -907,56 +1110,54 @@ const styles = StyleSheet.create({
         color: '#374151',
     },
     summaryBox: {
-        backgroundColor: '#f8fafc',
+        backgroundColor: '#fff8e7',
         borderWidth: 1,
-        borderColor: '#dbeafe',
+        borderColor: '#f0d58a',
         borderRadius: 12,
         padding: 12,
         marginBottom: 18,
     },
     summaryText: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        color: '#374151',
+    },
+    summarySubText: {
         fontSize: 14,
         fontWeight: '700',
         color: '#374151',
+        marginTop: 4,
+    },
+    summaryWarning: {
+        fontSize: 13,
+        fontWeight: '700',
+        color: '#92400e',
+        marginTop: 6,
     },
     filterScroll: {
         flexGrow: 0,
         marginBottom: 18,
     },
     filterChip: {
-        backgroundColor: '#e5e7eb',
+        backgroundColor: '#fff7df',
         paddingVertical: 10,
         paddingHorizontal: 14,
         borderRadius: 20,
         marginRight: 10,
         borderWidth: 1,
-        borderColor: '#d1d5db',
+        borderColor: '#f0d58a',
     },
     activeFilterChip: {
-        backgroundColor: '#2563eb',
-        borderColor: '#2563eb',
+        backgroundColor: '#c69214',
+        borderColor: '#c69214',
     },
     filterChipText: {
         fontSize: 14,
         fontWeight: '700',
-        color: '#374151',
+        color: '#7a4f01',
     },
     activeFilterChipText: {
         color: '#fff',
-    },
-    fullDayButton: {
-        backgroundColor: '#7c3aed',
-        padding: 15,
-        borderRadius: 10,
-        alignItems: 'center',
-        marginBottom: 8,
-    },
-    helperText: {
-        fontSize: 13,
-        fontWeight: '600',
-        color: '#6b7280',
-        marginBottom: 18,
-        textAlign: 'center',
     },
     noDataContainer: {
         backgroundColor: '#fef3c7',
@@ -979,26 +1180,37 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         fontWeight: '600',
     },
+    dateGroupHeader: {
+        backgroundColor: '#7a4f01',
+        borderRadius: 14,
+        padding: 14,
+        marginBottom: 12,
+        marginTop: 8,
+    },
+    dateGroupTitle: {
+        color: '#fff',
+        fontSize: 20,
+        fontWeight: 'bold',
+    },
+    dateGroupSubtitle: {
+        color: '#fff7df',
+        fontSize: 14,
+        fontWeight: '700',
+        marginTop: 4,
+    },
     card: {
-        backgroundColor: '#f8fafc',
+        backgroundColor: '#ffffff',
         borderRadius: 14,
         padding: 18,
         borderWidth: 1,
-        borderColor: '#dbeafe',
+        borderColor: '#f0d58a',
         marginBottom: 18,
-    },
-    cardHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 10,
     },
     teacherName: {
         fontSize: 22,
         fontWeight: 'bold',
         color: '#111827',
-        flex: 1,
-        marginRight: 10,
+        marginBottom: 10,
     },
     cardText: {
         fontSize: 16,
@@ -1009,16 +1221,14 @@ const styles = StyleSheet.create({
     replacementText: {
         fontSize: 16,
         color: '#7c3aed',
-        marginTop: 4,
-        marginBottom: 8,
+        marginTop: 10,
         fontWeight: 'bold',
     },
-    periodLeaveButton: {
-        backgroundColor: '#d97706',
-        padding: 12,
-        borderRadius: 10,
-        alignItems: 'center',
+    noReplacementText: {
+        fontSize: 15,
+        color: '#92400e',
         marginTop: 10,
+        fontWeight: '700',
     },
     assignReplacementButton: {
         backgroundColor: '#2563eb',
@@ -1033,33 +1243,33 @@ const styles = StyleSheet.create({
         fontSize: 14,
         textAlign: 'center',
     },
-    statusBadge: {
-        fontSize: 12,
+    bottomActionContainer: {
+        position: 'absolute',
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: '#fffdf7',
+        paddingHorizontal: 22,
+        paddingTop: 12,
+        paddingBottom: 22,
+        borderTopWidth: 1,
+        borderTopColor: '#e5e7eb',
+    },
+    bottomApplyButton: {
+        backgroundColor: '#7a4f01',
+        borderRadius: 28,
+        paddingVertical: 18,
+        paddingHorizontal: 18,
+        alignItems: 'center',
+    },
+    disabledBottomButton: {
+        backgroundColor: '#9ca3af',
+    },
+    bottomApplyButtonText: {
+        color: '#ffffff',
+        fontSize: 18,
         fontWeight: 'bold',
-        paddingHorizontal: 10,
-        paddingVertical: 5,
-        borderRadius: 20,
-        overflow: 'hidden',
-    },
-    availableStatus: {
-        backgroundColor: '#dcfce7',
-        color: '#166534',
-    },
-    leaveStatus: {
-        backgroundColor: '#fef3c7',
-        color: '#92400e',
-    },
-    absentStatus: {
-        backgroundColor: '#fee2e2',
-        color: '#991b1b',
-    },
-    replacedStatus: {
-        backgroundColor: '#ede9fe',
-        color: '#5b21b6',
-    },
-    defaultStatus: {
-        backgroundColor: '#e5e7eb',
-        color: '#374151',
+        textAlign: 'center',
     },
     modalOverlay: {
         flex: 1,
@@ -1068,6 +1278,11 @@ const styles = StyleSheet.create({
         padding: 25,
     },
     modalBox: {
+        backgroundColor: '#fff',
+        borderRadius: 18,
+        padding: 20,
+    },
+    applyConfirmModalBox: {
         backgroundColor: '#fff',
         borderRadius: 18,
         padding: 20,
@@ -1084,12 +1299,41 @@ const styles = StyleSheet.create({
         color: '#111827',
         marginBottom: 18,
     },
+    applySummaryBox: {
+        backgroundColor: '#fff8e7',
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: '#f0d58a',
+        padding: 14,
+        marginBottom: 14,
+    },
+    applySummaryText: {
+        fontSize: 16,
+        fontWeight: '700',
+        color: '#374151',
+        marginBottom: 6,
+    },
+    applyWarningText: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        color: '#92400e',
+        marginBottom: 6,
+    },
+    applyWarningNote: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: '#92400e',
+        lineHeight: 20,
+        marginBottom: 10,
+    },
     selectedDateBox: {
-        backgroundColor: '#e5e7eb',
+        backgroundColor: '#fff8e7',
         borderRadius: 10,
         padding: 14,
         alignItems: 'center',
         marginBottom: 18,
+        borderWidth: 1,
+        borderColor: '#f0d58a',
     },
     selectedDateText: {
         fontSize: 20,
@@ -1125,17 +1369,17 @@ const styles = StyleSheet.create({
         textAlign: 'center',
     },
     leaveInfoBox: {
-        backgroundColor: '#eff6ff',
+        backgroundColor: '#fff8e7',
         borderRadius: 12,
         borderWidth: 1,
-        borderColor: '#bfdbfe',
+        borderColor: '#f0d58a',
         padding: 14,
         marginBottom: 16,
     },
     leaveInfoTitle: {
         fontSize: 20,
         fontWeight: 'bold',
-        color: '#1e3a8a',
+        color: '#7a4f01',
         marginBottom: 6,
     },
     leaveInfoText: {
@@ -1151,19 +1395,21 @@ const styles = StyleSheet.create({
     },
     replacementTab: {
         flex: 1,
-        backgroundColor: '#e5e7eb',
+        backgroundColor: '#fff7df',
         paddingVertical: 14,
         paddingHorizontal: 10,
         borderRadius: 12,
         alignItems: 'center',
+        borderWidth: 1,
+        borderColor: '#f0d58a',
     },
     activeReplacementTab: {
-        backgroundColor: '#2563eb',
+        backgroundColor: '#c69214',
     },
     replacementTabText: {
         fontSize: 15,
         fontWeight: 'bold',
-        color: '#111827',
+        color: '#7a4f01',
         textAlign: 'center',
     },
     activeReplacementTabText: {
@@ -1173,9 +1419,9 @@ const styles = StyleSheet.create({
         maxHeight: 260,
     },
     groupedReplacementCard: {
-        backgroundColor: '#eff6ff',
+        backgroundColor: '#fff8e7',
         borderWidth: 1,
-        borderColor: '#bfdbfe',
+        borderColor: '#f0d58a',
         borderRadius: 12,
         padding: 16,
         alignItems: 'center',
@@ -1189,7 +1435,7 @@ const styles = StyleSheet.create({
     groupedReplacementName: {
         fontSize: 18,
         fontWeight: 'bold',
-        color: '#1e3a8a',
+        color: '#7a4f01',
         marginBottom: 6,
         textAlign: 'center',
     },
@@ -1199,10 +1445,17 @@ const styles = StyleSheet.create({
         color: '#6b7280',
         textAlign: 'center',
     },
+    groupedReplacementDetails: {
+        fontSize: 13,
+        fontWeight: '600',
+        color: '#374151',
+        textAlign: 'center',
+        marginTop: 4,
+    },
     noReplacementSelectButton: {
-        backgroundColor: '#eff6ff',
+        backgroundColor: '#fff8e7',
         borderWidth: 1,
-        borderColor: '#bfdbfe',
+        borderColor: '#f0d58a',
         borderRadius: 12,
         padding: 16,
         alignItems: 'center',
@@ -1211,7 +1464,7 @@ const styles = StyleSheet.create({
     noReplacementSelectText: {
         fontSize: 18,
         fontWeight: 'bold',
-        color: '#1e3a8a',
+        color: '#7a4f01',
         textAlign: 'center',
     },
     noReplacementBox: {
@@ -1229,7 +1482,7 @@ const styles = StyleSheet.create({
         color: '#92400e',
         marginBottom: 6,
     },
-    noReplacementText: {
+    noReplacementBoxText: {
         fontSize: 14,
         fontWeight: '600',
         color: '#92400e',
