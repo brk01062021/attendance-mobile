@@ -15,6 +15,8 @@ export const API_ENDPOINTS = {
     teacherClassDashboard: `${BASE_URL}/attendance/dashboard/teacher/classes`,
     teacherSchedules: `${BASE_URL}/teacher-schedules`,
     availableReplacementTeachers: `${BASE_URL}/teacher-schedules/available-replacements`,
+    autoAssignBestMatches: `${BASE_URL}/teacher-schedules/auto-assign-best`,
+    bulkAssignReplacement: `${BASE_URL}/teacher-schedules/bulk-assign-replacement`,
 
     teacherSubjects: `${BASE_URL}/teacher-assignments/subjects`,
     teacherClasses: `${BASE_URL}/teacher-assignments/classes`,
