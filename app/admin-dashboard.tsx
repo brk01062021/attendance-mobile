@@ -11,11 +11,13 @@ import {
 } from "react-native";
 import { Calendar } from "react-native-calendars";
 
-const BASE_URL = 'http://192.168.1.75:8080';
+const BASE_URL = "http://192.168.1.75:8080";
 
 export default function AdminDashboardScreen() {
-    const [date, setDate] = useState("2026-04-27");
-    const [selectedDate, setSelectedDate] = useState("2026-04-27");
+    const todayString = new Date().toISOString().split("T")[0];
+
+    const [date, setDate] = useState(todayString);
+    const [selectedDate, setSelectedDate] = useState(todayString);
     const [showCalendarModal, setShowCalendarModal] = useState(false);
 
     const [summary, setSummary] = useState<any>(null);
@@ -89,7 +91,7 @@ export default function AdminDashboardScreen() {
                 <View
                     style={[
                         styles.progressBarFill,
-                        { width: `${percentage}%` },
+                        { width: `${Math.min(Math.max(percentage, 0), 100)}%` },
                     ]}
                 />
             </View>
@@ -107,8 +109,9 @@ export default function AdminDashboardScreen() {
         subjects.length === 0;
 
     return (
-        <ScrollView style={styles.container}>
+        <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
             <Text style={styles.title}>Admin Dashboard</Text>
+            <Text style={styles.subtitle}>Whole School Attendance Overview</Text>
 
             <Text style={styles.label}>Attendance Date</Text>
 
@@ -160,10 +163,10 @@ export default function AdminDashboardScreen() {
                     <Text style={styles.late}>Late: {summary.late}</Text>
 
                     <Text style={styles.percentage}>
-                        Attendance: {summary.attendancePercentage.toFixed(2)}%
+                        Attendance: {Number(summary.attendancePercentage || 0).toFixed(2)}%
                     </Text>
 
-                    {renderProgress(summary.attendancePercentage)}
+                    {renderProgress(Number(summary.attendancePercentage || 0))}
                 </View>
             )}
 
@@ -185,10 +188,10 @@ export default function AdminDashboardScreen() {
                             <Text style={styles.late}>Late: {item.late}</Text>
 
                             <Text style={styles.percentage}>
-                                Attendance: {item.attendancePercentage.toFixed(2)}%
+                                Attendance: {Number(item.attendancePercentage || 0).toFixed(2)}%
                             </Text>
 
-                            {renderProgress(item.attendancePercentage)}
+                            {renderProgress(Number(item.attendancePercentage || 0))}
                         </View>
                     ))}
                 </>
@@ -215,10 +218,10 @@ export default function AdminDashboardScreen() {
                             <Text style={styles.late}>Late: {item.late}</Text>
 
                             <Text style={styles.percentage}>
-                                Attendance: {item.attendancePercentage.toFixed(2)}%
+                                Attendance: {Number(item.attendancePercentage || 0).toFixed(2)}%
                             </Text>
 
-                            {renderProgress(item.attendancePercentage)}
+                            {renderProgress(Number(item.attendancePercentage || 0))}
                         </View>
                     ))}
                 </>
@@ -241,10 +244,10 @@ export default function AdminDashboardScreen() {
                             <Text style={styles.late}>Late: {item.late}</Text>
 
                             <Text style={styles.percentage}>
-                                Attendance: {item.attendancePercentage.toFixed(2)}%
+                                Attendance: {Number(item.attendancePercentage || 0).toFixed(2)}%
                             </Text>
 
-                            {renderProgress(item.attendancePercentage)}
+                            {renderProgress(Number(item.attendancePercentage || 0))}
                         </View>
                     ))}
                 </>
@@ -261,7 +264,7 @@ export default function AdminDashboardScreen() {
                             markedDates={{
                                 [selectedDate]: {
                                     selected: true,
-                                    selectedColor: "#2563eb",
+                                    selectedColor: "#c69214",
                                 },
                             }}
                         />
@@ -291,221 +294,207 @@ export default function AdminDashboardScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: "#fff",
-        padding: 20,
+        backgroundColor: "#fffdf7",
     },
-
+    scrollContent: {
+        padding: 25,
+        paddingBottom: 70,
+    },
     title: {
-        fontSize: 30,
+        fontSize: 42,
         fontWeight: "bold",
-        color: "#1e3a8a",
-        marginBottom: 20,
-        textAlign: "center",
+        color: "#7a4f01",
+        marginBottom: 10,
     },
-
+    subtitle: {
+        fontSize: 20,
+        fontWeight: "800",
+        color: "#374151",
+        marginBottom: 32,
+    },
     label: {
-        fontSize: 16,
-        fontWeight: "700",
-        marginBottom: 8,
+        fontSize: 18,
+        fontWeight: "800",
+        marginBottom: 10,
+        color: "#374151",
     },
-
     dateBox: {
-        backgroundColor: "#eff6ff",
-        borderWidth: 1,
-        borderColor: "#93c5fd",
-        borderRadius: 10,
-        padding: 14,
-        marginBottom: 18,
+        backgroundColor: "#fff8e7",
+        borderWidth: 1.5,
+        borderColor: "#f0d58a",
+        borderRadius: 14,
+        padding: 16,
+        marginBottom: 22,
     },
-
     dateText: {
-        fontSize: 16,
+        fontSize: 20,
         color: "#111827",
     },
-
     button: {
-        backgroundColor: "#2563eb",
-        padding: 15,
-        borderRadius: 10,
+        backgroundColor: "#7a4f01",
+        padding: 17,
+        borderRadius: 14,
         alignItems: "center",
-        marginBottom: 20,
+        marginBottom: 24,
     },
-
     disabledButton: {
-        backgroundColor: "#93c5fd",
+        backgroundColor: "#d8bd72",
     },
-
     buttonText: {
         color: "#fff",
-        fontSize: 17,
+        fontSize: 20,
         fontWeight: "bold",
     },
-
     loadingContainer: {
         alignItems: "center",
         marginBottom: 20,
     },
-
     loadingText: {
         marginTop: 10,
         fontSize: 16,
-        fontWeight: "600",
+        fontWeight: "700",
+        color: "#374151",
     },
-
     noDataContainer: {
-        backgroundColor: "#fef3c7",
-        borderRadius: 14,
+        backgroundColor: "#fff8e7",
+        borderRadius: 16,
         padding: 18,
-        borderWidth: 1,
-        borderColor: "#fcd34d",
+        borderWidth: 1.5,
+        borderColor: "#f0d58a",
         alignItems: "center",
         marginBottom: 20,
     },
-
     noDataTitle: {
-        fontSize: 20,
+        fontSize: 22,
         fontWeight: "bold",
-        color: "#92400e",
+        color: "#7a4f01",
         marginBottom: 6,
     },
-
     noDataText: {
         fontSize: 16,
-        color: "#92400e",
+        color: "#7a4f01",
         textAlign: "center",
     },
-
     summaryCard: {
-        backgroundColor: "#eff6ff",
-        padding: 18,
-        borderRadius: 14,
-        marginBottom: 20,
+        backgroundColor: "#fff8e7",
+        padding: 20,
+        borderRadius: 18,
+        marginBottom: 24,
+        borderWidth: 1.5,
+        borderColor: "#f0d58a",
     },
-
     sectionTitle: {
+        fontSize: 26,
+        fontWeight: "bold",
+        marginBottom: 14,
+        color: "#7a4f01",
+    },
+    card: {
+        backgroundColor: "#fffdf7",
+        padding: 20,
+        borderRadius: 18,
+        marginBottom: 18,
+        borderWidth: 1.5,
+        borderColor: "#f0d58a",
+    },
+    summaryTitle: {
+        fontSize: 24,
+        fontWeight: "bold",
+        marginBottom: 14,
+        color: "#7a4f01",
+    },
+    cardTitle: {
         fontSize: 22,
         fontWeight: "bold",
         marginBottom: 12,
         color: "#111827",
     },
-
-    card: {
-        backgroundColor: "#f9fafb",
-        padding: 18,
-        borderRadius: 14,
-        marginBottom: 16,
-        borderWidth: 1,
-        borderColor: "#e5e7eb",
+    cardText: {
+        fontSize: 17,
+        marginBottom: 7,
+        color: "#374151",
+        fontWeight: "600",
     },
-
-    summaryTitle: {
+    present: {
+        fontSize: 17,
+        color: "#166534",
+        fontWeight: "800",
+        marginBottom: 7,
+    },
+    absent: {
+        fontSize: 17,
+        color: "#991b1b",
+        fontWeight: "800",
+        marginBottom: 7,
+    },
+    late: {
+        fontSize: 17,
+        color: "#92400e",
+        fontWeight: "800",
+        marginBottom: 7,
+    },
+    percentage: {
         fontSize: 22,
         fontWeight: "bold",
-        marginBottom: 12,
-        color: "#1e3a8a",
-    },
-
-    cardTitle: {
-        fontSize: 20,
-        fontWeight: "bold",
-        marginBottom: 10,
-    },
-
-    cardText: {
-        fontSize: 16,
-        marginBottom: 6,
-    },
-
-    present: {
-        fontSize: 16,
-        color: "#16a34a",
-        fontWeight: "600",
-        marginBottom: 6,
-    },
-
-    absent: {
-        fontSize: 16,
-        color: "#dc2626",
-        fontWeight: "600",
-        marginBottom: 6,
-    },
-
-    late: {
-        fontSize: 16,
-        color: "#d97706",
-        fontWeight: "600",
-        marginBottom: 6,
-    },
-
-    percentage: {
-        fontSize: 20,
-        fontWeight: "bold",
-        marginTop: 8,
-        color: "#1e3a8a",
-    },
-
-    progressBarBackground: {
-        height: 10,
-        backgroundColor: "#e5e7eb",
-        borderRadius: 10,
         marginTop: 10,
+        color: "#7a4f01",
+    },
+    progressBarBackground: {
+        height: 12,
+        backgroundColor: "#f3ead1",
+        borderRadius: 12,
+        marginTop: 12,
         overflow: "hidden",
     },
-
     progressBarFill: {
         height: "100%",
-        backgroundColor: "#16a34a",
-        borderRadius: 10,
+        backgroundColor: "#c69214",
+        borderRadius: 12,
     },
-
     statusText: {
-        fontSize: 16,
+        fontSize: 17,
         fontWeight: "bold",
-        marginTop: 10,
-        color: "#1e3a8a",
+        marginTop: 12,
+        color: "#374151",
     },
-
     modalOverlay: {
         flex: 1,
         backgroundColor: "rgba(0,0,0,0.4)",
         justifyContent: "center",
         padding: 25,
     },
-
     modalBox: {
-        backgroundColor: "#fff",
-        borderRadius: 18,
+        backgroundColor: "#fffdf7",
+        borderRadius: 20,
         padding: 20,
+        borderWidth: 1.5,
+        borderColor: "#f0d58a",
     },
-
     modalTitle: {
-        fontSize: 22,
+        fontSize: 24,
         fontWeight: "bold",
         marginBottom: 18,
+        color: "#7a4f01",
     },
-
     modalButtonRow: {
         flexDirection: "row",
         gap: 12,
         marginTop: 18,
     },
-
     cancelButton: {
         flex: 1,
         backgroundColor: "#6b7280",
         padding: 14,
-        borderRadius: 10,
+        borderRadius: 12,
         alignItems: "center",
     },
-
     confirmButton: {
         flex: 1,
-        backgroundColor: "#16a34a",
+        backgroundColor: "#7a4f01",
         padding: 14,
-        borderRadius: 10,
+        borderRadius: 12,
         alignItems: "center",
     },
-
     modalButtonText: {
         color: "#fff",
         fontWeight: "bold",

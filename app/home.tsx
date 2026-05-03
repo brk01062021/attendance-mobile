@@ -89,7 +89,7 @@ export default function HomeScreen() {
         if (!isAdmin) {
             loadSubjects();
         }
-    }, []);
+    }, [isAdmin]);
 
     useEffect(() => {
         if (!isAdmin && subject) {
@@ -215,6 +215,7 @@ export default function HomeScreen() {
 
         return `${API_ENDPOINTS.adminStudentDashboard}?${params.toString()}`;
     };
+
     const getAdminStudentAttendanceUrlWithoutDate = () => {
         const params = new URLSearchParams();
 
@@ -241,22 +242,23 @@ export default function HomeScreen() {
                 `${API_ENDPOINTS.adminDashboard}?date=${date}`
             );
 
-            const dashboardData = await dashboardResponse.json();
+            await dashboardResponse.json();
 
             const studentResponse = await fetch(getAdminStudentAttendanceUrl(date));
             const studentData = await studentResponse.json();
+            const safeStudentData = Array.isArray(studentData) ? studentData : [];
 
-            const filteredTotal = studentData.length;
+            const filteredTotal = safeStudentData.length;
 
-            const filteredPresent = studentData.filter(
+            const filteredPresent = safeStudentData.filter(
                 (item: AdminStudentAttendance) => item.status === 'PRESENT'
             ).length;
 
-            const filteredAbsent = studentData.filter(
+            const filteredAbsent = safeStudentData.filter(
                 (item: AdminStudentAttendance) => item.status === 'ABSENT'
             ).length;
 
-            const filteredLate = studentData.filter(
+            const filteredLate = safeStudentData.filter(
                 (item: AdminStudentAttendance) => item.status === 'LATE'
             ).length;
 
@@ -280,15 +282,16 @@ export default function HomeScreen() {
 
             const allRecordsResponse = await fetch(getAdminStudentAttendanceUrlWithoutDate());
             const allRecordsData = await allRecordsResponse.json();
+            const safeAllRecordsData = Array.isArray(allRecordsData) ? allRecordsData : [];
 
-            const absentStudents = studentData
+            const absentStudents = safeStudentData
                 .filter((item: AdminStudentAttendance) => item.status === 'ABSENT')
                 .map((item: AdminStudentAttendance) => ({
                     ...item,
                     alertReason: 'Absent on selected date',
                 }));
 
-            const lastFiveDaysLateRecords = allRecordsData.filter((item: AdminStudentAttendance) => {
+            const lastFiveDaysLateRecords = safeAllRecordsData.filter((item: AdminStudentAttendance) => {
                 const itemDate = new Date(item.attendanceDate);
 
                 return (
@@ -339,10 +342,11 @@ export default function HomeScreen() {
             );
 
             const data = await response.json();
-            setSubjects(data);
+            setSubjects(Array.isArray(data) ? data : []);
         } catch (error) {
             console.log(error);
             Alert.alert('Error', 'Unable to load subjects');
+            setSubjects([]);
         } finally {
             setLoading(false);
         }
@@ -355,10 +359,11 @@ export default function HomeScreen() {
             );
 
             const data = await response.json();
-            setClasses(data);
+            setClasses(Array.isArray(data) ? data : []);
         } catch (error) {
             console.log(error);
             Alert.alert('Error', 'Unable to load classes');
+            setClasses([]);
         }
     };
 
@@ -369,10 +374,11 @@ export default function HomeScreen() {
             );
 
             const data = await response.json();
-            setSections(data);
+            setSections(Array.isArray(data) ? data : []);
         } catch (error) {
             console.log(error);
             Alert.alert('Error', 'Unable to load sections');
+            setSections([]);
         }
     };
 
@@ -1055,7 +1061,7 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#fff',
+        backgroundColor: '#fffdf7',
     },
     scrollContent: {
         padding: 25,
@@ -1091,27 +1097,29 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     adminDashboardTitle: {
-        fontSize: 34,
+        fontSize: 42,
         fontWeight: 'bold',
-        color: '#1e3a8a',
+        color: '#7a4f01',
         textAlign: 'left',
         marginBottom: 18,
     },
     adminWelcomeText: {
-        fontSize: 28,
-        fontWeight: '700',
-        color: '#1e3a8a',
+        fontSize: 30,
+        fontWeight: '800',
+        color: '#374151',
         textAlign: 'left',
     },
     menuIconButton: {
-        padding: 8,
-        borderRadius: 8,
-        backgroundColor: '#eff6ff',
+        padding: 10,
+        borderRadius: 14,
+        backgroundColor: '#fff8e7',
+        borderWidth: 1,
+        borderColor: '#f0d58a',
     },
     menuIcon: {
-        fontSize: 28,
+        fontSize: 30,
         fontWeight: 'bold',
-        color: '#1e3a8a',
+        color: '#7a4f01',
     },
     title: {
         fontSize: 22,
@@ -1126,12 +1134,12 @@ const styles = StyleSheet.create({
         color: '#111827',
     },
     selectBox: {
-        borderWidth: 1,
-        borderColor: '#93c5fd',
-        borderRadius: 10,
-        padding: 14,
+        borderWidth: 1.5,
+        borderColor: '#f0d58a',
+        borderRadius: 14,
+        padding: 16,
         marginBottom: 18,
-        backgroundColor: '#eff6ff',
+        backgroundColor: '#fff8e7',
     },
     selectText: {
         fontSize: 16,
@@ -1142,12 +1150,12 @@ const styles = StyleSheet.create({
         color: '#6b7280',
     },
     dateInputBox: {
-        borderWidth: 1,
-        borderColor: '#93c5fd',
-        borderRadius: 10,
+        borderWidth: 1.5,
+        borderColor: '#f0d58a',
+        borderRadius: 14,
         padding: 16,
         marginBottom: 18,
-        backgroundColor: '#eff6ff',
+        backgroundColor: '#fff8e7',
     },
     dateInputText: {
         fontSize: 20,
@@ -1172,9 +1180,9 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
     },
     loadDashboardButton: {
-        backgroundColor: '#2563eb',
+        backgroundColor: '#7a4f01',
         padding: 17,
-        borderRadius: 10,
+        borderRadius: 14,
         alignItems: 'center',
         marginTop: 5,
     },

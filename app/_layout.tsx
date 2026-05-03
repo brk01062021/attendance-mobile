@@ -6,7 +6,20 @@ export default function RootLayout() {
             <Stack.Screen
                 name="index"
                 options={{
-                    title: 'Login',
+                    headerShown: false,
+                }}
+            />
+
+            <Stack.Screen
+                name="splash"
+                options={{
+                    headerShown: false,
+                }}
+            />
+
+            <Stack.Screen
+                name="login"
+                options={{
                     headerShown: false,
                 }}
             />
@@ -28,7 +41,28 @@ export default function RootLayout() {
             <Stack.Screen
                 name="teacher-dashboard"
                 options={{
-                    title: 'Teacher Dashboard',
+                    title: 'Dashboard',
+                }}
+            />
+
+            <Stack.Screen
+                name="teacher-leave-planning"
+                options={{
+                    title: 'Teacher Leave Planning',
+                }}
+            />
+
+            <Stack.Screen
+                name="admin-dashboard"
+                options={{
+                    title: 'Admin Dashboard',
+                }}
+            />
+
+            <Stack.Screen
+                name="admin-teacher-dashboard"
+                options={{
+                    title: "Admin Teacher's Dashboard",
                 }}
             />
 
