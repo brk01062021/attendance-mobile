@@ -1,7 +1,10 @@
 export const colors = {
-    primaryNavy: '#0B1D3A',
+    primaryNavy: '#061B33',
+    secondaryNavy: '#0B1D3A',
     premiumGold: '#D4AF37',
+    brightGold: '#F2C94C',
     deepGold: '#8A610D',
+
     softCream: '#FBF7EB',
     cardCream: '#FFFDF7',
     cardGoldBorder: '#EED58A',
