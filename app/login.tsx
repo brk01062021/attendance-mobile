@@ -20,26 +20,64 @@ export default function LoginScreen() {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
 
+    const roles: LoginRole[] = ['ADMIN', 'TEACHER', 'PARENT', 'STUDENT'];
+
     const handleLogin = () => {
-        if (!username.trim() || !password.trim()) {
+        const cleanUsername = username.trim();
+
+        if (!cleanUsername || !password.trim()) {
             Alert.alert('Validation', 'Please enter username and password');
             return;
         }
 
-        router.replace({
-            pathname: '/home-v2',
-            params: {
-                role: selectedRole,
-                teacherId: selectedRole === 'TEACHER' ? '1' : undefined,
-                teacherName: selectedRole === 'TEACHER' ? username : undefined,
-                principalName: selectedRole === 'ADMIN' ? username : undefined,
-                parentName: selectedRole === 'PARENT' ? username : undefined,
-                studentName: selectedRole === 'STUDENT' ? username : undefined,
-            },
-        } as any);
-    };
+        if (selectedRole === 'ADMIN') {
+            router.replace({
+                pathname: '/admin-dashboard',
+                params: {
+                    role: selectedRole,
+                    principalName: cleanUsername,
+                },
+            } as any);
+            return;
+        }
 
-    const roles: LoginRole[] = ['ADMIN', 'TEACHER', 'PARENT', 'STUDENT'];
+        if (selectedRole === 'TEACHER') {
+            router.replace({
+                pathname: '/home',
+                params: {
+                    role: selectedRole,
+                    teacherId: '1',
+                    teacherName: cleanUsername,
+                },
+            } as any);
+            return;
+        }
+
+        if (selectedRole === 'PARENT') {
+            router.replace({
+                pathname: '/parent-dashboard',
+                params: {
+                    role: selectedRole,
+                    parentId: '1',
+                    parentName: cleanUsername,
+                    studentId: '1',
+                    studentName: 'Demo Student',
+                },
+            } as any);
+            return;
+        }
+
+        if (selectedRole === 'STUDENT') {
+            router.replace({
+                pathname: '/student-dashboard',
+                params: {
+                    role: selectedRole,
+                    studentId: '1',
+                    studentName: cleanUsername,
+                },
+            } as any);
+        }
+    };
 
     return (
         <ImageBackground
