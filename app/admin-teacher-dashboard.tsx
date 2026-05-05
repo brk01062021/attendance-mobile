@@ -8,9 +8,11 @@ import {
     Modal,
     ScrollView,
     ActivityIndicator,
+    ImageBackground,
 } from 'react-native';
 import { Calendar } from 'react-native-calendars';
 import { API_ENDPOINTS } from '../src/services/api';
+import { images } from '../src/constants/images';
 
 type TeacherSchedule = {
     id: number;
@@ -807,626 +809,648 @@ Still Unassigned: ${result.stillUnassigned}`
     };
 
     return (
-        <ScrollView style={styles.container}>
-            <Text style={styles.title}>Admin Teacher&apos;s Dashboard</Text>
-            <Text style={styles.subtitle}>Single Period Leave & Replacement</Text>
+        <ImageBackground
+            source={images.splashGold}
+            style={styles.screen}
+            resizeMode="cover"
+        >
+            <View style={styles.pageOverlay}>
+                <ScrollView
+                    style={styles.container}
+                    contentContainerStyle={styles.scrollContent}
+                    showsVerticalScrollIndicator={false}
+                >
+                    <Text style={styles.title}>Admin Teacher&apos;s Dashboard</Text>
+                    <Text style={styles.subtitle}>Single Period Leave & Replacement</Text>
 
-            <Text style={styles.label}>Schedule Date</Text>
-
-            <TouchableOpacity
-                style={styles.dateBox}
-                onPress={() => {
-                    setSelectedDate(date);
-                    setShowCalendarModal(true);
-                }}
-            >
-                <Text style={styles.dateText}>{date}</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-                style={[styles.smallLoadButton, loading && styles.disabledButton]}
-                onPress={loadSchedulesForFilters}
-                disabled={loading}
-            >
-                <Text style={styles.buttonText}>
-                    {loading ? 'Loading...' : 'Load Filter Options'}
-                </Text>
-            </TouchableOpacity>
-
-            {allSchedules.length > 0 && (
-                <>
-                    {renderFilterChips('Teacher', teacherOptions, selectedTeacher, setSelectedTeacher, 'All Teachers')}
-                    {renderFilterChips('Class', classOptions, selectedClass, setSelectedClass, 'All Classes')}
-                    {renderFilterChips('Section', sectionOptions, selectedSection, setSelectedSection, 'All Sections')}
-                    {renderFilterChips('Subject', subjectOptions, selectedSubject, setSelectedSubject, 'All Subjects')}
-                    {renderFilterChips('Status', statusOptions, selectedStatus, setSelectedStatus, 'All Status')}
-
-                    {renderFilterChips(
-                        'Time Period',
-                        timePeriods,
-                        selectedTimePeriod,
-                        setSelectedTimePeriod,
-                        'All Time Periods'
-                    )}
-
-                    {renderFilterChips(
-                        'Replacement',
-                        replacementStatusOptions,
-                        selectedReplacementStatus,
-                        setSelectedReplacementStatus,
-                        'All Replacement'
-                    )}
+                    <Text style={styles.label}>Schedule Date</Text>
 
                     <TouchableOpacity
-                        style={[styles.button, loading && styles.disabledButton]}
-                        onPress={showFilteredResults}
-                        disabled={loading}
-                    >
-                        <Text style={styles.buttonText}>Load Teacher Schedule</Text>
-                    </TouchableOpacity>
-                </>
-            )}
-
-            {showResults && allSchedules.length > 0 && (
-                <View style={styles.resultSummaryBox}>
-                    <Text style={styles.resultSummaryText}>
-                        Showing {filteredSchedules.length} of {allSchedules.length} schedules
-                    </Text>
-
-                    {selectedBulkScheduleIds.length > 0 && (
-                        <Text style={styles.resultSummaryText}>
-                            Selected: {selectedBulkScheduleIds.length}
-                        </Text>
-                    )}
-
-                    <TouchableOpacity
+                        style={styles.dateBox}
                         onPress={() => {
-                            resetAllFilters();
-                            setShowResults(false);
+                            setSelectedDate(date);
+                            setShowCalendarModal(true);
                         }}
                     >
-                        <Text style={styles.resetText}>Reset Filters</Text>
+                        <Text style={styles.dateText}>{date}</Text>
                     </TouchableOpacity>
-                </View>
-            )}
 
-            {!loading && showResults && selectedBulkScheduleIds.length > 0 && (
-                <>
                     <TouchableOpacity
-                        style={styles.autoAssignButton}
-                        onPress={handleAutoAssignBestMatches}
+                        style={[styles.smallLoadButton, loading && styles.disabledButton]}
+                        onPress={loadSchedulesForFilters}
+                        disabled={loading}
                     >
-                        <Text style={styles.autoAssignButtonText}>
-                            Auto Assign Best Matches ({selectedBulkScheduleIds.length})
+                        <Text style={styles.buttonText}>
+                            {loading ? 'Loading...' : 'Load Filter Options'}
                         </Text>
                     </TouchableOpacity>
 
-                    <TouchableOpacity
-                        style={styles.bulkAssignButton}
-                        onPress={openBulkReplacementPicker}
-                    >
-                        <Text style={styles.bulkAssignButtonText}>
-                            Bulk Assign Replacement ({selectedBulkScheduleIds.length})
-                        </Text>
-                    </TouchableOpacity>
-                </>
-            )}
+                    {allSchedules.length > 0 && (
+                        <>
+                            {renderFilterChips('Teacher', teacherOptions, selectedTeacher, setSelectedTeacher, 'All Teachers')}
+                            {renderFilterChips('Class', classOptions, selectedClass, setSelectedClass, 'All Classes')}
+                            {renderFilterChips('Section', sectionOptions, selectedSection, setSelectedSection, 'All Sections')}
+                            {renderFilterChips('Subject', subjectOptions, selectedSubject, setSelectedSubject, 'All Subjects')}
+                            {renderFilterChips('Status', statusOptions, selectedStatus, setSelectedStatus, 'All Status')}
 
-            {loading && (
-                <View style={styles.loadingContainer}>
-                    <ActivityIndicator size="large" />
-                    <Text style={styles.loadingText}>Loading schedules...</Text>
-                </View>
-            )}
-
-            {!loading && hasLoadedOnce && allSchedules.length === 0 && (
-                <View style={styles.noDataContainer}>
-                    <Text style={styles.noDataTitle}>No Schedule Found</Text>
-                    <Text style={styles.noDataText}>
-                        No teacher schedule found for selected date.
-                    </Text>
-                </View>
-            )}
-
-            {!loading && showResults && allSchedules.length > 0 && filteredSchedules.length === 0 && (
-                <View style={styles.noDataContainer}>
-                    <Text style={styles.noDataTitle}>No Records Found</Text>
-                    <Text style={styles.noDataText}>
-                        No teacher schedule found for selected filters.
-                    </Text>
-                </View>
-            )}
-
-            {!loading && showResults && groupedSchedulesByDate.map(([scheduleDate, dateSchedules]) => (
-                <View key={scheduleDate}>
-                    <TouchableOpacity
-                        style={styles.dateGroupHeader}
-                        onPress={() => openBulkSelectConfirmModal(scheduleDate, dateSchedules)}
-                    >
-                        <Text style={styles.dateGroupTitle}>{scheduleDate}</Text>
-                        <Text style={styles.dateGroupSubtitle}>{dateSchedules.length} period(s)</Text>
-                    </TouchableOpacity>
-
-                    {dateSchedules.map((item) => (
-                        <View key={item.id} style={styles.card}>
-                            {selectedBulkScheduleIds.includes(item.id) && (
-                                <View style={styles.selectedBulkInfoBox}>
-                                    <Text style={styles.selectedBulkInfoText}>✓ Selected for Bulk Assign</Text>
-                                </View>
+                            {renderFilterChips(
+                                'Time Period',
+                                timePeriods,
+                                selectedTimePeriod,
+                                setSelectedTimePeriod,
+                                'All Time Periods'
                             )}
 
-                            <View style={styles.cardHeader}>
-                                <Text style={styles.teacherName}>{item.teacherName}</Text>
-                                <Text style={[styles.statusBadge, getStatusStyle(item.status)]}>
-                                    {getStatusLabel(item.status)}
-                                </Text>
-                            </View>
+                            {renderFilterChips(
+                                'Replacement',
+                                replacementStatusOptions,
+                                selectedReplacementStatus,
+                                setSelectedReplacementStatus,
+                                'All Replacement'
+                            )}
 
-                            <Text style={styles.cardText}>Class: {item.className}</Text>
-                            <Text style={styles.cardText}>Section: {item.section}</Text>
-                            <Text style={styles.cardText}>Subject: {item.subjectName}</Text>
+                            <TouchableOpacity
+                                style={[styles.button, loading && styles.disabledButton]}
+                                onPress={showFilteredResults}
+                                disabled={loading}
+                            >
+                                <Text style={styles.buttonText}>Load Teacher Schedule</Text>
+                            </TouchableOpacity>
+                        </>
+                    )}
 
-                            <Text style={styles.cardText}>
-                                Time Period: {item.startTime} - {item.endTime}
+                    {showResults && allSchedules.length > 0 && (
+                        <View style={styles.resultSummaryBox}>
+                            <Text style={styles.resultSummaryText}>
+                                Showing {filteredSchedules.length} of {allSchedules.length} schedules
                             </Text>
 
-                            {item.status !== 'AVAILABLE' && (
-                                hasReplacementAssigned(item) ? (
-                                    <Text style={styles.replacementText}>
-                                        Replacement info: {item.replacementTeacherName}
-                                    </Text>
-                                ) : (
-                                    <Text style={styles.noReplacementText}>
-                                        Replacement info: No replacement assigned
-                                    </Text>
-                                )
+                            {selectedBulkScheduleIds.length > 0 && (
+                                <Text style={styles.resultSummaryText}>
+                                    Selected: {selectedBulkScheduleIds.length}
+                                </Text>
                             )}
 
-                            {renderStatusAction(item)}
+                            <TouchableOpacity
+                                onPress={() => {
+                                    resetAllFilters();
+                                    setShowResults(false);
+                                }}
+                            >
+                                <Text style={styles.resetText}>Reset Filters</Text>
+                            </TouchableOpacity>
+                        </View>
+                    )}
+
+                    {!loading && showResults && selectedBulkScheduleIds.length > 0 && (
+                        <>
+                            <TouchableOpacity
+                                style={styles.autoAssignButton}
+                                onPress={handleAutoAssignBestMatches}
+                            >
+                                <Text style={styles.autoAssignButtonText}>
+                                    Auto Assign Best Matches ({selectedBulkScheduleIds.length})
+                                </Text>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity
+                                style={styles.bulkAssignButton}
+                                onPress={openBulkReplacementPicker}
+                            >
+                                <Text style={styles.bulkAssignButtonText}>
+                                    Bulk Assign Replacement ({selectedBulkScheduleIds.length})
+                                </Text>
+                            </TouchableOpacity>
+                        </>
+                    )}
+
+                    {loading && (
+                        <View style={styles.loadingContainer}>
+                            <ActivityIndicator size="large" />
+                            <Text style={styles.loadingText}>Loading schedules...</Text>
+                        </View>
+                    )}
+
+                    {!loading && hasLoadedOnce && allSchedules.length === 0 && (
+                        <View style={styles.noDataContainer}>
+                            <Text style={styles.noDataTitle}>No Schedule Found</Text>
+                            <Text style={styles.noDataText}>
+                                No teacher schedule found for selected date.
+                            </Text>
+                        </View>
+                    )}
+
+                    {!loading && showResults && allSchedules.length > 0 && filteredSchedules.length === 0 && (
+                        <View style={styles.noDataContainer}>
+                            <Text style={styles.noDataTitle}>No Records Found</Text>
+                            <Text style={styles.noDataText}>
+                                No teacher schedule found for selected filters.
+                            </Text>
+                        </View>
+                    )}
+
+                    {!loading && showResults && groupedSchedulesByDate.map(([scheduleDate, dateSchedules]) => (
+                        <View key={scheduleDate}>
+                            <TouchableOpacity
+                                style={styles.dateGroupHeader}
+                                onPress={() => openBulkSelectConfirmModal(scheduleDate, dateSchedules)}
+                            >
+                                <Text style={styles.dateGroupTitle}>{scheduleDate}</Text>
+                                <Text style={styles.dateGroupSubtitle}>{dateSchedules.length} period(s)</Text>
+                            </TouchableOpacity>
+
+                            {dateSchedules.map((item) => (
+                                <View key={item.id} style={styles.card}>
+                                    {selectedBulkScheduleIds.includes(item.id) && (
+                                        <View style={styles.selectedBulkInfoBox}>
+                                            <Text style={styles.selectedBulkInfoText}>✓ Selected for Bulk Assign</Text>
+                                        </View>
+                                    )}
+
+                                    <View style={styles.cardHeader}>
+                                        <Text style={styles.teacherName}>{item.teacherName}</Text>
+                                        <Text style={[styles.statusBadge, getStatusStyle(item.status)]}>
+                                            {getStatusLabel(item.status)}
+                                        </Text>
+                                    </View>
+
+                                    <Text style={styles.cardText}>Class: {item.className}</Text>
+                                    <Text style={styles.cardText}>Section: {item.section}</Text>
+                                    <Text style={styles.cardText}>Subject: {item.subjectName}</Text>
+
+                                    <Text style={styles.cardText}>
+                                        Time Period: {item.startTime} - {item.endTime}
+                                    </Text>
+
+                                    {item.status !== 'AVAILABLE' && (
+                                        hasReplacementAssigned(item) ? (
+                                            <Text style={styles.replacementText}>
+                                                Replacement info: {item.replacementTeacherName}
+                                            </Text>
+                                        ) : (
+                                            <Text style={styles.noReplacementText}>
+                                                Replacement info: No replacement assigned
+                                            </Text>
+                                        )
+                                    )}
+
+                                    {renderStatusAction(item)}
+                                </View>
+                            ))}
                         </View>
                     ))}
-                </View>
-            ))}
 
-            <Modal visible={showBulkSelectConfirmModal} transparent animationType="fade">
-                <View style={styles.modalOverlay}>
-                    <View style={styles.modalBox}>
-                        <Text style={styles.modalTitle}>Bulk Assign Replacement</Text>
+                    <Modal visible={showBulkSelectConfirmModal} transparent animationType="fade">
+                        <View style={styles.modalOverlay}>
+                            <View style={styles.modalBox}>
+                                <Text style={styles.modalTitle}>Bulk Assign Replacement</Text>
 
-                        <View style={styles.selectedDateBox}>
-                            <Text style={styles.selectedDateText}>{pendingBulkDate}</Text>
-                        </View>
+                                <View style={styles.selectedDateBox}>
+                                    <Text style={styles.selectedDateText}>{pendingBulkDate}</Text>
+                                </View>
 
-                        <Text style={styles.bulkPopupText}>
-                            Do you want to select all pending periods for bulk assignment?
-                        </Text>
-
-                        <Text style={styles.bulkPopupCount}>
-                            Pending Periods: {pendingBulkSchedules.length}
-                        </Text>
-
-                        <View style={styles.modalButtonRow}>
-                            <TouchableOpacity
-                                style={styles.cancelButton}
-                                onPress={() => setShowBulkSelectConfirmModal(false)}
-                            >
-                                <Text style={styles.modalButtonText}>Cancel</Text>
-                            </TouchableOpacity>
-
-                            <TouchableOpacity
-                                style={styles.confirmButton}
-                                onPress={confirmBulkSelectForDate}
-                            >
-                                <Text style={styles.modalButtonText}>Yes</Text>
-                            </TouchableOpacity>
-                        </View>
-                    </View>
-                </View>
-            </Modal>
-
-            <Modal visible={showCalendarModal} transparent animationType="fade">
-                <View style={styles.modalOverlay}>
-                    <View style={styles.modalBox}>
-                        <Text style={styles.modalTitle}>Select Schedule Date</Text>
-
-                        <View style={styles.selectedDateBox}>
-                            <Text style={styles.selectedDateText}>{selectedDate}</Text>
-                        </View>
-
-                        <Calendar
-                            current={selectedDate}
-                            onDayPress={(day) => setSelectedDate(day.dateString)}
-                            markedDates={{
-                                [selectedDate]: {
-                                    selected: true,
-                                    selectedColor: '#c69214',
-                                },
-                            }}
-                        />
-
-                        <View style={styles.modalButtonRow}>
-                            <TouchableOpacity
-                                style={styles.cancelButton}
-                                onPress={() => setShowCalendarModal(false)}
-                            >
-                                <Text style={styles.modalButtonText}>Cancel</Text>
-                            </TouchableOpacity>
-
-                            <TouchableOpacity
-                                style={styles.confirmButton}
-                                onPress={confirmDate}
-                            >
-                                <Text style={styles.modalButtonText}>Confirm Date</Text>
-                            </TouchableOpacity>
-                        </View>
-                    </View>
-                </View>
-            </Modal>
-
-            <Modal visible={showReplacementModal} transparent animationType="fade">
-                <View style={styles.modalOverlay}>
-                    <View style={styles.replacementModalBox}>
-                        <Text style={styles.modalTitle}>Replacement Options</Text>
-
-                        {selectedSchedule && (
-                            <View style={styles.leaveInfoBox}>
-                                <Text style={styles.leaveInfoTitle}>{selectedSchedule.teacherName}</Text>
-                                <Text style={styles.leaveInfoText}>
-                                    Class {selectedSchedule.className} - Section {selectedSchedule.section}
+                                <Text style={styles.bulkPopupText}>
+                                    Do you want to select all pending periods for bulk assignment?
                                 </Text>
-                                <Text style={styles.leaveInfoText}>
-                                    {selectedSchedule.subjectName} | {selectedSchedule.startTime} - {selectedSchedule.endTime}
+
+                                <Text style={styles.bulkPopupCount}>
+                                    Pending Periods: {pendingBulkSchedules.length}
                                 </Text>
-                            </View>
-                        )}
 
-                        <View style={styles.replacementTabRow}>
-                            <TouchableOpacity
-                                style={[
-                                    styles.replacementTab,
-                                    activeReplacementTab === 'BEST_MATCH' && styles.activeReplacementTab,
-                                ]}
-                                onPress={() => setActiveReplacementTab('BEST_MATCH')}
-                            >
-                                <Text
-                                    style={[
-                                        styles.replacementTabText,
-                                        activeReplacementTab === 'BEST_MATCH' && styles.activeReplacementTabText,
-                                    ]}
-                                >
-                                    Best Match
-                                </Text>
-                            </TouchableOpacity>
-
-                            <TouchableOpacity
-                                style={[
-                                    styles.replacementTab,
-                                    activeReplacementTab === 'SAME_CLASS' && styles.activeReplacementTab,
-                                ]}
-                                onPress={() => setActiveReplacementTab('SAME_CLASS')}
-                            >
-                                <Text
-                                    style={[
-                                        styles.replacementTabText,
-                                        activeReplacementTab === 'SAME_CLASS' && styles.activeReplacementTabText,
-                                    ]}
-                                >
-                                    Same Class
-                                </Text>
-                            </TouchableOpacity>
-
-                            <TouchableOpacity
-                                style={[
-                                    styles.replacementTab,
-                                    activeReplacementTab === 'OTHERS' && styles.activeReplacementTab,
-                                ]}
-                                onPress={() => setActiveReplacementTab('OTHERS')}
-                            >
-                                <Text
-                                    style={[
-                                        styles.replacementTabText,
-                                        activeReplacementTab === 'OTHERS' && styles.activeReplacementTabText,
-                                    ]}
-                                >
-                                    Others
-                                </Text>
-                            </TouchableOpacity>
-                        </View>
-
-                        {replacementLoading && (
-                            <View style={styles.loadingContainer}>
-                                <ActivityIndicator size="large" />
-                                <Text style={styles.loadingText}>Loading available teachers...</Text>
-                            </View>
-                        )}
-
-                        {!replacementLoading && selectedReplacementList.length === 0 && (
-                            <View style={styles.noReplacementBox}>
-                                <Text style={styles.noReplacementTitle}>No Teachers</Text>
-                                <Text style={styles.noReplacementBoxText}>
-                                    No teachers available in this category.
-                                </Text>
-                            </View>
-                        )}
-
-                        {!replacementLoading && selectedReplacementList.length > 0 && (
-                            <ScrollView style={styles.replacementList}>
-                                {selectedReplacementList.map((teacher) => (
+                                <View style={styles.modalButtonRow}>
                                     <TouchableOpacity
-                                        key={teacher.teacherId}
-                                        style={[
-                                            styles.groupedReplacementCard,
-                                            selectedReplacementTeacherId === teacher.teacherId &&
-                                            styles.selectedGroupedReplacementCard,
-                                        ]}
-                                        onPress={() => setSelectedReplacementTeacherId(teacher.teacherId)}
+                                        style={styles.cancelButton}
+                                        onPress={() => setShowBulkSelectConfirmModal(false)}
                                     >
-                                        <Text style={styles.groupedReplacementName}>
-                                            {teacher.teacherName}
-                                        </Text>
+                                        <Text style={styles.modalButtonText}>Cancel</Text>
+                                    </TouchableOpacity>
 
-                                        <Text style={styles.groupedReplacementType}>
-                                            {teacher.matchType || activeReplacementTab}
-                                        </Text>
+                                    <TouchableOpacity
+                                        style={styles.confirmButton}
+                                        onPress={confirmBulkSelectForDate}
+                                    >
+                                        <Text style={styles.modalButtonText}>Yes</Text>
+                                    </TouchableOpacity>
+                                </View>
+                            </View>
+                        </View>
+                    </Modal>
 
-                                        <Text style={styles.groupedReplacementDetails}>
-                                            Class: {teacher.className} - Section {teacher.section}
-                                        </Text>
+                    <Modal visible={showCalendarModal} transparent animationType="fade">
+                        <View style={styles.modalOverlay}>
+                            <View style={styles.modalBox}>
+                                <Text style={styles.modalTitle}>Select Schedule Date</Text>
 
-                                        <Text style={styles.groupedReplacementDetails}>
-                                            Subject: {teacher.subjectName}
-                                        </Text>
+                                <View style={styles.selectedDateBox}>
+                                    <Text style={styles.selectedDateText}>{selectedDate}</Text>
+                                </View>
 
-                                        <Text style={styles.groupedReplacementDetails}>
-                                            Workload: {teacher.dailyWorkload ?? 0}
+                                <Calendar
+                                    current={selectedDate}
+                                    onDayPress={(day) => setSelectedDate(day.dateString)}
+                                    markedDates={{
+                                        [selectedDate]: {
+                                            selected: true,
+                                            selectedColor: '#041226',
+                                        },
+                                    }}
+                                />
+
+                                <View style={styles.modalButtonRow}>
+                                    <TouchableOpacity
+                                        style={styles.cancelButton}
+                                        onPress={() => setShowCalendarModal(false)}
+                                    >
+                                        <Text style={styles.modalButtonText}>Cancel</Text>
+                                    </TouchableOpacity>
+
+                                    <TouchableOpacity
+                                        style={styles.confirmButton}
+                                        onPress={confirmDate}
+                                    >
+                                        <Text style={styles.modalButtonText}>Confirm Date</Text>
+                                    </TouchableOpacity>
+                                </View>
+                            </View>
+                        </View>
+                    </Modal>
+
+                    <Modal visible={showReplacementModal} transparent animationType="fade">
+                        <View style={styles.modalOverlay}>
+                            <View style={styles.replacementModalBox}>
+                                <Text style={styles.modalTitle}>Replacement Options</Text>
+
+                                {selectedSchedule && (
+                                    <View style={styles.leaveInfoBox}>
+                                        <Text style={styles.leaveInfoTitle}>{selectedSchedule.teacherName}</Text>
+                                        <Text style={styles.leaveInfoText}>
+                                            Class {selectedSchedule.className} - Section {selectedSchedule.section}
+                                        </Text>
+                                        <Text style={styles.leaveInfoText}>
+                                            {selectedSchedule.subjectName} | {selectedSchedule.startTime} - {selectedSchedule.endTime}
+                                        </Text>
+                                    </View>
+                                )}
+
+                                <View style={styles.replacementTabRow}>
+                                    <TouchableOpacity
+                                        style={[
+                                            styles.replacementTab,
+                                            activeReplacementTab === 'BEST_MATCH' && styles.activeReplacementTab,
+                                        ]}
+                                        onPress={() => setActiveReplacementTab('BEST_MATCH')}
+                                    >
+                                        <Text
+                                            style={[
+                                                styles.replacementTabText,
+                                                activeReplacementTab === 'BEST_MATCH' && styles.activeReplacementTabText,
+                                            ]}
+                                        >
+                                            Best Match
                                         </Text>
                                     </TouchableOpacity>
-                                ))}
-                            </ScrollView>
-                        )}
 
-                        <TouchableOpacity
-                            style={[
-                                styles.noReplacementSelectButton,
-                                selectedReplacementTeacherId === 'NO_REPLACEMENT' &&
-                                styles.selectedGroupedReplacementCard,
-                            ]}
-                            onPress={() => setSelectedReplacementTeacherId('NO_REPLACEMENT')}
-                        >
-                            <Text style={styles.noReplacementSelectText}>No Replacement</Text>
-                        </TouchableOpacity>
-
-                        <View style={styles.modalButtonRow}>
-                            <TouchableOpacity
-                                style={styles.cancelButton}
-                                onPress={() => {
-                                    setShowReplacementModal(false);
-                                    setSelectedSchedule(null);
-                                    setSelectedReplacementTeacherId(null);
-                                }}
-                            >
-                                <Text style={styles.modalButtonText}>Cancel</Text>
-                            </TouchableOpacity>
-
-                            <TouchableOpacity
-                                style={[
-                                    styles.confirmButton,
-                                    (selectedReplacementTeacherId === null || replacementLoading) &&
-                                    styles.disabledConfirmButton,
-                                ]}
-                                onPress={saveReplacementAction}
-                                disabled={selectedReplacementTeacherId === null || replacementLoading}
-                            >
-                                <Text style={styles.modalButtonText}>Save</Text>
-                            </TouchableOpacity>
-                        </View>
-                    </View>
-                </View>
-            </Modal>
-
-
-            <Modal visible={showBulkReplacementModal} transparent animationType="fade">
-                <View style={styles.modalOverlay}>
-                    <View style={styles.replacementModalBox}>
-                        <Text style={styles.modalTitle}>Bulk Assign Replacement</Text>
-
-                        <View style={styles.leaveInfoBox}>
-                            <Text style={styles.leaveInfoTitle}>
-                                Selected Periods: {selectedBulkScheduleIds.length}
-                            </Text>
-                            <Text style={styles.leaveInfoText}>
-                                Select one replacement teacher for all selected leave periods.
-                            </Text>
-                            {selectedBulkTeacherName !== '' && (
-                                <Text style={styles.leaveInfoText}>
-                                    Selected Replacement: {selectedBulkTeacherName}
-                                </Text>
-                            )}
-                        </View>
-
-                        <View style={styles.replacementTabRow}>
-                            <TouchableOpacity
-                                style={[
-                                    styles.replacementTab,
-                                    activeReplacementTab === 'BEST_MATCH' && styles.activeReplacementTab,
-                                ]}
-                                onPress={() => setActiveReplacementTab('BEST_MATCH')}
-                            >
-                                <Text
-                                    style={[
-                                        styles.replacementTabText,
-                                        activeReplacementTab === 'BEST_MATCH' && styles.activeReplacementTabText,
-                                    ]}
-                                >
-                                    Best Match
-                                </Text>
-                            </TouchableOpacity>
-
-                            <TouchableOpacity
-                                style={[
-                                    styles.replacementTab,
-                                    activeReplacementTab === 'SAME_CLASS' && styles.activeReplacementTab,
-                                ]}
-                                onPress={() => setActiveReplacementTab('SAME_CLASS')}
-                            >
-                                <Text
-                                    style={[
-                                        styles.replacementTabText,
-                                        activeReplacementTab === 'SAME_CLASS' && styles.activeReplacementTabText,
-                                    ]}
-                                >
-                                    Same Class
-                                </Text>
-                            </TouchableOpacity>
-
-                            <TouchableOpacity
-                                style={[
-                                    styles.replacementTab,
-                                    activeReplacementTab === 'OTHERS' && styles.activeReplacementTab,
-                                ]}
-                                onPress={() => setActiveReplacementTab('OTHERS')}
-                            >
-                                <Text
-                                    style={[
-                                        styles.replacementTabText,
-                                        activeReplacementTab === 'OTHERS' && styles.activeReplacementTabText,
-                                    ]}
-                                >
-                                    Others
-                                </Text>
-                            </TouchableOpacity>
-                        </View>
-
-                        {replacementLoading && (
-                            <View style={styles.loadingContainer}>
-                                <ActivityIndicator size="large" />
-                                <Text style={styles.loadingText}>Loading available teachers...</Text>
-                            </View>
-                        )}
-
-                        {!replacementLoading && bulkReplacementLoaded && selectedReplacementList.length === 0 && (
-                            <View style={styles.noReplacementBox}>
-                                <Text style={styles.noReplacementTitle}>No Teachers</Text>
-                                <Text style={styles.noReplacementBoxText}>
-                                    No teachers available in this category.
-                                </Text>
-                            </View>
-                        )}
-
-                        {!replacementLoading && selectedReplacementList.length > 0 && (
-                            <ScrollView style={styles.replacementList}>
-                                {selectedReplacementList.map((teacher) => (
                                     <TouchableOpacity
-                                        key={teacher.teacherId}
                                         style={[
-                                            styles.groupedReplacementCard,
-                                            selectedReplacementTeacherId === teacher.teacherId &&
-                                            styles.selectedGroupedReplacementCard,
+                                            styles.replacementTab,
+                                            activeReplacementTab === 'SAME_CLASS' && styles.activeReplacementTab,
                                         ]}
-                                        onPress={() => setSelectedReplacementTeacherId(teacher.teacherId)}
+                                        onPress={() => setActiveReplacementTab('SAME_CLASS')}
                                     >
-                                        <Text style={styles.groupedReplacementName}>
-                                            {teacher.teacherName}
-                                        </Text>
-                                        <Text style={styles.groupedReplacementType}>
-                                            {teacher.matchType || activeReplacementTab}
-                                        </Text>
-                                        <Text style={styles.groupedReplacementDetails}>
-                                            Class: {teacher.className} - Section {teacher.section}
-                                        </Text>
-                                        <Text style={styles.groupedReplacementDetails}>
-                                            Subject: {teacher.subjectName}
-                                        </Text>
-                                        <Text style={styles.groupedReplacementDetails}>
-                                            Workload: {teacher.dailyWorkload ?? 0}
+                                        <Text
+                                            style={[
+                                                styles.replacementTabText,
+                                                activeReplacementTab === 'SAME_CLASS' && styles.activeReplacementTabText,
+                                            ]}
+                                        >
+                                            Same Class
                                         </Text>
                                     </TouchableOpacity>
-                                ))}
-                            </ScrollView>
-                        )}
 
-                        <View style={styles.modalButtonRow}>
-                            <TouchableOpacity
-                                style={styles.cancelButton}
-                                onPress={() => {
-                                    setShowBulkReplacementModal(false);
-                                    setSelectedReplacementTeacherId(null);
-                                    setBulkReplacementLoaded(false);
-                                }}
-                            >
-                                <Text style={styles.modalButtonText}>Cancel</Text>
-                            </TouchableOpacity>
+                                    <TouchableOpacity
+                                        style={[
+                                            styles.replacementTab,
+                                            activeReplacementTab === 'OTHERS' && styles.activeReplacementTab,
+                                        ]}
+                                        onPress={() => setActiveReplacementTab('OTHERS')}
+                                    >
+                                        <Text
+                                            style={[
+                                                styles.replacementTabText,
+                                                activeReplacementTab === 'OTHERS' && styles.activeReplacementTabText,
+                                            ]}
+                                        >
+                                            Others
+                                        </Text>
+                                    </TouchableOpacity>
+                                </View>
 
-                            <TouchableOpacity
-                                style={[
-                                    styles.confirmButton,
-                                    (selectedReplacementTeacherId === null ||
-                                        selectedReplacementTeacherId === 'NO_REPLACEMENT' ||
-                                        replacementLoading) &&
-                                    styles.disabledConfirmButton,
-                                ]}
-                                onPress={bulkAssignReplacementTeacher}
-                                disabled={
-                                    selectedReplacementTeacherId === null ||
-                                    selectedReplacementTeacherId === 'NO_REPLACEMENT' ||
-                                    replacementLoading
-                                }
-                            >
-                                <Text style={styles.modalButtonText}>Bulk Assign</Text>
-                            </TouchableOpacity>
+                                {replacementLoading && (
+                                    <View style={styles.loadingContainer}>
+                                        <ActivityIndicator size="large" />
+                                        <Text style={styles.loadingText}>Loading available teachers...</Text>
+                                    </View>
+                                )}
+
+                                {!replacementLoading && selectedReplacementList.length === 0 && (
+                                    <View style={styles.noReplacementBox}>
+                                        <Text style={styles.noReplacementTitle}>No Teachers</Text>
+                                        <Text style={styles.noReplacementBoxText}>
+                                            No teachers available in this category.
+                                        </Text>
+                                    </View>
+                                )}
+
+                                {!replacementLoading && selectedReplacementList.length > 0 && (
+                                    <ScrollView style={styles.replacementList}>
+                                        {selectedReplacementList.map((teacher) => (
+                                            <TouchableOpacity
+                                                key={teacher.teacherId}
+                                                style={[
+                                                    styles.groupedReplacementCard,
+                                                    selectedReplacementTeacherId === teacher.teacherId &&
+                                                    styles.selectedGroupedReplacementCard,
+                                                ]}
+                                                onPress={() => setSelectedReplacementTeacherId(teacher.teacherId)}
+                                            >
+                                                <Text style={styles.groupedReplacementName}>
+                                                    {teacher.teacherName}
+                                                </Text>
+
+                                                <Text style={styles.groupedReplacementType}>
+                                                    {teacher.matchType || activeReplacementTab}
+                                                </Text>
+
+                                                <Text style={styles.groupedReplacementDetails}>
+                                                    Class: {teacher.className} - Section {teacher.section}
+                                                </Text>
+
+                                                <Text style={styles.groupedReplacementDetails}>
+                                                    Subject: {teacher.subjectName}
+                                                </Text>
+
+                                                <Text style={styles.groupedReplacementDetails}>
+                                                    Workload: {teacher.dailyWorkload ?? 0}
+                                                </Text>
+                                            </TouchableOpacity>
+                                        ))}
+                                    </ScrollView>
+                                )}
+
+                                <TouchableOpacity
+                                    style={[
+                                        styles.noReplacementSelectButton,
+                                        selectedReplacementTeacherId === 'NO_REPLACEMENT' &&
+                                        styles.selectedGroupedReplacementCard,
+                                    ]}
+                                    onPress={() => setSelectedReplacementTeacherId('NO_REPLACEMENT')}
+                                >
+                                    <Text style={styles.noReplacementSelectText}>No Replacement</Text>
+                                </TouchableOpacity>
+
+                                <View style={styles.modalButtonRow}>
+                                    <TouchableOpacity
+                                        style={styles.cancelButton}
+                                        onPress={() => {
+                                            setShowReplacementModal(false);
+                                            setSelectedSchedule(null);
+                                            setSelectedReplacementTeacherId(null);
+                                        }}
+                                    >
+                                        <Text style={styles.modalButtonText}>Cancel</Text>
+                                    </TouchableOpacity>
+
+                                    <TouchableOpacity
+                                        style={[
+                                            styles.confirmButton,
+                                            (selectedReplacementTeacherId === null || replacementLoading) &&
+                                            styles.disabledConfirmButton,
+                                        ]}
+                                        onPress={saveReplacementAction}
+                                        disabled={selectedReplacementTeacherId === null || replacementLoading}
+                                    >
+                                        <Text style={styles.modalButtonText}>Save</Text>
+                                    </TouchableOpacity>
+                                </View>
+                            </View>
                         </View>
-                    </View>
-                </View>
-            </Modal>
-        </ScrollView>
+                    </Modal>
+
+
+                    <Modal visible={showBulkReplacementModal} transparent animationType="fade">
+                        <View style={styles.modalOverlay}>
+                            <View style={styles.replacementModalBox}>
+                                <Text style={styles.modalTitle}>Bulk Assign Replacement</Text>
+
+                                <View style={styles.leaveInfoBox}>
+                                    <Text style={styles.leaveInfoTitle}>
+                                        Selected Periods: {selectedBulkScheduleIds.length}
+                                    </Text>
+                                    <Text style={styles.leaveInfoText}>
+                                        Select one replacement teacher for all selected leave periods.
+                                    </Text>
+                                    {selectedBulkTeacherName !== '' && (
+                                        <Text style={styles.leaveInfoText}>
+                                            Selected Replacement: {selectedBulkTeacherName}
+                                        </Text>
+                                    )}
+                                </View>
+
+                                <View style={styles.replacementTabRow}>
+                                    <TouchableOpacity
+                                        style={[
+                                            styles.replacementTab,
+                                            activeReplacementTab === 'BEST_MATCH' && styles.activeReplacementTab,
+                                        ]}
+                                        onPress={() => setActiveReplacementTab('BEST_MATCH')}
+                                    >
+                                        <Text
+                                            style={[
+                                                styles.replacementTabText,
+                                                activeReplacementTab === 'BEST_MATCH' && styles.activeReplacementTabText,
+                                            ]}
+                                        >
+                                            Best Match
+                                        </Text>
+                                    </TouchableOpacity>
+
+                                    <TouchableOpacity
+                                        style={[
+                                            styles.replacementTab,
+                                            activeReplacementTab === 'SAME_CLASS' && styles.activeReplacementTab,
+                                        ]}
+                                        onPress={() => setActiveReplacementTab('SAME_CLASS')}
+                                    >
+                                        <Text
+                                            style={[
+                                                styles.replacementTabText,
+                                                activeReplacementTab === 'SAME_CLASS' && styles.activeReplacementTabText,
+                                            ]}
+                                        >
+                                            Same Class
+                                        </Text>
+                                    </TouchableOpacity>
+
+                                    <TouchableOpacity
+                                        style={[
+                                            styles.replacementTab,
+                                            activeReplacementTab === 'OTHERS' && styles.activeReplacementTab,
+                                        ]}
+                                        onPress={() => setActiveReplacementTab('OTHERS')}
+                                    >
+                                        <Text
+                                            style={[
+                                                styles.replacementTabText,
+                                                activeReplacementTab === 'OTHERS' && styles.activeReplacementTabText,
+                                            ]}
+                                        >
+                                            Others
+                                        </Text>
+                                    </TouchableOpacity>
+                                </View>
+
+                                {replacementLoading && (
+                                    <View style={styles.loadingContainer}>
+                                        <ActivityIndicator size="large" />
+                                        <Text style={styles.loadingText}>Loading available teachers...</Text>
+                                    </View>
+                                )}
+
+                                {!replacementLoading && bulkReplacementLoaded && selectedReplacementList.length === 0 && (
+                                    <View style={styles.noReplacementBox}>
+                                        <Text style={styles.noReplacementTitle}>No Teachers</Text>
+                                        <Text style={styles.noReplacementBoxText}>
+                                            No teachers available in this category.
+                                        </Text>
+                                    </View>
+                                )}
+
+                                {!replacementLoading && selectedReplacementList.length > 0 && (
+                                    <ScrollView style={styles.replacementList}>
+                                        {selectedReplacementList.map((teacher) => (
+                                            <TouchableOpacity
+                                                key={teacher.teacherId}
+                                                style={[
+                                                    styles.groupedReplacementCard,
+                                                    selectedReplacementTeacherId === teacher.teacherId &&
+                                                    styles.selectedGroupedReplacementCard,
+                                                ]}
+                                                onPress={() => setSelectedReplacementTeacherId(teacher.teacherId)}
+                                            >
+                                                <Text style={styles.groupedReplacementName}>
+                                                    {teacher.teacherName}
+                                                </Text>
+                                                <Text style={styles.groupedReplacementType}>
+                                                    {teacher.matchType || activeReplacementTab}
+                                                </Text>
+                                                <Text style={styles.groupedReplacementDetails}>
+                                                    Class: {teacher.className} - Section {teacher.section}
+                                                </Text>
+                                                <Text style={styles.groupedReplacementDetails}>
+                                                    Subject: {teacher.subjectName}
+                                                </Text>
+                                                <Text style={styles.groupedReplacementDetails}>
+                                                    Workload: {teacher.dailyWorkload ?? 0}
+                                                </Text>
+                                            </TouchableOpacity>
+                                        ))}
+                                    </ScrollView>
+                                )}
+
+                                <View style={styles.modalButtonRow}>
+                                    <TouchableOpacity
+                                        style={styles.cancelButton}
+                                        onPress={() => {
+                                            setShowBulkReplacementModal(false);
+                                            setSelectedReplacementTeacherId(null);
+                                            setBulkReplacementLoaded(false);
+                                        }}
+                                    >
+                                        <Text style={styles.modalButtonText}>Cancel</Text>
+                                    </TouchableOpacity>
+
+                                    <TouchableOpacity
+                                        style={[
+                                            styles.confirmButton,
+                                            (selectedReplacementTeacherId === null ||
+                                                selectedReplacementTeacherId === 'NO_REPLACEMENT' ||
+                                                replacementLoading) &&
+                                            styles.disabledConfirmButton,
+                                        ]}
+                                        onPress={bulkAssignReplacementTeacher}
+                                        disabled={
+                                            selectedReplacementTeacherId === null ||
+                                            selectedReplacementTeacherId === 'NO_REPLACEMENT' ||
+                                            replacementLoading
+                                        }
+                                    >
+                                        <Text style={styles.modalButtonText}>Bulk Assign</Text>
+                                    </TouchableOpacity>
+                                </View>
+                            </View>
+                        </View>
+                    </Modal>
+                </ScrollView>
+            </View>
+        </ImageBackground>
     );
 }
 
 const styles = StyleSheet.create({
+    screen: {
+        flex: 1,
+    },
+    pageOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(255, 255, 255, 0.18)',
+    },
     container: {
         flex: 1,
-        backgroundColor: '#fffdf7',
+        backgroundColor: 'transparent',
+    },
+    scrollContent: {
         padding: 25,
+        paddingBottom: 120,
     },
     title: {
         fontSize: 32,
         fontWeight: 'bold',
-        color: '#7a4f01',
+        color: '#041226',
         marginBottom: 8,
     },
     subtitle: {
         fontSize: 18,
         fontWeight: '700',
-        color: '#374151',
+        color: '#041226',
         marginBottom: 25,
     },
     label: {
         fontSize: 16,
         fontWeight: '700',
         marginBottom: 8,
-        color: '#374151',
+        color: '#041226',
     },
     dateBox: {
         borderWidth: 1,
-        borderColor: '#f0d58a',
+        borderColor: '#D8B84A',
         borderRadius: 10,
         padding: 14,
         marginBottom: 18,
-        backgroundColor: '#fff8e7',
+        backgroundColor: 'rgba(255, 255, 255, 0.92)',
     },
     dateText: {
         fontSize: 16,
-        color: '#111827',
+        color: '#041226',
     },
     smallLoadButton: {
-        backgroundColor: '#7a4f01',
+        backgroundColor: '#041226',
         padding: 13,
         borderRadius: 10,
         alignItems: 'center',
         marginBottom: 20,
     },
     button: {
-        backgroundColor: '#c69214',
+        backgroundColor: '#041226',
         padding: 15,
         borderRadius: 10,
         alignItems: 'center',
@@ -1436,15 +1460,15 @@ const styles = StyleSheet.create({
         backgroundColor: '#d8bd72',
     },
     buttonText: {
-        color: '#fff',
+        color: '#D8B84A',
         fontSize: 17,
         fontWeight: 'bold',
         textAlign: 'center',
     },
     resultSummaryBox: {
-        backgroundColor: '#fff8e7',
+        backgroundColor: 'rgba(255, 255, 255, 0.92)',
         borderWidth: 1,
-        borderColor: '#f0d58a',
+        borderColor: '#D8B84A',
         borderRadius: 12,
         padding: 12,
         marginBottom: 16,
@@ -1455,12 +1479,12 @@ const styles = StyleSheet.create({
     resultSummaryText: {
         fontSize: 14,
         fontWeight: '700',
-        color: '#374151',
+        color: '#041226',
     },
     resetText: {
         fontSize: 14,
         fontWeight: 'bold',
-        color: '#7a4f01',
+        color: '#041226',
     },
     filterContainer: {
         marginBottom: 18,
@@ -1468,32 +1492,32 @@ const styles = StyleSheet.create({
     filterTitle: {
         fontSize: 16,
         fontWeight: '700',
-        color: '#374151',
+        color: '#041226',
         marginBottom: 10,
     },
     filterScroll: {
         flexGrow: 0,
     },
     filterChip: {
-        backgroundColor: '#fff7df',
+        backgroundColor: 'rgba(255, 255, 255, 0.92)',
         paddingVertical: 10,
         paddingHorizontal: 14,
         borderRadius: 20,
         marginRight: 10,
         borderWidth: 1,
-        borderColor: '#f0d58a',
+        borderColor: '#D8B84A',
     },
     activeFilterChip: {
-        backgroundColor: '#c69214',
-        borderColor: '#c69214',
+        backgroundColor: '#041226',
+        borderColor: '#041226',
     },
     filterChipText: {
         fontSize: 14,
         fontWeight: '700',
-        color: '#7a4f01',
+        color: '#041226',
     },
     activeFilterChipText: {
-        color: '#fff',
+        color: '#D8B84A',
     },
     loadingContainer: {
         marginTop: 10,
@@ -1505,14 +1529,14 @@ const styles = StyleSheet.create({
         marginTop: 10,
         fontSize: 16,
         fontWeight: '600',
-        color: '#374151',
+        color: '#041226',
     },
     noDataContainer: {
         backgroundColor: '#fef3c7',
         borderRadius: 14,
         padding: 18,
         borderWidth: 1,
-        borderColor: '#fcd34d',
+        borderColor: '#D8B84A',
         marginBottom: 20,
         alignItems: 'center',
     },
@@ -1529,11 +1553,11 @@ const styles = StyleSheet.create({
         fontWeight: '600',
     },
     card: {
-        backgroundColor: '#ffffff',
+        backgroundColor: 'rgba(255, 255, 255, 0.96)',
         borderRadius: 14,
         padding: 18,
         borderWidth: 1,
-        borderColor: '#f0d58a',
+        borderColor: '#D8B84A',
         marginBottom: 18,
     },
     cardHeader: {
@@ -1545,13 +1569,13 @@ const styles = StyleSheet.create({
     teacherName: {
         fontSize: 22,
         fontWeight: 'bold',
-        color: '#111827',
+        color: '#041226',
         flex: 1,
         marginRight: 10,
     },
     cardText: {
         fontSize: 16,
-        color: '#374151',
+        color: '#041226',
         marginBottom: 7,
         fontWeight: '600',
     },
@@ -1591,7 +1615,7 @@ const styles = StyleSheet.create({
     },
     defaultStatus: {
         backgroundColor: '#e5e7eb',
-        color: '#374151',
+        color: '#041226',
     },
     unplannedButton: {
         backgroundColor: '#dc2626',
@@ -1615,7 +1639,7 @@ const styles = StyleSheet.create({
         marginTop: 10,
     },
     actionButtonText: {
-        color: '#fff',
+        color: '#D8B84A',
         fontWeight: 'bold',
         fontSize: 14,
         textAlign: 'center',
@@ -1627,12 +1651,12 @@ const styles = StyleSheet.create({
         padding: 25,
     },
     modalBox: {
-        backgroundColor: '#fff',
+        backgroundColor: 'rgba(255, 255, 255, 0.96)',
         borderRadius: 18,
         padding: 20,
     },
     replacementModalBox: {
-        backgroundColor: '#fff',
+        backgroundColor: 'rgba(255, 255, 255, 0.96)',
         borderRadius: 18,
         padding: 20,
         maxHeight: '85%',
@@ -1640,22 +1664,22 @@ const styles = StyleSheet.create({
     modalTitle: {
         fontSize: 24,
         fontWeight: 'bold',
-        color: '#111827',
+        color: '#041226',
         marginBottom: 18,
     },
     selectedDateBox: {
-        backgroundColor: '#fff8e7',
+        backgroundColor: 'rgba(255, 255, 255, 0.92)',
         borderRadius: 10,
         padding: 14,
         alignItems: 'center',
         marginBottom: 18,
         borderWidth: 1,
-        borderColor: '#f0d58a',
+        borderColor: '#D8B84A',
     },
     selectedDateText: {
         fontSize: 20,
         fontWeight: 'bold',
-        color: '#111827',
+        color: '#041226',
     },
     modalButtonRow: {
         flexDirection: 'row',
@@ -1680,29 +1704,29 @@ const styles = StyleSheet.create({
         backgroundColor: '#86efac',
     },
     modalButtonText: {
-        color: '#fff',
+        color: '#D8B84A',
         fontSize: 16,
         fontWeight: 'bold',
         textAlign: 'center',
     },
     leaveInfoBox: {
-        backgroundColor: '#fff8e7',
+        backgroundColor: 'rgba(255, 255, 255, 0.92)',
         borderRadius: 12,
         borderWidth: 1,
-        borderColor: '#f0d58a',
+        borderColor: '#D8B84A',
         padding: 14,
         marginBottom: 16,
     },
     leaveInfoTitle: {
         fontSize: 20,
         fontWeight: 'bold',
-        color: '#7a4f01',
+        color: '#041226',
         marginBottom: 6,
     },
     leaveInfoText: {
         fontSize: 14,
         fontWeight: '600',
-        color: '#374151',
+        color: '#041226',
         marginBottom: 4,
     },
     replacementTabRow: {
@@ -1712,33 +1736,33 @@ const styles = StyleSheet.create({
     },
     replacementTab: {
         flex: 1,
-        backgroundColor: '#fff7df',
+        backgroundColor: 'rgba(255, 255, 255, 0.92)',
         paddingVertical: 14,
         paddingHorizontal: 10,
         borderRadius: 12,
         alignItems: 'center',
         borderWidth: 1,
-        borderColor: '#f0d58a',
+        borderColor: '#D8B84A',
     },
     activeReplacementTab: {
-        backgroundColor: '#c69214',
+        backgroundColor: '#041226',
     },
     replacementTabText: {
         fontSize: 15,
         fontWeight: 'bold',
-        color: '#7a4f01',
+        color: '#041226',
         textAlign: 'center',
     },
     activeReplacementTabText: {
-        color: '#fff',
+        color: '#D8B84A',
     },
     replacementList: {
         maxHeight: 260,
     },
     groupedReplacementCard: {
-        backgroundColor: '#fff8e7',
+        backgroundColor: 'rgba(255, 255, 255, 0.92)',
         borderWidth: 1,
-        borderColor: '#f0d58a',
+        borderColor: '#D8B84A',
         borderRadius: 12,
         padding: 16,
         alignItems: 'center',
@@ -1752,27 +1776,27 @@ const styles = StyleSheet.create({
     groupedReplacementName: {
         fontSize: 18,
         fontWeight: 'bold',
-        color: '#7a4f01',
+        color: '#041226',
         marginBottom: 6,
         textAlign: 'center',
     },
     groupedReplacementType: {
         fontSize: 14,
         fontWeight: '700',
-        color: '#6b7280',
+        color: '#5D6675',
         textAlign: 'center',
     },
     groupedReplacementDetails: {
         fontSize: 13,
         fontWeight: '600',
-        color: '#374151',
+        color: '#041226',
         textAlign: 'center',
         marginTop: 4,
     },
     noReplacementSelectButton: {
-        backgroundColor: '#fff8e7',
+        backgroundColor: 'rgba(255, 255, 255, 0.92)',
         borderWidth: 1,
-        borderColor: '#f0d58a',
+        borderColor: '#D8B84A',
         borderRadius: 12,
         padding: 16,
         alignItems: 'center',
@@ -1781,14 +1805,14 @@ const styles = StyleSheet.create({
     noReplacementSelectText: {
         fontSize: 18,
         fontWeight: 'bold',
-        color: '#7a4f01',
+        color: '#041226',
         textAlign: 'center',
     },
     noReplacementBox: {
         backgroundColor: '#fef3c7',
         borderRadius: 12,
         borderWidth: 1,
-        borderColor: '#fcd34d',
+        borderColor: '#D8B84A',
         padding: 16,
         alignItems: 'center',
         marginBottom: 12,
@@ -1807,19 +1831,19 @@ const styles = StyleSheet.create({
     },
 
     dateGroupHeader: {
-        backgroundColor: '#7a4f01',
+        backgroundColor: '#041226',
         borderRadius: 14,
         padding: 14,
         marginBottom: 12,
         marginTop: 8,
     },
     dateGroupTitle: {
-        color: '#fff',
+        color: '#D8B84A',
         fontSize: 20,
         fontWeight: 'bold',
     },
     dateGroupSubtitle: {
-        color: '#fff7df',
+        color: '#D8B84A',
         fontSize: 14,
         fontWeight: '700',
         marginTop: 4,
@@ -1850,20 +1874,20 @@ const styles = StyleSheet.create({
         elevation: 3,
     },
     autoAssignButtonText: {
-        color: '#fff',
+        color: '#D8B84A',
         fontSize: 16,
         fontWeight: 'bold',
         textAlign: 'center',
     },
     bulkAssignButton: {
-        backgroundColor: '#7a4f01',
+        backgroundColor: '#041226',
         padding: 15,
         borderRadius: 12,
         alignItems: 'center',
         marginBottom: 18,
     },
     bulkAssignButtonText: {
-        color: '#fff',
+        color: '#D8B84A',
         fontSize: 16,
         fontWeight: 'bold',
         textAlign: 'center',
@@ -1871,14 +1895,14 @@ const styles = StyleSheet.create({
     bulkPopupText: {
         fontSize: 16,
         fontWeight: '700',
-        color: '#374151',
+        color: '#041226',
         textAlign: 'center',
         marginBottom: 10,
     },
     bulkPopupCount: {
         fontSize: 16,
         fontWeight: 'bold',
-        color: '#7a4f01',
+        color: '#041226',
         textAlign: 'center',
         marginBottom: 12,
     },

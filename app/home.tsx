@@ -10,9 +10,10 @@ import {
     ScrollView,
     ImageBackground,
 } from 'react-native';
-import { router, useLocalSearchParams } from 'expo-router';
+import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { API_ENDPOINTS } from '../src/services/api';
 import { colors, spacing, shadows } from '../src/theme';
+import { images } from '../src/constants/images';
 
 type AdminStudentAttendance = {
     studentId: number;
@@ -485,415 +486,428 @@ export default function HomeScreen() {
     }
 
     return (
-        <View style={styles.screen}>
+        <>
+            <Stack.Screen options={{ headerShown: false }} />
             <ImageBackground
-                source={require('../assets/branding/india-ap-bg.png')}
-                style={styles.hero}
-                imageStyle={styles.heroImage}
-                resizeMode="contain"
+                source={images.splashGold}
+                style={styles.screen}
+                resizeMode="cover"
             >
-                <View style={styles.heroOverlay}>
-                    <View style={styles.heroTopRow}>
-                        <TouchableOpacity
-                            style={styles.backButton}
-                            onPress={() => router.push('/home-v2' as any)}
-                        >
-                            <Text style={styles.backButtonText}>‹</Text>
-                        </TouchableOpacity>
+                <View style={styles.goldOverlay}>
+                    <View style={styles.hero}>
+                        <View style={styles.heroOverlay}>
+                            <View style={styles.heroTopRow}>
+                                <TouchableOpacity
+                                    style={styles.backButton}
+                                    onPress={() =>
+                                        router.push({
+                                            pathname: '/home-v2',
+                                            params: {
+                                                role: userRole,
+                                                teacherId,
+                                                teacherName,
+                                            },
+                                        } as any)
+                                    }
+                                >
+                                    <Text style={styles.backButtonText}>‹</Text>
+                                </TouchableOpacity>
 
-                        <TouchableOpacity
-                            style={styles.menuIconButton}
-                            onPress={() => setShowMenuModal(true)}
-                        >
-                            <Text style={styles.menuIcon}>☰</Text>
-                        </TouchableOpacity>
-                    </View>
+                                <TouchableOpacity
+                                    style={styles.menuIconButton}
+                                    onPress={() => setShowMenuModal(true)}
+                                >
+                                    <Text style={styles.menuIcon}>☰</Text>
+                                </TouchableOpacity>
+                            </View>
 
-                    <Text style={styles.heroSmallText}>
-                        {isAdmin ? 'Admin Workspace' : 'Teacher Workspace'}
-                    </Text>
-
-                    <Text style={styles.heroTitle}>
-                        {isAdmin ? 'Student Dashboard' : 'Load Students'}
-                    </Text>
-
-                    <Text style={styles.heroSubtitle}>
-                        {isAdmin
-                            ? 'Filter attendance and review attention-needed students'
-                            : `Welcome, ${teacherName || 'Teacher'}`}
-                    </Text>
-                </View>
-            </ImageBackground>
-
-            <ScrollView
-                style={styles.container}
-                contentContainerStyle={styles.scrollContent}
-                showsVerticalScrollIndicator={false}
-            >
-                {!isAdmin && (
-                    <View style={styles.card}>
-                        <Text style={styles.cardTitle}>Select Class Details</Text>
-                        <Text style={styles.cardSubtitle}>
-                            Choose subject, class and section to load students for attendance.
-                        </Text>
-
-                        <Text style={styles.label}>Subject</Text>
-                        <TouchableOpacity
-                            style={styles.selectBox}
-                            onPress={() => setShowSubjectModal(true)}
-                        >
-                            <Text style={subject ? styles.selectText : styles.placeholderText}>
-                                {subject || 'Select Subject'}
-                            </Text>
-                        </TouchableOpacity>
-
-                        <Text style={styles.label}>Class</Text>
-                        <TouchableOpacity
-                            style={[styles.selectBox, !subject && styles.disabledBox]}
-                            disabled={!subject}
-                            onPress={() => setShowClassModal(true)}
-                        >
-                            <Text style={className ? styles.selectText : styles.placeholderText}>
-                                {className || 'Select Class'}
-                            </Text>
-                        </TouchableOpacity>
-
-                        <Text style={styles.label}>Section</Text>
-                        <TouchableOpacity
-                            style={[styles.selectBox, !className && styles.disabledBox]}
-                            disabled={!className}
-                            onPress={() => setShowSectionModal(true)}
-                        >
-                            <Text style={section ? styles.selectText : styles.placeholderText}>
-                                {section || 'Select Section'}
-                            </Text>
-                        </TouchableOpacity>
-
-                        <TouchableOpacity style={styles.primaryButton} onPress={handleLoadStudents}>
-                            <Text style={styles.primaryButtonText}>Load Students</Text>
-                        </TouchableOpacity>
-                    </View>
-                )}
-
-                {isAdmin && (
-                    <>
-                        <View style={styles.card}>
-                            <Text style={styles.cardTitle}>Attendance Filters</Text>
-                            <Text style={styles.cardSubtitle}>
-                                Select date, class, section and subject to view filtered attendance.
+                            <Text style={styles.heroSmallText}>
+                                {isAdmin ? 'Admin Workspace' : 'Teacher Workspace'}
                             </Text>
 
-                            <Text style={styles.label}>Attendance Date</Text>
+                            <Text style={styles.heroTitle}>
+                                {isAdmin ? 'Student Dashboard' : 'Load Students'}
+                            </Text>
 
-                            <TouchableOpacity
-                                style={styles.selectBox}
-                                onPress={openAdminDateModal}
-                            >
-                                <Text style={styles.selectText}>{attendanceDate}</Text>
-                            </TouchableOpacity>
-
-                            <Text style={styles.label}>Class</Text>
-                            <TouchableOpacity
-                                style={styles.selectBox}
-                                onPress={() => setShowAdminClassModal(true)}
-                            >
-                                <Text style={adminClassName ? styles.selectText : styles.placeholderText}>
-                                    {adminClassName || 'All Classes'}
-                                </Text>
-                            </TouchableOpacity>
-
-                            <Text style={styles.label}>Section</Text>
-                            <TouchableOpacity
-                                style={styles.selectBox}
-                                onPress={() => setShowAdminSectionModal(true)}
-                            >
-                                <Text style={adminSection ? styles.selectText : styles.placeholderText}>
-                                    {adminSection || 'All Sections'}
-                                </Text>
-                            </TouchableOpacity>
-
-                            <Text style={styles.label}>Subject</Text>
-                            <TouchableOpacity
-                                style={styles.selectBox}
-                                onPress={() => setShowAdminSubjectModal(true)}
-                            >
-                                <Text style={adminSubject ? styles.selectText : styles.placeholderText}>
-                                    {adminSubject || 'All Subjects'}
-                                </Text>
-                            </TouchableOpacity>
-
-                            <TouchableOpacity
-                                style={styles.primaryButton}
-                                onPress={() => loadAdminDashboard(attendanceDate)}
-                            >
-                                <Text style={styles.primaryButtonText}>Load Dashboard</Text>
-                            </TouchableOpacity>
+                            <Text style={styles.heroSubtitle}>
+                                {isAdmin
+                                    ? 'Filter attendance and review attention-needed students'
+                                    : `Welcome, ${teacherName || 'Teacher'}`}
+                            </Text>
                         </View>
+                    </View>
 
-                        {dashboardLoaded && (
-                            <View style={styles.resultSection}>
-                                <Text style={styles.sectionTitle}>Filtered Attendance Dashboard</Text>
-                                <Text style={styles.sectionSubtitle}>
-                                    Attendance Date: {adminDashboard.attendanceDate || attendanceDate}
+                    <ScrollView
+                        style={styles.container}
+                        contentContainerStyle={styles.scrollContent}
+                        showsVerticalScrollIndicator={false}
+                    >
+                        {!isAdmin && (
+                            <View style={styles.card}>
+                                <Text style={styles.cardTitle}>Select Class Details</Text>
+                                <Text style={styles.cardSubtitle}>
+                                    Choose subject, class and section to load students for attendance.
                                 </Text>
 
-                                <View style={styles.summaryGrid}>
-                                    <SummaryCard title="Total" value={adminDashboard.totalStudents} icon="👥" />
-                                    <SummaryCard title="Present" value={adminDashboard.presentStudents} icon="✅" />
-                                    <SummaryCard title="Absent" value={adminDashboard.absentStudents} icon="🚫" />
-                                    <SummaryCard title="Late" value={adminDashboard.lateStudents} icon="⏰" />
-                                </View>
-
-                                <View style={styles.percentageCard}>
-                                    <Text style={styles.percentageLabel}>Attendance Percentage</Text>
-                                    <Text style={styles.percentageValue}>
-                                        {adminDashboard.attendancePercentage.toFixed(2)}%
+                                <Text style={styles.label}>Subject</Text>
+                                <TouchableOpacity
+                                    style={styles.selectBox}
+                                    onPress={() => setShowSubjectModal(true)}
+                                >
+                                    <Text style={subject ? styles.selectText : styles.placeholderText}>
+                                        {subject || 'Select Subject'}
                                     </Text>
-                                </View>
+                                </TouchableOpacity>
 
-                                <Text style={styles.sectionTitle}>Attention Needed Students</Text>
+                                <Text style={styles.label}>Class</Text>
+                                <TouchableOpacity
+                                    style={[styles.selectBox, !subject && styles.disabledBox]}
+                                    disabled={!subject}
+                                    onPress={() => setShowClassModal(true)}
+                                >
+                                    <Text style={className ? styles.selectText : styles.placeholderText}>
+                                        {className || 'Select Class'}
+                                    </Text>
+                                </TouchableOpacity>
 
-                                {adminStudentAttendance.length === 0 ? (
-                                    <View style={styles.emptyBox}>
-                                        <Text style={styles.emptyText}>
-                                            No absent or repeated late students found.
-                                        </Text>
-                                    </View>
-                                ) : (
-                                    adminStudentAttendance.map((item, index) => (
-                                        <View
-                                            key={`${item.studentId}-${item.subjectName}-${item.attendanceDate}-${index}`}
-                                            style={styles.studentAttendanceCard}
-                                        >
-                                            <View style={styles.studentCardHeader}>
-                                                <Text style={styles.studentName}>
-                                                    {item.studentName}
-                                                </Text>
+                                <Text style={styles.label}>Section</Text>
+                                <TouchableOpacity
+                                    style={[styles.selectBox, !className && styles.disabledBox]}
+                                    disabled={!className}
+                                    onPress={() => setShowSectionModal(true)}
+                                >
+                                    <Text style={section ? styles.selectText : styles.placeholderText}>
+                                        {section || 'Select Section'}
+                                    </Text>
+                                </TouchableOpacity>
 
-                                                <Text style={[styles.statusBadge, getStatusStyle(item.status)]}>
-                                                    {item.status}
-                                                </Text>
-                                            </View>
-
-                                            <Text style={styles.studentDetail}>
-                                                Class {item.className} - Section {item.section}
-                                            </Text>
-
-                                            <Text style={styles.studentDetail}>
-                                                Subject: {item.subjectName}
-                                            </Text>
-
-                                            <Text style={styles.studentDetail}>
-                                                Date: {item.attendanceDate}
-                                            </Text>
-
-                                            {item.alertReason && (
-                                                <Text style={styles.alertReasonText}>
-                                                    Reason: {item.alertReason}
-                                                </Text>
-                                            )}
-                                        </View>
-                                    ))
-                                )}
+                                <TouchableOpacity style={styles.primaryButton} onPress={handleLoadStudents}>
+                                    <Text style={styles.primaryButtonText}>Load Students</Text>
+                                </TouchableOpacity>
                             </View>
                         )}
-                    </>
-                )}
 
-                <Modal visible={showMenuModal} transparent animationType="fade">
-                    <TouchableOpacity
-                        style={styles.menuOverlay}
-                        activeOpacity={1}
-                        onPress={() => setShowMenuModal(false)}
-                    >
-                        <View style={styles.menuBox}>
-                            {isAdmin ? (
-                                <>
-                                    <MenuItem title="Admin Teacher Dashboard" onPress={navigateToAdminTeacherDashboard} />
-                                    <MenuItem title="Teacher Leave Planning" onPress={navigateToTeacherLeavePlanning} />
-                                    <MenuItem title="Admin Parent Dashboard" onPress={navigateToAdminParentDashboard} />
-                                    <MenuItem title="Attendance Report" onPress={navigateToAttendanceReport} />
-                                    <MenuItem title="Import School Data" onPress={navigateToImportSchoolData} />
-                                    <MenuItem title="Register Teacher" onPress={navigateToRegisterTeacher} />
-                                    <MenuItem title="Register Parent" onPress={navigateToRegisterParent} />
-                                    <MenuItem title="Register Student" onPress={navigateToRegisterStudent} />
-                                    <MenuItem title="Teacher Assignments" onPress={navigateToTeacherAssignments} />
-                                </>
-                            ) : (
-                                <>
-                                    <MenuItem title="Teacher Dashboard" onPress={navigateToTeacherDashboard} />
-                                    <MenuItem title="Load Date Summary" onPress={navigateToDateSummary} />
-                                    <MenuItem title="Attendance Report" onPress={navigateToAttendanceReport} />
-                                </>
-                            )}
-
-                            <TouchableOpacity style={styles.menuItem} onPress={handleLogout}>
-                                <Text style={styles.logoutText}>Logout</Text>
-                            </TouchableOpacity>
-                        </View>
-                    </TouchableOpacity>
-                </Modal>
-
-                <Modal visible={showAdminDateModal} transparent animationType="fade">
-                    <View style={styles.calendarOverlay}>
-                        <View style={styles.calendarModalBox}>
-                            <Text style={styles.calendarTitle}>Select Dashboard Date</Text>
-
-                            <Text style={styles.calendarLabel}>Dashboard Date</Text>
-
-                            <View style={styles.selectedDateBox}>
-                                <Text style={styles.selectedDateText}>{selectedAdminDate}</Text>
-                            </View>
-
-                            <View style={styles.monthRow}>
-                                <TouchableOpacity onPress={goToPreviousMonth}>
-                                    <Text style={styles.monthArrow}>‹</Text>
-                                </TouchableOpacity>
-
-                                <Text style={styles.monthTitle}>
-                                    {monthNames[calendarMonth]} {calendarYear}
-                                </Text>
-
-                                <TouchableOpacity onPress={goToNextMonth}>
-                                    <Text style={styles.monthArrow}>›</Text>
-                                </TouchableOpacity>
-                            </View>
-
-                            <View style={styles.weekRow}>
-                                {weekDays.map((day) => (
-                                    <Text key={day} style={styles.weekDayText}>
-                                        {day}
+                        {isAdmin && (
+                            <>
+                                <View style={styles.card}>
+                                    <Text style={styles.cardTitle}>Attendance Filters</Text>
+                                    <Text style={styles.cardSubtitle}>
+                                        Select date, class, section and subject to view filtered attendance.
                                     </Text>
-                                ))}
-                            </View>
 
-                            <View style={styles.daysGrid}>
-                                {getCalendarDays().map((item, index) => {
-                                    const isSelected = item.date === selectedAdminDate;
-                                    const isFutureDate = item.date > todayString;
+                                    <Text style={styles.label}>Attendance Date</Text>
 
-                                    return (
-                                        <TouchableOpacity
-                                            key={`${item.date}-${index}`}
-                                            style={[
-                                                styles.dayButton,
-                                                isSelected && styles.selectedDayButton,
-                                                isFutureDate && styles.disabledDayButton,
-                                            ]}
-                                            disabled={isFutureDate}
-                                            onPress={() => {
-                                                if (!isFutureDate) {
-                                                    setSelectedAdminDate(item.date);
-                                                }
-                                            }}
-                                        >
-                                            <Text
-                                                style={[
-                                                    styles.dayText,
-                                                    !item.currentMonth && styles.otherMonthDayText,
-                                                    isFutureDate && styles.futureDayText,
-                                                    isSelected && styles.selectedDayText,
-                                                ]}
-                                            >
-                                                {item.day}
+                                    <TouchableOpacity
+                                        style={styles.selectBox}
+                                        onPress={openAdminDateModal}
+                                    >
+                                        <Text style={styles.selectText}>{attendanceDate}</Text>
+                                    </TouchableOpacity>
+
+                                    <Text style={styles.label}>Class</Text>
+                                    <TouchableOpacity
+                                        style={styles.selectBox}
+                                        onPress={() => setShowAdminClassModal(true)}
+                                    >
+                                        <Text style={adminClassName ? styles.selectText : styles.placeholderText}>
+                                            {adminClassName || 'All Classes'}
+                                        </Text>
+                                    </TouchableOpacity>
+
+                                    <Text style={styles.label}>Section</Text>
+                                    <TouchableOpacity
+                                        style={styles.selectBox}
+                                        onPress={() => setShowAdminSectionModal(true)}
+                                    >
+                                        <Text style={adminSection ? styles.selectText : styles.placeholderText}>
+                                            {adminSection || 'All Sections'}
+                                        </Text>
+                                    </TouchableOpacity>
+
+                                    <Text style={styles.label}>Subject</Text>
+                                    <TouchableOpacity
+                                        style={styles.selectBox}
+                                        onPress={() => setShowAdminSubjectModal(true)}
+                                    >
+                                        <Text style={adminSubject ? styles.selectText : styles.placeholderText}>
+                                            {adminSubject || 'All Subjects'}
+                                        </Text>
+                                    </TouchableOpacity>
+
+                                    <TouchableOpacity
+                                        style={styles.primaryButton}
+                                        onPress={() => loadAdminDashboard(attendanceDate)}
+                                    >
+                                        <Text style={styles.primaryButtonText}>Load Dashboard</Text>
+                                    </TouchableOpacity>
+                                </View>
+
+                                {dashboardLoaded && (
+                                    <View style={styles.resultSection}>
+                                        <Text style={styles.sectionTitle}>Filtered Attendance Dashboard</Text>
+                                        <Text style={styles.sectionSubtitle}>
+                                            Attendance Date: {adminDashboard.attendanceDate || attendanceDate}
+                                        </Text>
+
+                                        <View style={styles.summaryGrid}>
+                                            <SummaryCard title="Total" value={adminDashboard.totalStudents} icon="👥" />
+                                            <SummaryCard title="Present" value={adminDashboard.presentStudents} icon="✅" />
+                                            <SummaryCard title="Absent" value={adminDashboard.absentStudents} icon="🚫" />
+                                            <SummaryCard title="Late" value={adminDashboard.lateStudents} icon="⏰" />
+                                        </View>
+
+                                        <View style={styles.percentageCard}>
+                                            <Text style={styles.percentageLabel}>Attendance Percentage</Text>
+                                            <Text style={styles.percentageValue}>
+                                                {adminDashboard.attendancePercentage.toFixed(2)}%
                                             </Text>
+                                        </View>
+
+                                        <Text style={styles.sectionTitle}>Attention Needed Students</Text>
+
+                                        {adminStudentAttendance.length === 0 ? (
+                                            <View style={styles.emptyBox}>
+                                                <Text style={styles.emptyText}>
+                                                    No absent or repeated late students found.
+                                                </Text>
+                                            </View>
+                                        ) : (
+                                            adminStudentAttendance.map((item, index) => (
+                                                <View
+                                                    key={`${item.studentId}-${item.subjectName}-${item.attendanceDate}-${index}`}
+                                                    style={styles.studentAttendanceCard}
+                                                >
+                                                    <View style={styles.studentCardHeader}>
+                                                        <Text style={styles.studentName}>
+                                                            {item.studentName}
+                                                        </Text>
+
+                                                        <Text style={[styles.statusBadge, getStatusStyle(item.status)]}>
+                                                            {item.status}
+                                                        </Text>
+                                                    </View>
+
+                                                    <Text style={styles.studentDetail}>
+                                                        Class {item.className} - Section {item.section}
+                                                    </Text>
+
+                                                    <Text style={styles.studentDetail}>
+                                                        Subject: {item.subjectName}
+                                                    </Text>
+
+                                                    <Text style={styles.studentDetail}>
+                                                        Date: {item.attendanceDate}
+                                                    </Text>
+
+                                                    {item.alertReason && (
+                                                        <Text style={styles.alertReasonText}>
+                                                            Reason: {item.alertReason}
+                                                        </Text>
+                                                    )}
+                                                </View>
+                                            ))
+                                        )}
+                                    </View>
+                                )}
+                            </>
+                        )}
+
+                        <Modal visible={showMenuModal} transparent animationType="fade">
+                            <TouchableOpacity
+                                style={styles.menuOverlay}
+                                activeOpacity={1}
+                                onPress={() => setShowMenuModal(false)}
+                            >
+                                <View style={styles.menuBox}>
+                                    {isAdmin ? (
+                                        <>
+                                            <MenuItem title="Admin Teacher Dashboard" onPress={navigateToAdminTeacherDashboard} />
+                                            <MenuItem title="Teacher Leave Planning" onPress={navigateToTeacherLeavePlanning} />
+                                            <MenuItem title="Admin Parent Dashboard" onPress={navigateToAdminParentDashboard} />
+                                            <MenuItem title="Attendance Report" onPress={navigateToAttendanceReport} />
+                                            <MenuItem title="Import School Data" onPress={navigateToImportSchoolData} />
+                                            <MenuItem title="Register Teacher" onPress={navigateToRegisterTeacher} />
+                                            <MenuItem title="Register Parent" onPress={navigateToRegisterParent} />
+                                            <MenuItem title="Register Student" onPress={navigateToRegisterStudent} />
+                                            <MenuItem title="Teacher Assignments" onPress={navigateToTeacherAssignments} />
+                                        </>
+                                    ) : (
+                                        <>
+                                            <MenuItem title="Teacher Dashboard" onPress={navigateToTeacherDashboard} />
+                                            <MenuItem title="Load Date Summary" onPress={navigateToDateSummary} />
+                                            <MenuItem title="Attendance Report" onPress={navigateToAttendanceReport} />
+                                        </>
+                                    )}
+
+                                    <TouchableOpacity style={styles.menuItem} onPress={handleLogout}>
+                                        <Text style={styles.logoutText}>Logout</Text>
+                                    </TouchableOpacity>
+                                </View>
+                            </TouchableOpacity>
+                        </Modal>
+
+                        <Modal visible={showAdminDateModal} transparent animationType="fade">
+                            <View style={styles.calendarOverlay}>
+                                <View style={styles.calendarModalBox}>
+                                    <Text style={styles.calendarTitle}>Select Dashboard Date</Text>
+
+                                    <Text style={styles.calendarLabel}>Dashboard Date</Text>
+
+                                    <View style={styles.selectedDateBox}>
+                                        <Text style={styles.selectedDateText}>{selectedAdminDate}</Text>
+                                    </View>
+
+                                    <View style={styles.monthRow}>
+                                        <TouchableOpacity onPress={goToPreviousMonth}>
+                                            <Text style={styles.monthArrow}>‹</Text>
                                         </TouchableOpacity>
-                                    );
-                                })}
+
+                                        <Text style={styles.monthTitle}>
+                                            {monthNames[calendarMonth]} {calendarYear}
+                                        </Text>
+
+                                        <TouchableOpacity onPress={goToNextMonth}>
+                                            <Text style={styles.monthArrow}>›</Text>
+                                        </TouchableOpacity>
+                                    </View>
+
+                                    <View style={styles.weekRow}>
+                                        {weekDays.map((day) => (
+                                            <Text key={day} style={styles.weekDayText}>
+                                                {day}
+                                            </Text>
+                                        ))}
+                                    </View>
+
+                                    <View style={styles.daysGrid}>
+                                        {getCalendarDays().map((item, index) => {
+                                            const isSelected = item.date === selectedAdminDate;
+                                            const isFutureDate = item.date > todayString;
+
+                                            return (
+                                                <TouchableOpacity
+                                                    key={`${item.date}-${index}`}
+                                                    style={[
+                                                        styles.dayButton,
+                                                        isSelected && styles.selectedDayButton,
+                                                        isFutureDate && styles.disabledDayButton,
+                                                    ]}
+                                                    disabled={isFutureDate}
+                                                    onPress={() => {
+                                                        if (!isFutureDate) {
+                                                            setSelectedAdminDate(item.date);
+                                                        }
+                                                    }}
+                                                >
+                                                    <Text
+                                                        style={[
+                                                            styles.dayText,
+                                                            !item.currentMonth && styles.otherMonthDayText,
+                                                            isFutureDate && styles.futureDayText,
+                                                            isSelected && styles.selectedDayText,
+                                                        ]}
+                                                    >
+                                                        {item.day}
+                                                    </Text>
+                                                </TouchableOpacity>
+                                            );
+                                        })}
+                                    </View>
+
+                                    <View style={styles.calendarButtonRow}>
+                                        <TouchableOpacity
+                                            style={styles.cancelDateButton}
+                                            onPress={() => setShowAdminDateModal(false)}
+                                        >
+                                            <Text style={styles.calendarButtonText}>Cancel</Text>
+                                        </TouchableOpacity>
+
+                                        <TouchableOpacity
+                                            style={styles.confirmDateButton}
+                                            onPress={confirmAdminDate}
+                                        >
+                                            <Text style={styles.calendarButtonText}>Confirm Date</Text>
+                                        </TouchableOpacity>
+                                    </View>
+                                </View>
                             </View>
+                        </Modal>
 
-                            <View style={styles.calendarButtonRow}>
-                                <TouchableOpacity
-                                    style={styles.cancelDateButton}
-                                    onPress={() => setShowAdminDateModal(false)}
-                                >
-                                    <Text style={styles.calendarButtonText}>Cancel</Text>
-                                </TouchableOpacity>
+                        <OptionModal
+                            visible={showAdminClassModal}
+                            title="Select Class"
+                            options={adminClassOptions}
+                            getLabel={(item) => (item === 'All' ? 'All Classes' : `Class ${item}`)}
+                            onSelect={(item) => {
+                                setAdminClassName(item === 'All' ? '' : item);
+                                setShowAdminClassModal(false);
+                            }}
+                            onClose={() => setShowAdminClassModal(false)}
+                        />
 
-                                <TouchableOpacity
-                                    style={styles.confirmDateButton}
-                                    onPress={confirmAdminDate}
-                                >
-                                    <Text style={styles.calendarButtonText}>Confirm Date</Text>
-                                </TouchableOpacity>
-                            </View>
-                        </View>
-                    </View>
-                </Modal>
+                        <OptionModal
+                            visible={showAdminSectionModal}
+                            title="Select Section"
+                            options={adminSectionOptions}
+                            getLabel={(item) => (item === 'All' ? 'All Sections' : `Section ${item}`)}
+                            onSelect={(item) => {
+                                setAdminSection(item === 'All' ? '' : item);
+                                setShowAdminSectionModal(false);
+                            }}
+                            onClose={() => setShowAdminSectionModal(false)}
+                        />
 
-                <OptionModal
-                    visible={showAdminClassModal}
-                    title="Select Class"
-                    options={adminClassOptions}
-                    getLabel={(item) => (item === 'All' ? 'All Classes' : `Class ${item}`)}
-                    onSelect={(item) => {
-                        setAdminClassName(item === 'All' ? '' : item);
-                        setShowAdminClassModal(false);
-                    }}
-                    onClose={() => setShowAdminClassModal(false)}
-                />
+                        <OptionModal
+                            visible={showAdminSubjectModal}
+                            title="Select Subject"
+                            options={adminSubjectOptions}
+                            getLabel={(item) => (item === 'All' ? 'All Subjects' : item)}
+                            onSelect={(item) => {
+                                setAdminSubject(item === 'All' ? '' : item);
+                                setShowAdminSubjectModal(false);
+                            }}
+                            onClose={() => setShowAdminSubjectModal(false)}
+                        />
 
-                <OptionModal
-                    visible={showAdminSectionModal}
-                    title="Select Section"
-                    options={adminSectionOptions}
-                    getLabel={(item) => (item === 'All' ? 'All Sections' : `Section ${item}`)}
-                    onSelect={(item) => {
-                        setAdminSection(item === 'All' ? '' : item);
-                        setShowAdminSectionModal(false);
-                    }}
-                    onClose={() => setShowAdminSectionModal(false)}
-                />
+                        <OptionModal
+                            visible={showSubjectModal}
+                            title="Select Subject"
+                            options={subjects}
+                            getLabel={(item) => item}
+                            onSelect={(item) => {
+                                setSubject(item);
+                                setShowSubjectModal(false);
+                            }}
+                            onClose={() => setShowSubjectModal(false)}
+                        />
 
-                <OptionModal
-                    visible={showAdminSubjectModal}
-                    title="Select Subject"
-                    options={adminSubjectOptions}
-                    getLabel={(item) => (item === 'All' ? 'All Subjects' : item)}
-                    onSelect={(item) => {
-                        setAdminSubject(item === 'All' ? '' : item);
-                        setShowAdminSubjectModal(false);
-                    }}
-                    onClose={() => setShowAdminSubjectModal(false)}
-                />
+                        <OptionModal
+                            visible={showClassModal}
+                            title="Select Class"
+                            options={classes}
+                            getLabel={(item) => `Class ${item}`}
+                            onSelect={(item) => {
+                                setClassName(item);
+                                setShowClassModal(false);
+                            }}
+                            onClose={() => setShowClassModal(false)}
+                        />
 
-                <OptionModal
-                    visible={showSubjectModal}
-                    title="Select Subject"
-                    options={subjects}
-                    getLabel={(item) => item}
-                    onSelect={(item) => {
-                        setSubject(item);
-                        setShowSubjectModal(false);
-                    }}
-                    onClose={() => setShowSubjectModal(false)}
-                />
-
-                <OptionModal
-                    visible={showClassModal}
-                    title="Select Class"
-                    options={classes}
-                    getLabel={(item) => `Class ${item}`}
-                    onSelect={(item) => {
-                        setClassName(item);
-                        setShowClassModal(false);
-                    }}
-                    onClose={() => setShowClassModal(false)}
-                />
-
-                <OptionModal
-                    visible={showSectionModal}
-                    title="Select Section"
-                    options={sections}
-                    getLabel={(item) => `Section ${item}`}
-                    onSelect={(item) => {
-                        setSection(item);
-                        setShowSectionModal(false);
-                    }}
-                    onClose={() => setShowSectionModal(false)}
-                />
-            </ScrollView>
-        </View>
+                        <OptionModal
+                            visible={showSectionModal}
+                            title="Select Section"
+                            options={sections}
+                            getLabel={(item) => `Section ${item}`}
+                            onSelect={(item) => {
+                                setSection(item);
+                                setShowSectionModal(false);
+                            }}
+                            onClose={() => setShowSectionModal(false)}
+                        />
+                    </ScrollView>
+                </View>
+            </ImageBackground>
+        </>
     );
 }
 
@@ -976,11 +990,13 @@ function OptionModal({
 const styles = StyleSheet.create({
     screen: {
         flex: 1,
-        backgroundColor: '#FFF8DF',
+    },
+    goldOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(255,255,255,0.15)',
     },
     hero: {
-        height: 270,
-        backgroundColor: colors.primaryNavy,
+        height: 230,
     },
     heroImage: {
         width: '100%',
@@ -988,15 +1004,15 @@ const styles = StyleSheet.create({
     },
     heroOverlay: {
         flex: 1,
-        backgroundColor: 'rgba(212, 175, 55, 0.84)',
-        paddingTop: 56,
+        backgroundColor: 'transparent',
+        paddingTop: 46,
         paddingHorizontal: 22,
     },
     heroTopRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: 26,
+        marginBottom: 16,
     },
     backButton: {
         width: 42,
@@ -1032,11 +1048,11 @@ const styles = StyleSheet.create({
         marginBottom: 4,
     },
     heroTitle: {
-        fontSize: 38,
-        lineHeight: 42,
+        fontSize: 36,
+        lineHeight: 40,
         fontWeight: '900',
         color: colors.primaryNavy,
-        marginBottom: 6,
+        marginBottom: 4,
     },
     heroSubtitle: {
         fontSize: 15,
@@ -1044,14 +1060,15 @@ const styles = StyleSheet.create({
         fontWeight: '700',
         color: colors.primaryNavy,
         opacity: 0.9,
+        marginTop: 35,
     },
     container: {
         flex: 1,
-        marginTop: -42,
+        marginTop: 10,
     },
     scrollContent: {
         paddingHorizontal: 18,
-        paddingBottom: 60,
+        paddingBottom: 90,
     },
     center: {
         flex: 1,

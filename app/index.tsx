@@ -14,7 +14,7 @@ export default function Index() {
     return (
         <View style={styles.container}>
             <Image
-                source={require('../assets/branding/splash-bg.png')}
+                source={require('../assets/branding/splash-dark.png')}
                 style={styles.image}
                 resizeMode="cover"
             />
