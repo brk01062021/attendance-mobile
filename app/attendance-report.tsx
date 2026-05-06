@@ -1,16 +1,18 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
-    View,
-    Text,
-    TouchableOpacity,
-    StyleSheet,
-    ScrollView,
-    Alert,
-    Modal,
-    TextInput,
     ActivityIndicator,
+    Alert,
+    ImageBackground,
+    Modal,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
+import { colors, spacing, shadows } from '../src/theme';
 
 const BASE_URL = 'http://192.168.1.75:8080';
 
@@ -27,7 +29,7 @@ type ReportItem = {
 export default function AttendanceReportScreen() {
     const { role } = useLocalSearchParams();
 
-    const userRole = String(role || 'TEACHER').toUpperCase();
+    const userRole = String(role || 'ADMIN').toUpperCase();
     const isAdmin = userRole === 'ADMIN';
 
     const [date, setDate] = useState('2026-04-27');
@@ -61,8 +63,6 @@ export default function AttendanceReportScreen() {
             daysBack = 6;
         } else if (sortBy.includes('Monthly')) {
             daysBack = 29;
-        } else {
-            daysBack = 0;
         }
 
         for (let i = daysBack; i >= 0; i--) {
@@ -115,7 +115,9 @@ export default function AttendanceReportScreen() {
                         existing.attendancePercentage =
                             existing.totalRecords === 0
                                 ? 0
-                                : ((existing.present + existing.late) / existing.totalRecords) * 100;
+                                : ((existing.present + existing.late) /
+                                    existing.totalRecords) *
+                                100;
 
                         map.set(key, existing);
                     });
@@ -134,299 +136,445 @@ export default function AttendanceReportScreen() {
 
     const handleLoadReport = () => {
         if (!isAdmin) {
-            Alert.alert('Info', 'Teacher attendance report will be connected next');
+            Alert.alert(
+                'Teacher Report',
+                'Teacher attendance reports will be connected next.'
+            );
             return;
         }
 
         loadAdminReport();
     };
 
-    const getSortedReport = () => {
+    const sortedReport = useMemo(() => {
         const data = [...reportData];
 
         if (sortBy === 'Class Name') {
             data.sort((a, b) =>
-                `${a.className}-${a.section}`.localeCompare(`${b.className}-${b.section}`)
+                `${a.className}-${a.section}`.localeCompare(
+                    `${b.className}-${b.section}`
+                )
             );
         } else if (
             sortBy === 'Least Weekly Attendance' ||
             sortBy === 'Least Monthly Attendance'
         ) {
-            data.sort((a, b) => a.attendancePercentage - b.attendancePercentage);
+            data.sort(
+                (a, b) => a.attendancePercentage - b.attendancePercentage
+            );
         } else {
-            data.sort((a, b) => b.attendancePercentage - a.attendancePercentage);
+            data.sort(
+                (a, b) => b.attendancePercentage - a.attendancePercentage
+            );
         }
 
         return data;
-    };
+    }, [reportData, sortBy]);
 
     return (
-        <ScrollView style={styles.container}>
-            <Text style={styles.title}>
-                {isAdmin ? 'Admin Attendance Report' : 'Attendance Report'}
-            </Text>
-
-            <Text style={styles.label}>Report Date</Text>
-            <TextInput
-                style={styles.input}
-                value={date}
-                onChangeText={setDate}
-                placeholder="YYYY-MM-DD"
-            />
-
-            {isAdmin && (
-                <TouchableOpacity
-                    style={styles.sortButton}
-                    onPress={() => setShowSortModal(true)}
-                >
-                    <Text style={styles.sortButtonText}>Sort By: {sortBy}</Text>
-                </TouchableOpacity>
-            )}
-
-            <TouchableOpacity
-                style={[styles.button, loading && styles.disabledButton]}
-                onPress={handleLoadReport}
-                disabled={loading}
+        <ImageBackground
+            source={require('../assets/branding/splash-gold.png')}
+            style={styles.background}
+            resizeMode="cover"
+        >
+            <ScrollView
+                contentContainerStyle={styles.container}
+                showsVerticalScrollIndicator={false}
             >
-                {loading ? (
-                    <ActivityIndicator color="#fff" />
-                ) : (
-                    <Text style={styles.buttonText}>Load Attendance Report</Text>
-                )}
-            </TouchableOpacity>
+                <Text style={styles.title}>
+                    {isAdmin
+                        ? 'Admin Attendance Reports'
+                        : 'Attendance Reports'}
+                </Text>
 
-            {!loading && hasLoadedOnce && reportData.length === 0 && (
-                <View style={styles.noDataCard}>
-                    <Text style={styles.noDataTitle}>No Data Found</Text>
-                    <Text style={styles.noDataText}>
-                        No attendance report data found for selected date.
-                    </Text>
+                <View style={styles.filterCard}>
+                    <Text style={styles.label}>Report Date</Text>
+
+                    <TextInput
+                        style={styles.input}
+                        value={date}
+                        onChangeText={setDate}
+                        placeholder="YYYY-MM-DD"
+                        placeholderTextColor="#6B7280"
+                    />
+
+                    {isAdmin && (
+                        <TouchableOpacity
+                            style={styles.sortButton}
+                            onPress={() => setShowSortModal(true)}
+                            activeOpacity={0.85}
+                        >
+                            <Text style={styles.sortButtonText}>
+                                Sort By: {sortBy}
+                            </Text>
+                        </TouchableOpacity>
+                    )}
+
+                    <TouchableOpacity
+                        style={[
+                            styles.loadButton,
+                            loading && styles.disabledButton,
+                        ]}
+                        onPress={handleLoadReport}
+                        disabled={loading}
+                        activeOpacity={0.9}
+                    >
+                        {loading ? (
+                            <ActivityIndicator color={colors.primaryNavy} />
+                        ) : (
+                            <Text style={styles.loadButtonText}>
+                                Load Attendance Report
+                            </Text>
+                        )}
+                    </TouchableOpacity>
                 </View>
-            )}
 
-            {!loading &&
-                getSortedReport().map((item, index) => (
-                    <View key={index} style={styles.card}>
-                        <Text style={styles.cardTitle}>
-                            Class {item.className} - Section {item.section}
+                {!loading && hasLoadedOnce && reportData.length === 0 && (
+                    <View style={styles.noDataCard}>
+                        <Text style={styles.noDataTitle}>No Data Found</Text>
+
+                        <Text style={styles.noDataText}>
+                            No attendance report data found for selected date.
                         </Text>
+                    </View>
+                )}
 
-                        <Text style={styles.cardText}>Total Records: {item.totalRecords}</Text>
-                        <Text style={styles.present}>Present: {item.present}</Text>
-                        <Text style={styles.absent}>Absent: {item.absent}</Text>
-                        <Text style={styles.late}>Late: {item.late}</Text>
+                {!loading &&
+                    sortedReport.map((item, index) => (
+                        <View key={index} style={styles.reportCard}>
+                            <View style={styles.cardHeader}>
+                                <Text style={styles.cardTitle}>
+                                    Class {item.className} - Section{' '}
+                                    {item.section}
+                                </Text>
 
-                        <Text style={styles.percentage}>
-                            Attendance: {item.attendancePercentage.toFixed(2)}%
-                        </Text>
+                                <Text style={styles.attendancePercent}>
+                                    {item.attendancePercentage.toFixed(1)}%
+                                </Text>
+                            </View>
 
-                        <View style={styles.progressBarBackground}>
-                            <View
-                                style={[
-                                    styles.progressBarFill,
-                                    { width: `${item.attendancePercentage}%` },
-                                ]}
-                            />
+                            <View style={styles.statsGrid}>
+                                <StatBox title="Total" value={item.totalRecords} />
+                                <StatBox
+                                    title="Present"
+                                    value={item.present}
+                                    color={colors.successGreen}
+                                />
+                                <StatBox
+                                    title="Absent"
+                                    value={item.absent}
+                                    color="#DC2626"
+                                />
+                                <StatBox
+                                    title="Late"
+                                    value={item.late}
+                                    color="#D97706"
+                                />
+                            </View>
+
+                            <View style={styles.progressBackground}>
+                                <View
+                                    style={[
+                                        styles.progressFill,
+                                        {
+                                            width: `${Math.min(
+                                                item.attendancePercentage,
+                                                100
+                                            )}%`,
+                                        },
+                                    ]}
+                                />
+                            </View>
+                        </View>
+                    ))}
+
+                <Modal visible={showSortModal} transparent animationType="fade">
+                    <View style={styles.modalOverlay}>
+                        <View style={styles.modalBox}>
+                            <Text style={styles.modalTitle}>
+                                Sort Attendance Report
+                            </Text>
+
+                            {sortOptions.map((option) => (
+                                <TouchableOpacity
+                                    key={option}
+                                    style={styles.optionButton}
+                                    onPress={() => {
+                                        setSortBy(option);
+                                        setShowSortModal(false);
+                                    }}
+                                >
+                                    <Text style={styles.optionText}>
+                                        {option}
+                                    </Text>
+                                </TouchableOpacity>
+                            ))}
+
+                            <TouchableOpacity
+                                style={styles.closeButton}
+                                onPress={() => setShowSortModal(false)}
+                            >
+                                <Text style={styles.closeButtonText}>
+                                    Close
+                                </Text>
+                            </TouchableOpacity>
                         </View>
                     </View>
-                ))}
+                </Modal>
+            </ScrollView>
+        </ImageBackground>
+    );
+}
 
-            <Modal visible={showSortModal} transparent animationType="fade">
-                <View style={styles.modalOverlay}>
-                    <View style={styles.modalBox}>
-                        <Text style={styles.modalTitle}>Sort Attendance Report</Text>
-
-                        {sortOptions.map((option) => (
-                            <TouchableOpacity
-                                key={option}
-                                style={styles.optionButton}
-                                onPress={() => {
-                                    setSortBy(option);
-                                    setShowSortModal(false);
-                                }}
-                            >
-                                <Text style={styles.optionText}>{option}</Text>
-                            </TouchableOpacity>
-                        ))}
-
-                        <TouchableOpacity
-                            style={styles.closeButton}
-                            onPress={() => setShowSortModal(false)}
-                        >
-                            <Text style={styles.closeButtonText}>Close</Text>
-                        </TouchableOpacity>
-                    </View>
-                </View>
-            </Modal>
-        </ScrollView>
+function StatBox({
+                     title,
+                     value,
+                     color = colors.primaryNavy,
+                 }: {
+    title: string;
+    value: number;
+    color?: string;
+}) {
+    return (
+        <View style={styles.statBox}>
+            <Text style={styles.statTitle}>{title}</Text>
+            <Text style={[styles.statValue, { color }]}>{value}</Text>
+        </View>
     );
 }
 
 const styles = StyleSheet.create({
-    container: {
+    background: {
         flex: 1,
-        padding: 22,
-        backgroundColor: '#fff',
+        backgroundColor: '#F6E7B0',
     },
+
+    container: {
+        padding: spacing.screenPadding,
+        paddingBottom: spacing.xxxl,
+    },
+
     title: {
-        fontSize: 27,
-        fontWeight: 'bold',
-        marginBottom: 20,
-        color: '#111827',
+        fontSize: 30,
+        fontWeight: '900',
+        color: colors.primaryNavy,
+        textAlign: 'center',
+        marginTop: spacing.xl,
+        marginBottom: spacing.xl,
     },
+
+    filterCard: {
+        backgroundColor: 'rgba(255,255,255,0.96)',
+        borderRadius: 24,
+        borderWidth: 1.5,
+        borderColor: colors.cardGoldBorder,
+        padding: spacing.xl,
+        marginBottom: spacing.xl,
+        ...shadows.medium,
+    },
+
     label: {
         fontSize: 16,
-        fontWeight: '700',
-        marginBottom: 8,
-        color: '#374151',
+        fontWeight: '800',
+        color: colors.primaryNavy,
+        marginBottom: spacing.sm,
     },
+
     input: {
-        borderWidth: 1,
-        borderColor: '#d1d5db',
-        borderRadius: 10,
-        padding: 14,
+        height: 54,
+        borderRadius: 14,
+        borderWidth: 1.2,
+        borderColor: '#D1D5DB',
+        paddingHorizontal: spacing.md,
+        backgroundColor: '#F9FAFB',
         fontSize: 16,
-        marginBottom: 14,
-        backgroundColor: '#f9fafb',
+        fontWeight: '700',
+        color: colors.primaryNavy,
+        marginBottom: spacing.md,
     },
+
     sortButton: {
-        backgroundColor: '#f3f4f6',
-        padding: 14,
-        borderRadius: 10,
-        marginBottom: 14,
-        borderWidth: 1,
-        borderColor: '#d1d5db',
+        backgroundColor: '#FFF8E1',
+        borderRadius: 14,
+        borderWidth: 1.2,
+        borderColor: colors.cardGoldBorder,
+        paddingVertical: 14,
+        paddingHorizontal: spacing.md,
+        marginBottom: spacing.md,
     },
+
     sortButtonText: {
-        fontSize: 16,
+        textAlign: 'center',
+        fontSize: 15,
+        fontWeight: '800',
+        color: colors.primaryNavy,
+    },
+
+    loadButton: {
+        height: 56,
+        borderRadius: 16,
+        backgroundColor: colors.premiumGold,
+        alignItems: 'center',
+        justifyContent: 'center',
+        ...shadows.medium,
+    },
+
+    disabledButton: {
+        opacity: 0.7,
+    },
+
+    loadButtonText: {
+        fontSize: 17,
+        fontWeight: '900',
+        color: colors.primaryNavy,
+    },
+
+    noDataCard: {
+        backgroundColor: '#FFF8E1',
+        borderRadius: 22,
+        borderWidth: 1.2,
+        borderColor: colors.cardGoldBorder,
+        padding: spacing.xl,
+        alignItems: 'center',
+        ...shadows.soft,
+    },
+
+    noDataTitle: {
+        fontSize: 22,
+        fontWeight: '900',
+        color: '#92400E',
+        marginBottom: spacing.sm,
+    },
+
+    noDataText: {
+        fontSize: 15,
         fontWeight: '700',
         textAlign: 'center',
-        color: '#111827',
+        color: '#92400E',
+        lineHeight: 22,
     },
-    button: {
-        backgroundColor: '#2563eb',
-        padding: 15,
-        borderRadius: 10,
+
+    reportCard: {
+        backgroundColor: 'rgba(255,255,255,0.97)',
+        borderRadius: 24,
+        borderWidth: 1.5,
+        borderColor: colors.cardGoldBorder,
+        padding: spacing.xl,
+        marginBottom: spacing.lg,
+        ...shadows.medium,
+    },
+
+    cardHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: 20,
+        marginBottom: spacing.lg,
     },
-    disabledButton: {
-        backgroundColor: '#93c5fd',
-    },
-    buttonText: {
-        color: '#fff',
-        fontSize: 17,
-        fontWeight: 'bold',
-    },
-    card: {
-        borderWidth: 1,
-        borderColor: '#d1d5db',
-        borderRadius: 12,
-        padding: 15,
-        marginBottom: 14,
-        backgroundColor: '#f9fafb',
-    },
+
     cardTitle: {
+        flex: 1,
         fontSize: 20,
-        fontWeight: 'bold',
-        marginBottom: 8,
-        color: '#111827',
+        fontWeight: '900',
+        color: colors.primaryNavy,
+        paddingRight: spacing.md,
     },
-    cardText: {
-        fontSize: 16,
-        marginBottom: 5,
-        color: '#374151',
+
+    attendancePercent: {
+        fontSize: 22,
+        fontWeight: '900',
+        color: colors.successGreen,
     },
-    present: {
-        fontSize: 16,
-        color: '#16a34a',
-        marginBottom: 4,
-        fontWeight: '600',
+
+    statsGrid: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        justifyContent: 'space-between',
+        marginBottom: spacing.lg,
     },
-    absent: {
-        fontSize: 16,
-        color: '#dc2626',
-        marginBottom: 4,
-        fontWeight: '600',
+
+    statBox: {
+        width: '48%',
+        backgroundColor: '#FFF9E8',
+        borderRadius: 16,
+        borderWidth: 1,
+        borderColor: colors.cardGoldBorder,
+        paddingVertical: spacing.md,
+        paddingHorizontal: spacing.md,
+        marginBottom: spacing.md,
     },
-    late: {
-        fontSize: 16,
-        color: '#d97706',
-        marginBottom: 4,
-        fontWeight: '600',
+
+    statTitle: {
+        fontSize: 14,
+        fontWeight: '800',
+        color: colors.slateText,
     },
-    percentage: {
-        fontSize: 20,
-        fontWeight: 'bold',
-        marginTop: 8,
-        color: '#1e3a8a',
+
+    statValue: {
+        fontSize: 26,
+        fontWeight: '900',
+        marginTop: spacing.xs,
     },
-    progressBarBackground: {
-        height: 10,
-        backgroundColor: '#e5e7eb',
-        borderRadius: 10,
-        marginTop: 10,
+
+    progressBackground: {
+        height: 12,
+        backgroundColor: '#E5E7EB',
+        borderRadius: 20,
         overflow: 'hidden',
     },
-    progressBarFill: {
+
+    progressFill: {
         height: '100%',
-        backgroundColor: '#16a34a',
-        borderRadius: 10,
+        backgroundColor: colors.successGreen,
+        borderRadius: 20,
     },
-    noDataCard: {
-        backgroundColor: '#fef3c7',
-        borderRadius: 14,
-        padding: 18,
-        borderWidth: 1,
-        borderColor: '#fcd34d',
-        marginBottom: 20,
-        alignItems: 'center',
-    },
-    noDataTitle: {
-        fontSize: 20,
-        fontWeight: 'bold',
-        color: '#92400e',
-        marginBottom: 6,
-    },
-    noDataText: {
-        fontSize: 16,
-        color: '#92400e',
-        textAlign: 'center',
-    },
+
     modalOverlay: {
         flex: 1,
-        backgroundColor: 'rgba(0,0,0,0.4)',
+        backgroundColor: 'rgba(0,0,0,0.5)',
         justifyContent: 'center',
-        padding: 25,
+        padding: spacing.xl,
     },
+
     modalBox: {
-        backgroundColor: '#fff',
-        borderRadius: 14,
-        padding: 20,
+        backgroundColor: colors.white,
+        borderRadius: 24,
+        padding: spacing.xl,
+        borderWidth: 1.5,
+        borderColor: colors.cardGoldBorder,
     },
+
     modalTitle: {
-        fontSize: 22,
-        fontWeight: 'bold',
-        marginBottom: 15,
+        fontSize: 24,
+        fontWeight: '900',
+        color: colors.primaryNavy,
+        marginBottom: spacing.lg,
+        textAlign: 'center',
     },
+
     optionButton: {
-        padding: 14,
+        paddingVertical: spacing.md,
         borderBottomWidth: 1,
-        borderBottomColor: '#e5e7eb',
+        borderBottomColor: '#E5E7EB',
     },
+
     optionText: {
-        fontSize: 17,
-        fontWeight: '600',
+        fontSize: 16,
+        fontWeight: '800',
+        color: colors.primaryNavy,
     },
+
     closeButton: {
-        backgroundColor: '#dc2626',
-        padding: 13,
-        borderRadius: 10,
+        marginTop: spacing.xl,
+        backgroundColor: colors.primaryNavy,
+        height: 52,
+        borderRadius: 16,
         alignItems: 'center',
-        marginTop: 18,
+        justifyContent: 'center',
     },
+
     closeButtonText: {
-        color: '#fff',
-        fontWeight: 'bold',
+        fontSize: 16,
+        fontWeight: '900',
+        color: colors.white,
     },
 });

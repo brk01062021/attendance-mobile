@@ -43,7 +43,7 @@ export default function LoginScreen() {
 
         if (selectedRole === 'TEACHER') {
             router.replace({
-                pathname: '/home',
+                pathname: '/teacher-dashboard',
                 params: {
                     role: selectedRole,
                     teacherId: '1',
@@ -194,22 +194,18 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: colors.primaryNavy,
     },
-
     bgImage: {
         width: '100%',
         height: '70%',
         alignSelf: 'center',
     },
-
     overlay: {
         ...StyleSheet.absoluteFillObject,
         backgroundColor: 'rgba(6, 27, 51, 0.40)',
     },
-
     scrollContainer: {
         flexGrow: 1,
     },
-
     container: {
         flex: 1,
         paddingHorizontal: spacing.screenPadding,
@@ -217,7 +213,6 @@ const styles = StyleSheet.create({
         paddingBottom: spacing.xxxl,
         justifyContent: 'center',
     },
-
     logo: {
         width: 250,
         height: 400,
@@ -225,7 +220,6 @@ const styles = StyleSheet.create({
         marginTop: 0,
         marginBottom: -28,
     },
-
     title: {
         fontSize: 40,
         lineHeight: 42,
@@ -236,12 +230,10 @@ const styles = StyleSheet.create({
         marginBottom: 14,
         letterSpacing: 1,
     },
-
     brandText: {
         color: '#FFD76A',
         letterSpacing: 1.5,
     },
-
     card: {
         backgroundColor: 'rgba(255,253,247,0.97)',
         borderRadius: 26,
@@ -250,7 +242,6 @@ const styles = StyleSheet.create({
         padding: spacing.xxl,
         ...shadows.medium,
     },
-
     cardTitle: {
         fontSize: 22,
         fontWeight: '900',
@@ -258,7 +249,6 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         marginBottom: spacing.xl,
     },
-
     label: {
         ...typography.label,
         color: colors.slateText,
@@ -266,14 +256,12 @@ const styles = StyleSheet.create({
         marginTop: spacing.md,
         fontWeight: '700',
     },
-
     roleGrid: {
         flexDirection: 'row',
         flexWrap: 'wrap',
         gap: 12,
         marginBottom: spacing.md,
     },
-
     roleButton: {
         width: '47.8%',
         height: 50,
@@ -284,22 +272,18 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
     },
-
     roleButtonActive: {
         backgroundColor: colors.primaryNavy,
         borderColor: colors.premiumGold,
     },
-
     roleText: {
         fontSize: 15,
         fontWeight: '900',
         color: colors.primaryNavy,
     },
-
     roleTextActive: {
         color: colors.premiumGold,
     },
-
     input: {
         height: 58,
         borderRadius: 15,
@@ -311,7 +295,6 @@ const styles = StyleSheet.create({
         color: colors.darkText,
         marginBottom: spacing.md,
     },
-
     loginButton: {
         height: 60,
         borderRadius: 16,
@@ -322,32 +305,27 @@ const styles = StyleSheet.create({
         marginBottom: spacing.lg,
         ...shadows.medium,
     },
-
     loginButtonText: {
         ...typography.button,
         color: colors.primaryNavy,
         fontWeight: '900',
         fontSize: 18,
     },
-
     linksRow: {
         flexDirection: 'row',
         justifyContent: 'center',
         alignItems: 'center',
         gap: 10,
     },
-
     link: {
         color: colors.infoBlue,
         fontSize: 15,
         fontWeight: '700',
     },
-
     linkDivider: {
         color: colors.mutedText,
         fontSize: 15,
     },
-
     footerText: {
         color: colors.premiumGold,
         textAlign: 'center',

@@ -1,608 +1,488 @@
 import React, { useState } from 'react';
 import {
-    View,
-    Text,
-    TouchableOpacity,
-    StyleSheet,
-    Alert,
+    ImageBackground,
     Modal,
     ScrollView,
-    ActivityIndicator,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from 'react-native';
-import { Calendar } from 'react-native-calendars';
-import { useLocalSearchParams } from 'expo-router';
-import { API_ENDPOINTS } from '../src/services/api';
+import { router, useLocalSearchParams } from 'expo-router';
+import { colors, shadows, spacing } from '../src/theme';
 
-export default function TeacherDashboardScreen() {
-    const { teacherId, teacherName } = useLocalSearchParams();
-
-    const [date, setDate] = useState('2026-04-27');
-    const [selectedDate, setSelectedDate] = useState('2026-04-27');
-    const [showCalendarModal, setShowCalendarModal] = useState(false);
-
-    const [dashboardCards, setDashboardCards] = useState<any[]>([]);
-    const [sortBy, setSortBy] = useState('Highest Attendance First');
-    const [showSortModal, setShowSortModal] = useState(false);
-    const [loading, setLoading] = useState(false);
-    const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
-
-    const loadDashboard = async () => {
-        try {
-            setLoading(true);
-            setHasLoadedOnce(true);
-
-            const response = await fetch(
-                `${API_ENDPOINTS.teacherClassDashboard}?teacherId=${teacherId}&date=${date}`
-            );
-
-            if (!response.ok) {
-                throw new Error('Failed to load dashboard');
-            }
-
-            const data = await response.json();
-
-            if (Array.isArray(data)) {
-                setDashboardCards(data);
-            } else {
-                setDashboardCards([]);
-            }
-        } catch (error) {
-            console.log(error);
-            setDashboardCards([]);
-            Alert.alert('Error', 'Unable to load dashboard');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const confirmDate = () => {
-        setDate(selectedDate);
-        setShowCalendarModal(false);
-    };
-
-    const getSortedCards = () => {
-        const cards = [...dashboardCards];
-
-        if (sortBy === 'Highest Attendance First') {
-            cards.sort((a, b) => b.attendancePercentage - a.attendancePercentage);
-        } else if (sortBy === 'Lowest Attendance First') {
-            cards.sort((a, b) => a.attendancePercentage - b.attendancePercentage);
-        } else {
-            cards.sort((a, b) =>
-                `${a.className}-${a.section}`.localeCompare(`${b.className}-${b.section}`)
-            );
-        }
-
-        return cards;
-    };
-
-    const totalStudents = dashboardCards.reduce(
-        (sum, item) => sum + item.totalStudents,
-        0
-    );
-
-    const totalPresent = dashboardCards.reduce(
-        (sum, item) => sum + item.present,
-        0
-    );
-
-    const totalAbsent = dashboardCards.reduce(
-        (sum, item) => sum + item.absent,
-        0
-    );
-
-    const totalLate = dashboardCards.reduce(
-        (sum, item) => sum + item.late,
-        0
-    );
-
-    const overallAttendance =
-        totalStudents === 0
-            ? 0
-            : ((totalPresent + totalLate) / totalStudents) * 100;
+export default function TeacherDashboard() {
+    const params = useLocalSearchParams();
+    const displayTeacherName = String(params.teacherName || 'Teacher');
+    const [menuVisible, setMenuVisible] = useState(false);
 
     return (
-        <ScrollView style={styles.container}>
-            <Text style={styles.title}>Dashboard</Text>
-            <Text style={styles.subtitle}>{teacherName}</Text>
+        <ImageBackground
+            source={require('../assets/branding/splash-gold.png')}
+            style={styles.background}
+            resizeMode="cover"
+        >
+            <ScrollView contentContainerStyle={styles.container}>
+                <View style={styles.topHeader}>
+                    <TouchableOpacity
+                        style={styles.backButton}
+                        onPress={() => router.back()}
+                    >
+                        <Text style={styles.backButtonText}>‹ Home</Text>
+                    </TouchableOpacity>
 
-            <Text style={styles.label}>Date</Text>
-
-            <TouchableOpacity
-                style={styles.dateBox}
-                onPress={() => {
-                    setSelectedDate(date);
-                    setShowCalendarModal(true);
-                }}
-            >
-                <Text style={styles.dateText}>{date}</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-                style={[styles.button, loading && styles.disabledButton]}
-                onPress={loadDashboard}
-                disabled={loading}
-            >
-                <Text style={styles.buttonText}>
-                    {loading ? 'Loading...' : 'Load Dashboard'}
-                </Text>
-            </TouchableOpacity>
-
-            {loading && (
-                <View style={styles.loadingContainer}>
-                    <ActivityIndicator size="large" />
-                    <Text style={styles.loadingText}>Loading dashboard...</Text>
+                    <Text style={styles.headerTitle}>Dashboard</Text>
                 </View>
-            )}
 
-            {!loading && hasLoadedOnce && dashboardCards.length === 0 && (
-                <View style={styles.noDataContainer}>
-                    <Text style={styles.noDataTitle}>No Data Found</Text>
-                    <Text style={styles.noDataText}>
-                        No attendance dashboard data found for selected date.
-                    </Text>
-                </View>
-            )}
-
-            {!loading && dashboardCards.length > 0 && (
                 <TouchableOpacity
-                    style={styles.sortButton}
-                    onPress={() => setShowSortModal(true)}
+                    style={styles.menuCircle}
+                    onPress={() => setMenuVisible(true)}
                 >
-                    <Text style={styles.sortButtonText}>
-                        Sort By: {sortBy}
-                    </Text>
+                    <Text style={styles.menuIcon}>☰</Text>
                 </TouchableOpacity>
-            )}
 
-            {!loading && dashboardCards.length > 0 && (
-                <View style={styles.summaryCard}>
-                    <Text style={styles.summaryTitle}>Today&apos;s Summary</Text>
+                <Text style={styles.workspaceHeading}>
+                    Teacher Workspace
+                </Text>
 
-                    <View style={styles.summaryGrid}>
-                        <View style={styles.summaryBox}>
-                            <Text style={styles.summaryNumber}>{dashboardCards.length}</Text>
-                            <Text style={styles.summaryLabel}>Classes</Text>
-                        </View>
+                <Text style={styles.mainHeading}>Dashboard</Text>
 
-                        <View style={styles.summaryBox}>
-                            <Text style={styles.summaryNumber}>{totalStudents}</Text>
-                            <Text style={styles.summaryLabel}>Students</Text>
-                        </View>
+                <Text style={styles.welcomeText}>
+                    Welcome, {displayTeacherName}
+                </Text>
 
-                        <View style={styles.summaryBox}>
-                            <Text style={styles.summaryNumber}>{totalPresent}</Text>
-                            <Text style={styles.summaryLabel}>Present</Text>
-                        </View>
-
-                        <View style={styles.summaryBox}>
-                            <Text style={styles.summaryNumber}>{totalAbsent}</Text>
-                            <Text style={styles.summaryLabel}>Absent</Text>
-                        </View>
-
-                        <View style={styles.summaryBox}>
-                            <Text style={styles.summaryNumber}>{totalLate}</Text>
-                            <Text style={styles.summaryLabel}>Late</Text>
-                        </View>
-                    </View>
-
-                    <Text style={styles.overallPercentage}>
-                        Overall Attendance: {overallAttendance.toFixed(2)}%
+                <View style={styles.workspaceCard}>
+                    <Text style={styles.workspaceTitle}>
+                        Today&apos;s Overview
                     </Text>
-                </View>
-            )}
 
-            {!loading &&
-                getSortedCards().map((item, index) => {
-                    const status =
-                        item.attendancePercentage >= 80
-                            ? 'Excellent'
-                            : item.attendancePercentage >= 60
-                                ? 'Good'
-                                : 'Needs Attention';
+                    <View style={styles.statsGrid}>
+                        <StatCard
+                            emoji="📚"
+                            value="4"
+                            label="Classes"
+                        />
 
-                    return (
-                        <View key={index} style={styles.card}>
-                            <Text style={styles.cardTitle}>
-                                Class {item.className} - Section {item.section}
-                            </Text>
+                        <StatCard
+                            emoji="🕒"
+                            value="2"
+                            label="Periods Left"
+                        />
 
-                            <Text style={styles.subject}>Subject: {item.subjectName}</Text>
+                        <StatCard
+                            emoji="✅"
+                            value="86%"
+                            label="Attendance"
+                        />
 
-                            <Text style={styles.cardText}>
-                                Total Students: {item.totalStudents}
-                            </Text>
+                        <StatCard
+                            emoji="🗓️"
+                            value="0"
+                            label="Leaves"
+                        />
+                    </View>
 
-                            <Text style={styles.present}>Present: {item.present}</Text>
-                            <Text style={styles.absent}>Absent: {item.absent}</Text>
-                            <Text style={styles.late}>Late: {item.late}</Text>
+                    <View style={styles.attendanceCard}>
+                        <Text style={styles.attendanceTitle}>
+                            Attendance Percentage
+                        </Text>
 
-                            <Text style={styles.percentage}>
-                                Attendance: {item.attendancePercentage.toFixed(2)}%
-                            </Text>
-
-                            <View style={styles.progressBarBackground}>
-                                <View
-                                    style={[
-                                        styles.progressBarFill,
-                                        { width: `${item.attendancePercentage}%` },
-                                    ]}
-                                />
-                            </View>
-
-                            <Text style={styles.statusText}>Status: {status}</Text>
-                        </View>
-                    );
-                })}
-
-            <Modal visible={showSortModal} transparent animationType="fade">
-                <View style={styles.modalOverlay}>
-                    <View style={styles.modalBox}>
-                        <Text style={styles.modalTitle}>Sort Dashboard</Text>
-
-                        {[
-                            'Highest Attendance First',
-                            'Lowest Attendance First',
-                            'Class Name',
-                        ].map((option) => (
-                            <TouchableOpacity
-                                key={option}
-                                style={styles.optionButton}
-                                onPress={() => {
-                                    setSortBy(option);
-                                    setShowSortModal(false);
-                                }}
-                            >
-                                <Text style={styles.optionText}>{option}</Text>
-                            </TouchableOpacity>
-                        ))}
-
-                        <TouchableOpacity
-                            style={styles.closeSortButton}
-                            onPress={() => setShowSortModal(false)}
-                        >
-                            <Text style={styles.modalButtonText}>Close</Text>
-                        </TouchableOpacity>
+                        <Text style={styles.attendanceValue}>
+                            86%
+                        </Text>
                     </View>
                 </View>
-            </Modal>
 
-            <Modal visible={showCalendarModal} transparent animationType="fade">
-                <View style={styles.modalOverlay}>
-                    <View style={styles.modalBox}>
-                        <Text style={styles.modalTitle}>Select Dashboard Date</Text>
+                <Text style={styles.sectionTitle}>
+                    Quick Actions
+                </Text>
 
-                        <Text style={styles.modalLabel}>Dashboard Date</Text>
+                <View style={styles.quickGrid}>
+                    <QuickActionCard
+                        emoji="✅"
+                        title="Take Attendance"
+                        subtitle="Submit class attendance"
+                        onPress={() => router.push('/home' as any)}
+                    />
 
-                        <View style={styles.selectedDateBox}>
-                            <Text style={styles.selectedDateText}>{selectedDate}</Text>
-                        </View>
+                    <QuickActionCard
+                        emoji="📊"
+                        title="Dashboard"
+                        subtitle="Today and class-wise view"
+                        onPress={() =>
+                            router.push('/teacher-dashboard' as any)
+                        }
+                    />
 
-                        <Calendar
-                            current={selectedDate}
-                            maxDate={new Date().toISOString().split('T')[0]}
-                            onDayPress={(day) => {
-                                const todayString = new Date().toISOString().split('T')[0];
+                    <QuickActionCard
+                        emoji="📅"
+                        title="Date Summary"
+                        subtitle="Daily attendance overview"
+                        onPress={() =>
+                            router.push('/date-summary' as any)
+                        }
+                    />
 
-                                if (day.dateString > todayString) {
-                                    Alert.alert('Invalid Date', 'Future dates are not allowed.');
-                                    return;
-                                }
+                    <QuickActionCard
+                        emoji="📄"
+                        title="Reports"
+                        subtitle="Attendance analytics"
+                        onPress={() =>
+                            router.push('/attendance-report' as any)
+                        }
+                    />
+                </View>
+            </ScrollView>
 
-                                setSelectedDate(day.dateString);
-                            }}
-                            markedDates={{
-                                [selectedDate]: {
-                                    selected: true,
-                                    selectedColor: '#0ea5e9',
-                                },
+            <Modal visible={menuVisible} transparent animationType="slide">
+                <TouchableOpacity
+                    style={styles.modalOverlay}
+                    activeOpacity={1}
+                    onPress={() => setMenuVisible(false)}
+                >
+                    <View style={styles.menuContainer}>
+                        <Text style={styles.menuTitle}>
+                            Teacher Menu
+                        </Text>
+
+                        <MenuItem
+                            title="Home"
+                            onPress={() => setMenuVisible(false)}
+                        />
+
+                        <MenuItem
+                            title="Take Attendance"
+                            onPress={() => {
+                                setMenuVisible(false);
+                                router.push('/home' as any);
                             }}
                         />
 
-                        <View style={styles.modalButtonRow}>
-                            <TouchableOpacity
-                                style={styles.cancelButton}
-                                onPress={() => setShowCalendarModal(false)}
-                            >
-                                <Text style={styles.modalButtonText}>Cancel</Text>
-                            </TouchableOpacity>
+                        <MenuItem
+                            title="Reports"
+                            onPress={() => {
+                                setMenuVisible(false);
+                                router.push('/attendance-report' as any);
+                            }}
+                        />
 
-                            <TouchableOpacity
-                                style={styles.confirmButton}
-                                onPress={confirmDate}
-                            >
-                                <Text style={styles.modalButtonText}>Confirm Date</Text>
-                            </TouchableOpacity>
-                        </View>
+                        <MenuItem
+                            title="Logout"
+                            onPress={() => {
+                                setMenuVisible(false);
+                                router.replace('/login' as any);
+                            }}
+                        />
                     </View>
-                </View>
+                </TouchableOpacity>
             </Modal>
-        </ScrollView>
+        </ImageBackground>
+    );
+}
+
+function StatCard({
+                      emoji,
+                      value,
+                      label,
+                  }: {
+    emoji: string;
+    value: string;
+    label: string;
+}) {
+    return (
+        <View style={styles.statCard}>
+            <Text style={styles.statEmoji}>
+                {emoji}
+            </Text>
+
+            <Text style={styles.statValue}>
+                {value}
+            </Text>
+
+            <Text style={styles.statLabel}>
+                {label}
+            </Text>
+        </View>
+    );
+}
+
+function QuickActionCard({
+                             emoji,
+                             title,
+                             subtitle,
+                             onPress,
+                         }: {
+    emoji: string;
+    title: string;
+    subtitle: string;
+    onPress: () => void;
+}) {
+    return (
+        <TouchableOpacity
+            style={styles.quickCard}
+            onPress={onPress}
+            activeOpacity={0.9}
+        >
+            <Text style={styles.quickEmoji}>
+                {emoji}
+            </Text>
+
+            <Text style={styles.quickTitle}>
+                {title}
+            </Text>
+
+            <Text style={styles.quickSubtitle}>
+                {subtitle}
+            </Text>
+        </TouchableOpacity>
+    );
+}
+
+function MenuItem({
+                      title,
+                      onPress,
+                  }: {
+    title: string;
+    onPress: () => void;
+}) {
+    return (
+        <TouchableOpacity
+            style={styles.menuItem}
+            onPress={onPress}
+        >
+            <Text style={styles.menuItemText}>
+                {title}
+            </Text>
+        </TouchableOpacity>
     );
 }
 
 const styles = StyleSheet.create({
-    container: {
+    background: {
         flex: 1,
-        backgroundColor: '#fff',
-        padding: 25,
+        backgroundColor: '#F6E7B0',
     },
-    title: {
-        fontSize: 34,
-        fontWeight: 'bold',
-        color: '#1e3a8a',
-        marginBottom: 8,
+
+    container: {
+        padding: spacing.screenPadding,
+        paddingBottom: 140,
     },
-    subtitle: {
-        fontSize: 22,
-        fontWeight: '700',
-        color: '#374151',
-        marginBottom: 25,
-    },
-    label: {
-        fontSize: 16,
-        fontWeight: '700',
-        marginBottom: 8,
-        color: '#374151',
-    },
-    dateBox: {
-        borderWidth: 1,
-        borderColor: '#93c5fd',
-        borderRadius: 10,
-        padding: 14,
-        marginBottom: 18,
-        backgroundColor: '#eff6ff',
-    },
-    dateText: {
-        fontSize: 16,
-        color: '#111827',
-    },
-    button: {
-        backgroundColor: '#2563eb',
-        padding: 15,
-        borderRadius: 10,
+
+    topHeader: {
+        marginTop: spacing.xxxl,
+        flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: 20,
+        justifyContent: 'space-between',
+        marginBottom: spacing.xl,
     },
-    disabledButton: {
-        backgroundColor: '#93c5fd',
+
+    backButton: {
+        backgroundColor: 'rgba(255,255,255,0.7)',
+        paddingHorizontal: spacing.lg,
+        paddingVertical: spacing.md,
+        borderRadius: 20,
     },
-    buttonText: {
-        color: '#fff',
-        fontSize: 17,
-        fontWeight: 'bold',
+
+    backButtonText: {
+        fontSize: 18,
+        fontWeight: '800',
+        color: colors.primaryNavy,
     },
-    loadingContainer: {
-        marginTop: 10,
-        marginBottom: 20,
+
+    headerTitle: {
+        fontSize: 20,
+        fontWeight: '900',
+        color: colors.primaryNavy,
+        marginRight: 90,
+    },
+
+    menuCircle: {
+        width: 58,
+        height: 58,
+        borderRadius: 29,
+        backgroundColor: 'rgba(255,255,255,0.6)',
         alignItems: 'center',
         justifyContent: 'center',
+        alignSelf: 'flex-end',
+        marginBottom: spacing.lg,
     },
-    loadingText: {
-        marginTop: 10,
-        fontSize: 16,
-        fontWeight: '600',
-        color: '#374151',
+
+    menuIcon: {
+        fontSize: 28,
+        fontWeight: '900',
+        color: colors.primaryNavy,
     },
-    noDataContainer: {
-        backgroundColor: '#fef3c7',
-        borderRadius: 14,
-        padding: 18,
-        borderWidth: 1,
-        borderColor: '#fcd34d',
-        marginBottom: 20,
-        alignItems: 'center',
-    },
-    noDataTitle: {
-        fontSize: 20,
-        fontWeight: 'bold',
-        color: '#92400e',
-        marginBottom: 6,
-    },
-    noDataText: {
-        fontSize: 16,
-        color: '#92400e',
-        textAlign: 'center',
-        fontWeight: '600',
-    },
-    sortButton: {
-        backgroundColor: '#f3f4f6',
-        padding: 14,
-        borderRadius: 10,
-        marginBottom: 20,
-        borderWidth: 1,
-        borderColor: '#d1d5db',
-    },
-    sortButtonText: {
-        fontSize: 16,
-        fontWeight: '700',
-        color: '#111827',
-        textAlign: 'center',
-    },
-    summaryCard: {
-        backgroundColor: '#eff6ff',
-        borderRadius: 14,
-        padding: 18,
-        borderWidth: 1,
-        borderColor: '#bfdbfe',
-        marginBottom: 20,
-    },
-    summaryTitle: {
+
+    workspaceHeading: {
         fontSize: 22,
-        fontWeight: 'bold',
-        color: '#1e3a8a',
-        marginBottom: 14,
+        fontWeight: '900',
+        color: colors.primaryNavy,
     },
-    summaryGrid: {
+
+    mainHeading: {
+        fontSize: 56,
+        lineHeight: 62,
+        fontWeight: '900',
+        color: colors.primaryNavy,
+    },
+
+    welcomeText: {
+        fontSize: 20,
+        fontWeight: '800',
+        color: colors.primaryNavy,
+        marginTop: spacing.sm,
+        marginBottom: spacing.xl,
+    },
+
+    workspaceCard: {
+        backgroundColor: 'rgba(255,255,255,0.96)',
+        borderRadius: 34,
+        borderWidth: 1.5,
+        borderColor: colors.cardGoldBorder,
+        padding: spacing.xl,
+        ...shadows.medium,
+    },
+
+    workspaceTitle: {
+        fontSize: 22,
+        fontWeight: '900',
+        color: colors.primaryNavy,
+        marginBottom: spacing.lg,
+    },
+
+    statsGrid: {
         flexDirection: 'row',
         flexWrap: 'wrap',
-        gap: 10,
+        justifyContent: 'space-between',
     },
-    summaryBox: {
-        backgroundColor: '#fff',
-        borderRadius: 10,
-        padding: 12,
-        minWidth: '30%',
+
+    statCard: {
+        width: '48%',
+        backgroundColor: colors.white,
+        borderRadius: 28,
+        borderWidth: 1.5,
+        borderColor: colors.cardGoldBorder,
         alignItems: 'center',
+        paddingVertical: spacing.xl,
+        marginBottom: spacing.lg,
     },
-    summaryNumber: {
-        fontSize: 22,
-        fontWeight: 'bold',
-        color: '#111827',
+
+    statEmoji: {
+        fontSize: 34,
+        marginBottom: spacing.md,
     },
-    summaryLabel: {
-        fontSize: 13,
-        color: '#6b7280',
-        marginTop: 4,
+
+    statValue: {
+        fontSize: 34,
+        fontWeight: '900',
+        color: colors.primaryNavy,
     },
-    overallPercentage: {
-        fontSize: 20,
-        fontWeight: 'bold',
-        color: '#16a34a',
-        marginTop: 16,
+
+    statLabel: {
+        fontSize: 16,
+        fontWeight: '800',
+        color: colors.slateText,
+        marginTop: spacing.sm,
     },
-    card: {
-        backgroundColor: '#f9fafb',
-        borderRadius: 14,
-        padding: 18,
-        borderWidth: 1,
-        borderColor: '#e5e7eb',
-        marginBottom: 18,
+
+    attendanceCard: {
+        backgroundColor: colors.primaryNavy,
+        borderRadius: 30,
+        borderWidth: 1.5,
+        borderColor: colors.cardGoldBorder,
+        padding: spacing.xl,
     },
-    cardTitle: {
-        fontSize: 22,
-        fontWeight: 'bold',
-        color: '#111827',
-        marginBottom: 10,
-    },
-    subject: {
+
+    attendanceTitle: {
         fontSize: 18,
-        fontWeight: '600',
-        color: '#2563eb',
-        marginBottom: 12,
+        fontWeight: '900',
+        color: colors.premiumGold,
     },
-    cardText: {
-        fontSize: 17,
-        marginBottom: 8,
-        color: '#374151',
+
+    attendanceValue: {
+        fontSize: 52,
+        fontWeight: '900',
+        color: colors.white,
+        marginTop: spacing.md,
     },
-    present: {
-        fontSize: 17,
-        marginBottom: 8,
-        color: '#16a34a',
-        fontWeight: '600',
+
+    sectionTitle: {
+        fontSize: 26,
+        fontWeight: '900',
+        color: colors.primaryNavy,
+        marginTop: spacing.xxl,
+        marginBottom: spacing.lg,
     },
-    absent: {
-        fontSize: 17,
-        marginBottom: 8,
-        color: '#dc2626',
-        fontWeight: '600',
+
+    quickGrid: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        justifyContent: 'space-between',
     },
-    late: {
-        fontSize: 17,
-        marginBottom: 8,
-        color: '#d97706',
-        fontWeight: '600',
+
+    quickCard: {
+        width: '48%',
+        backgroundColor: 'rgba(255,255,255,0.96)',
+        borderRadius: 28,
+        borderWidth: 1.5,
+        borderColor: colors.cardGoldBorder,
+        padding: spacing.xl,
+        marginBottom: spacing.xl,
+        minHeight: 190,
+        ...shadows.medium,
     },
-    percentage: {
-        fontSize: 22,
-        fontWeight: 'bold',
-        marginTop: 10,
-        color: '#1e3a8a',
+
+    quickEmoji: {
+        fontSize: 42,
+        marginBottom: spacing.lg,
     },
-    progressBarBackground: {
-        height: 10,
-        backgroundColor: '#e5e7eb',
-        borderRadius: 10,
-        marginTop: 10,
-        overflow: 'hidden',
+
+    quickTitle: {
+        fontSize: 21,
+        fontWeight: '900',
+        color: colors.primaryNavy,
+        lineHeight: 28,
     },
-    progressBarFill: {
-        height: '100%',
-        backgroundColor: '#16a34a',
-        borderRadius: 10,
+
+    quickSubtitle: {
+        fontSize: 15,
+        fontWeight: '700',
+        color: colors.slateText,
+        marginTop: spacing.md,
+        lineHeight: 22,
     },
-    statusText: {
-        fontSize: 17,
-        fontWeight: 'bold',
-        marginTop: 10,
-        color: '#1e3a8a',
-    },
-    optionButton: {
-        padding: 16,
-        borderBottomWidth: 1,
-        borderBottomColor: '#e5e7eb',
-    },
-    optionText: {
-        fontSize: 17,
-        fontWeight: '600',
-        color: '#111827',
-    },
-    closeSortButton: {
-        backgroundColor: '#6b7280',
-        padding: 14,
-        borderRadius: 10,
-        alignItems: 'center',
-        marginTop: 18,
-    },
+
     modalOverlay: {
         flex: 1,
         backgroundColor: 'rgba(0,0,0,0.4)',
-        justifyContent: 'center',
-        padding: 25,
+        justifyContent: 'flex-end',
     },
-    modalBox: {
-        backgroundColor: '#fff',
-        borderRadius: 18,
-        padding: 20,
+
+    menuContainer: {
+        backgroundColor: colors.white,
+        borderTopLeftRadius: 30,
+        borderTopRightRadius: 30,
+        padding: spacing.xl,
     },
-    modalTitle: {
+
+    menuTitle: {
         fontSize: 24,
-        fontWeight: 'bold',
-        color: '#111827',
-        marginBottom: 18,
+        fontWeight: '900',
+        color: colors.primaryNavy,
+        marginBottom: spacing.lg,
     },
-    modalLabel: {
-        fontSize: 16,
-        fontWeight: '700',
-        color: '#374151',
-        marginBottom: 8,
+
+    menuItem: {
+        backgroundColor: '#FFF8E1',
+        borderRadius: 18,
+        paddingVertical: spacing.lg,
+        paddingHorizontal: spacing.lg,
+        marginBottom: spacing.md,
     },
-    selectedDateBox: {
-        backgroundColor: '#e5e7eb',
-        borderRadius: 10,
-        padding: 14,
-        alignItems: 'center',
-        marginBottom: 18,
-    },
-    selectedDateText: {
-        fontSize: 20,
-        fontWeight: 'bold',
-        color: '#111827',
-    },
-    modalButtonRow: {
-        flexDirection: 'row',
-        gap: 12,
-        marginTop: 18,
-    },
-    cancelButton: {
-        flex: 1,
-        backgroundColor: '#6b7280',
-        padding: 14,
-        borderRadius: 10,
-        alignItems: 'center',
-    },
-    confirmButton: {
-        flex: 1,
-        backgroundColor: '#16a34a',
-        padding: 14,
-        borderRadius: 10,
-        alignItems: 'center',
-    },
-    modalButtonText: {
-        color: '#fff',
-        fontSize: 16,
-        fontWeight: 'bold',
-        textAlign: 'center',
+
+    menuItemText: {
+        fontSize: 18,
+        fontWeight: '800',
+        color: colors.primaryNavy,
     },
 });
