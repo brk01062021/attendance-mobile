@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
     View,
     Text,
@@ -9,6 +9,7 @@ import {
     ActivityIndicator,
     Modal,
     ImageBackground,
+    TextInput,
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -47,6 +48,8 @@ export default function AttendanceScreen() {
     const [showCalendar, setShowCalendar] = useState(false);
     const [attendanceDate, setAttendanceDate] = useState(today);
     const [selectedDate, setSelectedDate] = useState(todayDate);
+    const [searchText, setSearchText] = useState('');
+    const [statusFilter, setStatusFilter] = useState<'All' | 'Present' | 'Late' | 'Absent'>('All');
 
     useEffect(() => {
         loadStudents();
@@ -59,7 +62,15 @@ export default function AttendanceScreen() {
                 `${API_ENDPOINTS.loadStudents}?className=${className}&section=${section}`
             );
             const data = await response.json();
-            setStudents(data);
+            const safeData = Array.isArray(data) ? data : [];
+
+            setStudents(safeData);
+
+            const defaultAttendance: Record<number, AttendanceStatus> = {};
+            safeData.forEach((student: Student) => {
+                defaultAttendance[student.id] = 'Present';
+            });
+            setAttendance(defaultAttendance);
         } catch (error) {
             Alert.alert('Error', 'Unable to load students');
         } finally {
@@ -120,12 +131,58 @@ export default function AttendanceScreen() {
             Alert.alert('Success', 'Attendance submitted', [
                 {
                     text: 'OK',
-                    onPress: () => router.replace('/home' as any),
+                    onPress: () =>
+                        router.replace({
+                            pathname: '/teacher-dashboard',
+                            params: {
+                                teacherId,
+                                teacherName,
+                                role: 'TEACHER',
+                            },
+                        } as any),
                 },
             ]);
         } catch {
             Alert.alert('Error', 'Submission failed');
         }
+    };
+
+
+    const filteredStudents = useMemo(() => {
+        return students.filter((student) => {
+            const currentStatus = attendance[student.id] || 'Present';
+            const matchesSearch = student.name
+                .toLowerCase()
+                .includes(searchText.trim().toLowerCase());
+            const matchesFilter =
+                statusFilter === 'All' || currentStatus === statusFilter;
+
+            return matchesSearch && matchesFilter;
+        });
+    }, [students, attendance, searchText, statusFilter]);
+
+    const attendanceSummary = useMemo(() => {
+        const values = students.map(
+            (student) => attendance[student.id] || 'Present'
+        );
+
+        return {
+            present: values.filter((status) => status === 'Present').length,
+            late: values.filter((status) => status === 'Late').length,
+            absent: values.filter((status) => status === 'Absent').length,
+        };
+    }, [students, attendance]);
+
+    const markAllPresent = () => {
+        const updatedAttendance: Record<number, AttendanceStatus> = {};
+
+        students.forEach((student) => {
+            updatedAttendance[student.id] = 'Present';
+        });
+
+        setAttendance(updatedAttendance);
+        setStatusFilter('All');
+        setSearchText('');
     };
 
     if (loading) {
@@ -146,14 +203,104 @@ export default function AttendanceScreen() {
             <View style={styles.overlay}>
 
                 <ScrollView contentContainerStyle={styles.container}>
-                    <Text style={styles.title}>Students Attendance</Text>
+                    <View style={styles.headerRow}>
+                        <TouchableOpacity
+                            style={styles.backButton}
+                            onPress={() =>
+                                router.replace({
+                                    pathname: '/home',
+                                    params: {
+                                        teacherId,
+                                        teacherName,
+                                        role: 'TEACHER',
+                                    },
+                                } as any)
+                            }
+                            activeOpacity={0.85}
+                        >
+                            <Text style={styles.backButtonText}>‹</Text>
+                        </TouchableOpacity>
+
+                        <Text style={styles.title}>Students Attendance</Text>
+
+                        <View style={styles.headerSpacer} />
+                    </View>
 
                     <Text style={styles.info}>Teacher: {teacherName}</Text>
                     <Text style={styles.info}>Subject: {subject}</Text>
                     <Text style={styles.info}>Class: {className}</Text>
                     <Text style={styles.info}>Section: {section}</Text>
 
-                    {students.map((student) => (
+                    <View style={styles.searchContainer}>
+                        <TextInput
+                            style={styles.searchInput}
+                            value={searchText}
+                            onChangeText={setSearchText}
+                            placeholder="Search student by name"
+                            placeholderTextColor="#6b7280"
+                        />
+
+                        {searchText.length > 0 && (
+                            <TouchableOpacity
+                                style={styles.clearSearchButton}
+                                onPress={() => setSearchText('')}
+                                activeOpacity={0.8}
+                            >
+                                <Text style={styles.clearSearchText}>×</Text>
+                            </TouchableOpacity>
+                        )}
+                    </View>
+
+                    <View style={styles.filterRow}>
+                        {(['All', 'Present', 'Late', 'Absent'] as const).map((item) => (
+                            <TouchableOpacity
+                                key={item}
+                                style={[
+                                    styles.filterChip,
+                                    statusFilter === item && styles.filterChipActive,
+                                ]}
+                                onPress={() => setStatusFilter(item)}
+                                activeOpacity={0.85}
+                            >
+                                <Text
+                                    style={[
+                                        styles.filterChipText,
+                                        statusFilter === item && styles.filterChipTextActive,
+                                    ]}
+                                >
+                                    {item}
+                                </Text>
+                            </TouchableOpacity>
+                        ))}
+                    </View>
+
+                    <TouchableOpacity
+                        style={styles.markAllButton}
+                        onPress={markAllPresent}
+                        activeOpacity={0.9}
+                    >
+                        <Text style={styles.markAllButtonText}>Mark All Present</Text>
+                    </TouchableOpacity>
+
+                    <View style={styles.summaryCard}>
+                        <Text style={styles.summaryTitle}>Attendance Summary</Text>
+
+                        <View style={styles.summaryRow}>
+                            <Text style={styles.summaryPresent}>
+                                Present: {attendanceSummary.present}
+                            </Text>
+
+                            <Text style={styles.summaryLate}>
+                                Late: {attendanceSummary.late}
+                            </Text>
+
+                            <Text style={styles.summaryAbsent}>
+                                Absent: {attendanceSummary.absent}
+                            </Text>
+                        </View>
+                    </View>
+
+                    {filteredStudents.map((student) => (
                         <View key={student.id} style={styles.card}>
                             <Text style={styles.studentName}>{student.name}</Text>
 
@@ -228,21 +375,165 @@ const styles = StyleSheet.create({
     },
 
     container: {
-        padding: 20,
+        paddingHorizontal: 20,
+        paddingTop: 64,
         paddingBottom: 100,
     },
 
+    headerRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: 18,
+    },
+
+    backButton: {
+        width: 46,
+        height: 46,
+        borderRadius: 23,
+        backgroundColor: 'rgba(255,255,255,0.35)',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+
+    backButtonText: {
+        fontSize: 34,
+        lineHeight: 36,
+        fontWeight: '900',
+        color: '#041226',
+    },
+
+    headerSpacer: {
+        width: 46,
+    },
+
     title: {
+        flex: 1,
+        textAlign: 'center',
         fontSize: 26,
         fontWeight: '900',
         color: '#041226',
-        marginBottom: 12,
     },
 
     info: {
         fontSize: 15,
         color: '#041226',
         marginBottom: 4,
+    },
+
+
+    searchContainer: {
+        marginTop: 16,
+        position: 'relative',
+    },
+
+    searchInput: {
+        backgroundColor: '#fff',
+        borderRadius: 14,
+        paddingLeft: 14,
+        paddingRight: 48,
+        paddingVertical: 12,
+        borderWidth: 1,
+        borderColor: '#D8B84A',
+        color: '#041226',
+        fontWeight: '800',
+    },
+
+    clearSearchButton: {
+        position: 'absolute',
+        right: 10,
+        top: 8,
+        width: 32,
+        height: 32,
+        borderRadius: 16,
+        backgroundColor: '#041226',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+
+    clearSearchText: {
+        color: '#D8B84A',
+        fontSize: 24,
+        lineHeight: 26,
+        fontWeight: '900',
+    },
+
+    filterRow: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 8,
+        marginTop: 12,
+    },
+
+    filterChip: {
+        paddingHorizontal: 14,
+        paddingVertical: 9,
+        borderRadius: 22,
+        backgroundColor: '#fff',
+        borderWidth: 1,
+        borderColor: '#D8B84A',
+    },
+
+    filterChipActive: {
+        backgroundColor: '#041226',
+    },
+
+    filterChipText: {
+        color: '#041226',
+        fontWeight: '900',
+    },
+
+    filterChipTextActive: {
+        color: '#D8B84A',
+    },
+
+    markAllButton: {
+        marginTop: 12,
+        backgroundColor: '#041226',
+        padding: 13,
+        borderRadius: 12,
+        alignItems: 'center',
+    },
+
+    markAllButtonText: {
+        color: '#D8B84A',
+        fontWeight: '900',
+    },
+
+    summaryCard: {
+        backgroundColor: '#FFF8E1',
+        borderRadius: 14,
+        padding: 13,
+        borderWidth: 1,
+        borderColor: '#D8B84A',
+        marginTop: 14,
+    },
+
+    summaryTitle: {
+        fontWeight: '900',
+        color: '#041226',
+        marginBottom: 8,
+    },
+
+    summaryRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        gap: 8,
+    },
+
+    summaryPresent: {
+        fontWeight: '900',
+        color: '#16a34a',
+    },
+
+    summaryLate: {
+        fontWeight: '900',
+        color: '#D97706',
+    },
+
+    summaryAbsent: {
+        fontWeight: '900',
+        color: '#dc2626',
     },
 
     card: {

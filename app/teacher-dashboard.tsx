@@ -166,6 +166,15 @@ export default function TeacherDashboard() {
                         />
                     </View>
                 </View>
+
+                <TouchableOpacity
+                    style={styles.logoutButton}
+                    onPress={() => router.replace('/login' as any)}
+                    activeOpacity={0.9}
+                >
+                    <Text style={styles.logoutButtonText}>Logout</Text>
+                </TouchableOpacity>
+
             </ScrollView>
 
             <Modal visible={menuVisible} transparent animationType="slide">
@@ -583,6 +592,26 @@ const styles = StyleSheet.create({
         fontWeight: '800',
         color: colors.slateText,
         marginTop: spacing.xs,
+    },
+
+
+    logoutButton: {
+        backgroundColor: colors.primaryNavy,
+        borderRadius: 28,
+        borderWidth: 1.5,
+        borderColor: colors.cardGoldBorder,
+        paddingVertical: spacing.lg,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginTop: spacing.xl,
+        marginBottom: spacing.xl,
+        ...shadows.medium,
+    },
+
+    logoutButtonText: {
+        fontSize: 20,
+        fontWeight: '900',
+        color: colors.premiumGold,
     },
 
     modalOverlay: {

@@ -11,7 +11,7 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
-import { useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { colors, spacing, shadows } from '../src/theme';
 
 const BASE_URL = 'http://192.168.1.75:8080';
@@ -27,7 +27,7 @@ type ReportItem = {
 };
 
 export default function AttendanceReportScreen() {
-    const { role } = useLocalSearchParams();
+    const { teacherId, teacherName, role } = useLocalSearchParams();
 
     const userRole = String(role || 'ADMIN').toUpperCase();
     const isAdmin = userRole === 'ADMIN';
@@ -146,6 +146,17 @@ export default function AttendanceReportScreen() {
         loadAdminReport();
     };
 
+    const goBackToTeacherDashboard = () => {
+        router.replace({
+            pathname: '/teacher-dashboard',
+            params: {
+                teacherId,
+                teacherName,
+                role: userRole,
+            },
+        } as any);
+    };
+
     const sortedReport = useMemo(() => {
         const data = [...reportData];
 
@@ -181,11 +192,23 @@ export default function AttendanceReportScreen() {
                 contentContainerStyle={styles.container}
                 showsVerticalScrollIndicator={false}
             >
-                <Text style={styles.title}>
-                    {isAdmin
-                        ? 'Admin Attendance Reports'
-                        : 'Attendance Reports'}
-                </Text>
+                <View style={styles.headerRow}>
+                    <TouchableOpacity
+                        style={styles.backButton}
+                        onPress={goBackToTeacherDashboard}
+                        activeOpacity={0.85}
+                    >
+                        <Text style={styles.backButtonText}>‹</Text>
+                    </TouchableOpacity>
+
+                    <Text style={styles.title}>
+                        {isAdmin
+                            ? 'Admin Reports'
+                            : 'Attendance Reports'}
+                    </Text>
+
+                    <View style={styles.headerSpacer} />
+                </View>
 
                 <View style={styles.filterCard}>
                     <Text style={styles.label}>Report Date</Text>
@@ -350,17 +373,47 @@ const styles = StyleSheet.create({
     },
 
     container: {
-        padding: spacing.screenPadding,
+        paddingHorizontal: spacing.screenPadding,
+        paddingTop: 64,
         paddingBottom: spacing.xxxl,
     },
 
+    headerRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: spacing.xl,
+    },
+
+    backButton: {
+        width: 48,
+        height: 48,
+        borderRadius: 24,
+        backgroundColor: 'rgba(255,255,255,0.42)',
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.65)',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+
+    backButtonText: {
+        fontSize: 38,
+        lineHeight: 40,
+        fontWeight: '900',
+        color: colors.primaryNavy,
+    },
+
     title: {
-        fontSize: 30,
+        flex: 1,
+        fontSize: 28,
         fontWeight: '900',
         color: colors.primaryNavy,
         textAlign: 'center',
-        marginTop: spacing.xl,
-        marginBottom: spacing.xl,
+        paddingHorizontal: spacing.sm,
+    },
+
+    headerSpacer: {
+        width: 48,
     },
 
     filterCard: {

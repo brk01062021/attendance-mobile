@@ -388,7 +388,7 @@ export default function HomeScreen() {
     const navigateToTeacherDashboard = () => {
         setShowMenuModal(false);
 
-        router.push({
+        router.replace({
             pathname: '/teacher-dashboard',
             params: {
                 teacherId,
@@ -500,8 +500,8 @@ export default function HomeScreen() {
                                 <TouchableOpacity
                                     style={styles.backButton}
                                     onPress={() =>
-                                        router.push({
-                                            pathname: '/home-v2',
+                                        router.replace({
+                                            pathname: '/teacher-dashboard',
                                             params: {
                                                 role: userRole,
                                                 teacherId,
