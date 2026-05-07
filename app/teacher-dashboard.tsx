@@ -14,10 +14,14 @@ import { colors, shadows, spacing } from '../src/theme';
 export default function TeacherDashboard() {
     const params = useLocalSearchParams();
 
+    const teacherId = params.teacherId;
+    const teacherName = params.teacherName;
+    const role = params.role || 'TEACHER';
+
     const displayTeacherName = useMemo(() => {
-        const name = String(params.teacherName || '').trim();
+        const name = String(teacherName || '').trim();
         return name.length > 0 ? name : 'Teacher';
-    }, [params.teacherName]);
+    }, [teacherName]);
 
     const [menuVisible, setMenuVisible] = useState(false);
 
@@ -26,6 +30,19 @@ export default function TeacherDashboard() {
         completedAttendance: '2',
         pendingAttendance: '2',
         attendancePercent: '86%',
+    };
+
+    const goToTakeAttendance = () => {
+        setMenuVisible(false);
+
+        router.replace({
+            pathname: '/home',
+            params: {
+                teacherId,
+                teacherName,
+                role,
+            },
+        } as any);
     };
 
     return (
@@ -61,18 +78,59 @@ export default function TeacherDashboard() {
                 <View style={styles.heroCard}>
                     <Text style={styles.heroSmallText}>Good morning</Text>
 
-                    <Text style={styles.heroName}>
-                        {displayTeacherName}
-                    </Text>
+                    <Text style={styles.heroName}>{displayTeacherName}</Text>
 
                     <Text style={styles.heroSubText}>
                         Manage today&apos;s classes, attendance, reports and replacement updates.
                     </Text>
                 </View>
 
+                <View style={styles.classesCard}>
+                    <Text style={styles.sectionEyebrow}>My Classes</Text>
+                    <Text style={styles.sectionTitle}>Today&apos;s Schedule</Text>
+
+                    <ScheduleRow
+                        time="09:00 AM"
+                        subject="Mathematics"
+                        className="Class 8 - A"
+                        status="Attendance Done"
+                        done
+                    />
+
+                    <ScheduleRow
+                        time="10:00 AM"
+                        subject="Science"
+                        className="Class 7 - B"
+                        status="Pending"
+                    />
+
+                    <ScheduleRow
+                        time="11:30 AM"
+                        subject="English"
+                        className="Class 9 - A"
+                        status="Pending"
+                    />
+                </View>
+
+                <TouchableOpacity
+                    style={styles.primaryAction}
+                    onPress={goToTakeAttendance}
+                    activeOpacity={0.9}
+                >
+                    <View style={styles.primaryActionTextBox}>
+                        <Text style={styles.primaryActionTitle}>Take Attendance</Text>
+
+                        <Text style={styles.primaryActionSubtitle}>
+                            Select class, section and subject
+                        </Text>
+                    </View>
+
+                    <Text style={styles.primaryActionArrow}>›</Text>
+                </TouchableOpacity>
+
                 <View style={styles.overviewCard}>
                     <View style={styles.sectionHeaderRow}>
-                        <View>
+                        <View style={styles.sectionHeaderTextBox}>
                             <Text style={styles.sectionEyebrow}>Today</Text>
                             <Text style={styles.sectionTitle}>Attendance Overview</Text>
                         </View>
@@ -107,83 +165,6 @@ export default function TeacherDashboard() {
                             label="Average"
                         />
                     </View>
-
-                    <TouchableOpacity
-                        style={styles.primaryAction}
-                        onPress={() => router.push('/home' as any)}
-                        activeOpacity={0.9}
-                    >
-                        <View>
-                            <Text style={styles.primaryActionTitle}>
-                                Take Attendance
-                            </Text>
-
-                            <Text style={styles.primaryActionSubtitle}>
-                                Select class, section and subject
-                            </Text>
-                        </View>
-
-                        <Text style={styles.primaryActionArrow}>›</Text>
-                    </TouchableOpacity>
-                </View>
-
-                <Text style={styles.quickHeading}>Quick Actions</Text>
-
-                <View style={styles.quickGrid}>
-                    <QuickActionCard
-                        emoji="✅"
-                        title="Take Attendance"
-                        subtitle="Load students and submit attendance"
-                        onPress={() => router.push('/home' as any)}
-                    />
-
-                    <QuickActionCard
-                        emoji="📅"
-                        title="Date Summary"
-                        subtitle="Check daily attendance overview"
-                        onPress={() => router.push('/date-summary' as any)}
-                    />
-
-                    <QuickActionCard
-                        emoji="📄"
-                        title="Reports"
-                        subtitle="View attendance reports"
-                        onPress={() => router.push('/attendance-report' as any)}
-                    />
-
-                    <QuickActionCard
-                        emoji="🔁"
-                        title="Replacements"
-                        subtitle="Teacher leave replacement updates"
-                        onPress={() => router.push('/teacher-replacements' as any)}
-                    />
-                </View>
-
-                <View style={styles.classesCard}>
-                    <Text style={styles.sectionEyebrow}>My Classes</Text>
-                    <Text style={styles.sectionTitle}>Today&apos;s Schedule</Text>
-
-                    <ScheduleRow
-                        time="09:00 AM"
-                        subject="Mathematics"
-                        className="Class 8 - A"
-                        status="Attendance Done"
-                        done
-                    />
-
-                    <ScheduleRow
-                        time="10:00 AM"
-                        subject="Science"
-                        className="Class 7 - B"
-                        status="Pending"
-                    />
-
-                    <ScheduleRow
-                        time="11:30 AM"
-                        subject="English"
-                        className="Class 9 - A"
-                        status="Pending"
-                    />
                 </View>
             </ScrollView>
 
@@ -203,17 +184,21 @@ export default function TeacherDashboard() {
 
                         <MenuItem
                             title="Take Attendance"
-                            onPress={() => {
-                                setMenuVisible(false);
-                                router.push('/home' as any);
-                            }}
+                            onPress={goToTakeAttendance}
                         />
 
                         <MenuItem
                             title="Date Summary"
                             onPress={() => {
                                 setMenuVisible(false);
-                                router.push('/date-summary' as any);
+                                router.push({
+                                    pathname: '/date-summary',
+                                    params: {
+                                        teacherId,
+                                        teacherName,
+                                        role,
+                                    },
+                                } as any);
                             }}
                         />
 
@@ -221,7 +206,29 @@ export default function TeacherDashboard() {
                             title="Reports"
                             onPress={() => {
                                 setMenuVisible(false);
-                                router.push('/attendance-report' as any);
+                                router.push({
+                                    pathname: '/attendance-report',
+                                    params: {
+                                        teacherId,
+                                        teacherName,
+                                        role,
+                                    },
+                                } as any);
+                            }}
+                        />
+
+                        <MenuItem
+                            title="Replacements"
+                            onPress={() => {
+                                setMenuVisible(false);
+                                router.push({
+                                    pathname: '/teacher-replacements',
+                                    params: {
+                                        teacherId,
+                                        teacherName,
+                                        role,
+                                    },
+                                } as any);
                             }}
                         />
 
@@ -255,30 +262,6 @@ function StatCard({
             <Text style={styles.statValue}>{value}</Text>
             <Text style={styles.statLabel}>{label}</Text>
         </View>
-    );
-}
-
-function QuickActionCard({
-                             emoji,
-                             title,
-                             subtitle,
-                             onPress,
-                         }: {
-    emoji: string;
-    title: string;
-    subtitle: string;
-    onPress: () => void;
-}) {
-    return (
-        <TouchableOpacity
-            style={styles.quickCard}
-            onPress={onPress}
-            activeOpacity={0.9}
-        >
-            <Text style={styles.quickEmoji}>{emoji}</Text>
-            <Text style={styles.quickTitle}>{title}</Text>
-            <Text style={styles.quickSubtitle}>{subtitle}</Text>
-        </TouchableOpacity>
     );
 }
 
@@ -344,8 +327,8 @@ const styles = StyleSheet.create({
     },
 
     container: {
-        padding: spacing.screenPadding,
-        paddingTop: spacing.xxxl,
+        paddingHorizontal: spacing.screenPadding,
+        paddingTop: 72,
         paddingBottom: 140,
     },
 
@@ -379,6 +362,7 @@ const styles = StyleSheet.create({
         fontSize: 21,
         fontWeight: '900',
         color: colors.white,
+        paddingHorizontal: spacing.sm,
     },
 
     heroCard: {
@@ -412,6 +396,111 @@ const styles = StyleSheet.create({
         marginTop: spacing.md,
     },
 
+    classesCard: {
+        backgroundColor: 'rgba(255,255,255,0.96)',
+        borderRadius: 34,
+        borderWidth: 1.5,
+        borderColor: colors.cardGoldBorder,
+        padding: spacing.xl,
+        marginBottom: spacing.xl,
+        ...shadows.medium,
+    },
+
+    scheduleRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#FFF8E1',
+        borderRadius: 22,
+        padding: spacing.md,
+        marginTop: spacing.md,
+    },
+
+    scheduleTimeBox: {
+        width: 78,
+    },
+
+    scheduleTime: {
+        fontSize: 13,
+        fontWeight: '900',
+        color: colors.primaryNavy,
+    },
+
+    scheduleInfo: {
+        flex: 1,
+        paddingHorizontal: spacing.md,
+    },
+
+    scheduleSubject: {
+        fontSize: 16,
+        fontWeight: '900',
+        color: colors.primaryNavy,
+    },
+
+    scheduleClass: {
+        fontSize: 13,
+        fontWeight: '700',
+        color: colors.slateText,
+        marginTop: spacing.xs,
+    },
+
+    scheduleStatus: {
+        backgroundColor: '#FFF0D1',
+        paddingHorizontal: spacing.md,
+        paddingVertical: spacing.sm,
+        borderRadius: 16,
+    },
+
+    scheduleStatusDone: {
+        backgroundColor: '#E8F8EF',
+    },
+
+    scheduleStatusText: {
+        fontSize: 12,
+        fontWeight: '900',
+        color: '#B36B00',
+    },
+
+    scheduleStatusTextDone: {
+        color: '#16834A',
+    },
+
+    primaryAction: {
+        backgroundColor: colors.primaryNavy,
+        borderRadius: 28,
+        borderWidth: 1.5,
+        borderColor: colors.cardGoldBorder,
+        padding: spacing.xl,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: spacing.xl,
+        ...shadows.medium,
+    },
+
+    primaryActionTextBox: {
+        flex: 1,
+        paddingRight: spacing.md,
+    },
+
+    primaryActionTitle: {
+        fontSize: 24,
+        fontWeight: '900',
+        color: colors.white,
+    },
+
+    primaryActionSubtitle: {
+        fontSize: 15,
+        fontWeight: '700',
+        color: 'rgba(255,255,255,0.78)',
+        marginTop: spacing.sm,
+    },
+
+    primaryActionArrow: {
+        fontSize: 46,
+        fontWeight: '900',
+        color: colors.premiumGold,
+    },
+
     overviewCard: {
         backgroundColor: 'rgba(255,255,255,0.96)',
         borderRadius: 34,
@@ -426,6 +515,11 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'space-between',
         marginBottom: spacing.lg,
+    },
+
+    sectionHeaderTextBox: {
+        flex: 1,
+        paddingRight: spacing.md,
     },
 
     sectionEyebrow: {
@@ -489,151 +583,6 @@ const styles = StyleSheet.create({
         fontWeight: '800',
         color: colors.slateText,
         marginTop: spacing.xs,
-    },
-
-    primaryAction: {
-        backgroundColor: colors.primaryNavy,
-        borderRadius: 28,
-        borderWidth: 1.5,
-        borderColor: colors.cardGoldBorder,
-        padding: spacing.xl,
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        marginTop: spacing.sm,
-    },
-
-    primaryActionTitle: {
-        fontSize: 22,
-        fontWeight: '900',
-        color: colors.white,
-    },
-
-    primaryActionSubtitle: {
-        fontSize: 15,
-        fontWeight: '700',
-        color: 'rgba(255,255,255,0.78)',
-        marginTop: spacing.sm,
-    },
-
-    primaryActionArrow: {
-        fontSize: 44,
-        fontWeight: '900',
-        color: colors.premiumGold,
-    },
-
-    quickHeading: {
-        fontSize: 25,
-        fontWeight: '900',
-        color: colors.white,
-        marginTop: spacing.xxl,
-        marginBottom: spacing.lg,
-    },
-
-    quickGrid: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        justifyContent: 'space-between',
-    },
-
-    quickCard: {
-        width: '48%',
-        backgroundColor: 'rgba(255,255,255,0.95)',
-        borderRadius: 28,
-        borderWidth: 1.5,
-        borderColor: colors.cardGoldBorder,
-        padding: spacing.lg,
-        marginBottom: spacing.lg,
-        minHeight: 165,
-        ...shadows.medium,
-    },
-
-    quickEmoji: {
-        fontSize: 36,
-        marginBottom: spacing.md,
-    },
-
-    quickTitle: {
-        fontSize: 19,
-        fontWeight: '900',
-        color: colors.primaryNavy,
-        lineHeight: 25,
-    },
-
-    quickSubtitle: {
-        fontSize: 14,
-        fontWeight: '700',
-        color: colors.slateText,
-        marginTop: spacing.sm,
-        lineHeight: 20,
-    },
-
-    classesCard: {
-        backgroundColor: 'rgba(255,255,255,0.96)',
-        borderRadius: 34,
-        borderWidth: 1.5,
-        borderColor: colors.cardGoldBorder,
-        padding: spacing.xl,
-        marginTop: spacing.lg,
-        ...shadows.medium,
-    },
-
-    scheduleRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: '#FFF8E1',
-        borderRadius: 22,
-        padding: spacing.md,
-        marginTop: spacing.md,
-    },
-
-    scheduleTimeBox: {
-        width: 78,
-    },
-
-    scheduleTime: {
-        fontSize: 13,
-        fontWeight: '900',
-        color: colors.primaryNavy,
-    },
-
-    scheduleInfo: {
-        flex: 1,
-        paddingHorizontal: spacing.md,
-    },
-
-    scheduleSubject: {
-        fontSize: 16,
-        fontWeight: '900',
-        color: colors.primaryNavy,
-    },
-
-    scheduleClass: {
-        fontSize: 13,
-        fontWeight: '700',
-        color: colors.slateText,
-        marginTop: spacing.xs,
-    },
-
-    scheduleStatus: {
-        backgroundColor: '#FFF0D1',
-        paddingHorizontal: spacing.md,
-        paddingVertical: spacing.sm,
-        borderRadius: 16,
-    },
-
-    scheduleStatusDone: {
-        backgroundColor: '#E8F8EF',
-    },
-
-    scheduleStatusText: {
-        fontSize: 12,
-        fontWeight: '900',
-        color: '#B36B00',
-    },
-
-    scheduleStatusTextDone: {
-        color: '#16834A',
     },
 
     modalOverlay: {
