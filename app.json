@@ -2,7 +2,7 @@
   "expo": {
     "name": "VidyaSetu",
     "slug": "attendance-mobile",
-    "version": "1.0.0",
+    "version": "1.0.3",
     "orientation": "portrait",
     "icon": "./assets/branding/app-icon.png",
     "scheme": "attendancemobile",
@@ -10,12 +10,14 @@
     "newArchEnabled": true,
 
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "buildNumber": "4"
     },
 
     "android": {
+      "versionCode": 4,
       "adaptiveIcon": {
-        "backgroundColor": "#061B33",
+        "backgroundColor": "#FFFFFF",
         "foregroundImage": "./assets/branding/app-icon.png"
       },
       "edgeToEdgeEnabled": true,
@@ -32,11 +34,11 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/branding/splash-bg.png",
+          "image": "./assets/branding/splash-gold.png",
           "resizeMode": "cover",
-          "backgroundColor": "#061B33",
+          "backgroundColor": "#FFFFFF",
           "dark": {
-            "image": "./assets/branding/splash-bg.png",
+            "image": "./assets/branding/splash-dark.png",
             "resizeMode": "cover",
             "backgroundColor": "#061B33"
           }
