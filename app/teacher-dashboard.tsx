@@ -68,7 +68,16 @@ export default function TeacherDashboard() {
 
                     <TouchableOpacity
                         style={styles.circleButton}
-                        onPress={() => router.push('/teacher-notifications' as any)}
+                        onPress={() =>
+                            router.push({
+                                pathname: '/notifications',
+                                params: {
+                                    userId: teacherId,
+                                    role,
+                                    userName: teacherName,
+                                },
+                            } as any)
+                        }
                         activeOpacity={0.85}
                     >
                         <Text style={styles.circleButtonText}>🔔</Text>

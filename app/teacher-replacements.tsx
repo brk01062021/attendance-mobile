@@ -174,14 +174,12 @@ export default function TeacherReplacementsScreen() {
     return (
         <ImageBackground source={images.splashGold} style={styles.screen} resizeMode="cover">
             <View style={styles.overlay}>
-                <View style={styles.headerRow}>
-                    <TouchableOpacity style={styles.backButton} onPress={goBackToDashboard} activeOpacity={0.85}>
+                <View style={styles.topBar}>
+                    <TouchableOpacity style={styles.circleButton} onPress={goBackToDashboard} activeOpacity={0.85}>
                         <Text style={styles.backButtonText}>‹</Text>
                     </TouchableOpacity>
 
-                    <Text style={styles.headerTitle}>Teacher Replacements</Text>
-
-                    <TouchableOpacity style={styles.refreshButton} onPress={() => loadReplacements(true)} activeOpacity={0.85}>
+                    <TouchableOpacity style={styles.circleButton} onPress={() => loadReplacements(true)} activeOpacity={0.85}>
                         <Text style={styles.refreshButtonText}>↻</Text>
                     </TouchableOpacity>
                 </View>
@@ -193,55 +191,62 @@ export default function TeacherReplacementsScreen() {
                         <RefreshControl refreshing={refreshing} onRefresh={() => loadReplacements(true)} />
                     }
                 >
-                    <View style={styles.heroCard}>
-                        <Text style={styles.heroLabel}>Assigned replacement classes</Text>
-                        <Text style={styles.heroName}>{displayTeacherName}</Text>
-                        <Text style={styles.heroText}>
-                            View classes assigned to you when another teacher is on leave.
-                        </Text>
+                    <View style={styles.titleBlock}>
+                        <Text style={styles.workspaceTitle}>Teacher Workspace</Text>
+                        <Text style={styles.pageTitle}>Teacher Replacements</Text>
+                        <Text style={styles.welcomeText}>Welcome, {displayTeacherName}</Text>
                     </View>
 
-                    <View style={styles.summaryRow}>
-                        <SummaryCard label="Today" value={todayItems.length} />
-                        <SummaryCard label="Upcoming" value={upcomingItems.length} />
-                        <SummaryCard label="Completed" value={historyItems.length} />
-                    </View>
-
-                    <View style={styles.tabRow}>
-                        <TabButton title="Today" active={activeTab === 'TODAY'} onPress={() => setActiveTab('TODAY')} />
-                        <TabButton title="Upcoming" active={activeTab === 'UPCOMING'} onPress={() => setActiveTab('UPCOMING')} />
-                        <TabButton title="History" active={activeTab === 'HISTORY'} onPress={() => setActiveTab('HISTORY')} />
-                    </View>
-
-                    {loading ? (
-                        <View style={styles.loadingCard}>
-                            <ActivityIndicator size="large" />
-                            <Text style={styles.loadingText}>Loading replacements...</Text>
-                        </View>
-                    ) : visibleItems.length === 0 ? (
-                        <View style={styles.emptyCard}>
-                            <Text style={styles.emptyIcon}>🧑‍🏫</Text>
-                            <Text style={styles.emptyTitle}>No replacements found</Text>
-                            <Text style={styles.emptyText}>
-                                {activeTab === 'TODAY'
-                                    ? 'No replacement classes assigned for today.'
-                                    : activeTab === 'UPCOMING'
-                                        ? 'No upcoming replacement classes assigned.'
-                                        : 'No completed replacement history found.'}
+                    <View style={styles.mainCard}>
+                        <View style={styles.cardHeaderBlock}>
+                            <Text style={styles.sectionTitle}>Assigned Replacement Classes</Text>
+                            <Text style={styles.sectionSubtitle}>
+                                View classes assigned to you when another teacher is on leave.
                             </Text>
                         </View>
-                    ) : (
-                        <View style={styles.listSection}>
-                            {visibleItems.map((item) => (
-                                <ReplacementCard
-                                    key={item.id}
-                                    item={item}
-                                    currentTab={activeTab}
-                                    onPress={() => setSelectedSchedule(item)}
-                                />
-                            ))}
+
+                        <View style={styles.summaryRow}>
+                            <SummaryCard label="Today" value={todayItems.length} />
+                            <SummaryCard label="Upcoming" value={upcomingItems.length} />
+                            <SummaryCard label="Completed" value={historyItems.length} />
                         </View>
-                    )}
+
+                        <View style={styles.tabRow}>
+                            <TabButton title="Today" active={activeTab === 'TODAY'} onPress={() => setActiveTab('TODAY')} />
+                            <TabButton title="Upcoming" active={activeTab === 'UPCOMING'} onPress={() => setActiveTab('UPCOMING')} />
+                            <TabButton title="History" active={activeTab === 'HISTORY'} onPress={() => setActiveTab('HISTORY')} />
+                        </View>
+
+                        {loading ? (
+                            <View style={styles.loadingCard}>
+                                <ActivityIndicator size="large" />
+                                <Text style={styles.loadingText}>Loading replacements...</Text>
+                            </View>
+                        ) : visibleItems.length === 0 ? (
+                            <View style={styles.emptyCard}>
+                                <Text style={styles.emptyIcon}>🧑‍🏫</Text>
+                                <Text style={styles.emptyTitle}>No replacements found</Text>
+                                <Text style={styles.emptyText}>
+                                    {activeTab === 'TODAY'
+                                        ? 'No replacement classes assigned for today.'
+                                        : activeTab === 'UPCOMING'
+                                            ? 'No upcoming replacement classes assigned.'
+                                            : 'No completed replacement history found.'}
+                                </Text>
+                            </View>
+                        ) : (
+                            <View style={styles.listSection}>
+                                {visibleItems.map((item) => (
+                                    <ReplacementCard
+                                        key={item.id}
+                                        item={item}
+                                        currentTab={activeTab}
+                                        onPress={() => setSelectedSchedule(item)}
+                                    />
+                                ))}
+                            </View>
+                        )}
+                    </View>
                 </ScrollView>
 
                 <Modal visible={selectedSchedule !== null} transparent animationType="fade">
@@ -356,101 +361,112 @@ const styles = StyleSheet.create({
     },
     overlay: {
         flex: 1,
-        backgroundColor: 'rgba(255, 248, 225, 0.55)',
+        backgroundColor: 'rgba(255, 248, 225, 0.35)',
     },
-    headerRow: {
+    topBar: {
         paddingTop: 58,
-        paddingHorizontal: 18,
-        paddingBottom: 10,
+        paddingHorizontal: 24,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
     },
-    backButton: {
-        width: 42,
-        height: 42,
-        borderRadius: 21,
-        backgroundColor: '#FFF8E1',
+    circleButton: {
+        width: 48,
+        height: 48,
+        borderRadius: 24,
+        backgroundColor: 'rgba(255, 248, 225, 0.92)',
         alignItems: 'center',
         justifyContent: 'center',
         borderWidth: 1,
-        borderColor: '#D6A94A',
+        borderColor: 'rgba(214, 169, 74, 0.7)',
+        shadowColor: '#000',
+        shadowOpacity: 0.12,
+        shadowOffset: { width: 0, height: 5 },
+        shadowRadius: 10,
+        elevation: 4,
     },
     backButtonText: {
-        fontSize: 34,
-        color: '#6B3F00',
-        marginTop: -4,
-    },
-    headerTitle: {
-        flex: 1,
-        textAlign: 'center',
-        fontSize: 21,
+        fontSize: 40,
+        color: '#09213F',
         fontWeight: '900',
-        color: '#3D2500',
-    },
-    refreshButton: {
-        width: 42,
-        height: 42,
-        borderRadius: 21,
-        backgroundColor: '#FFF8E1',
-        alignItems: 'center',
-        justifyContent: 'center',
-        borderWidth: 1,
-        borderColor: '#D6A94A',
+        marginTop: -6,
     },
     refreshButtonText: {
-        fontSize: 23,
+        fontSize: 29,
         fontWeight: '900',
-        color: '#6B3F00',
+        color: '#09213F',
+        marginTop: -2,
     },
     container: {
-        padding: 18,
+        paddingHorizontal: 24,
+        paddingTop: 26,
         paddingBottom: 36,
     },
-    heroCard: {
-        backgroundColor: 'rgba(61, 37, 0, 0.92)',
-        borderRadius: 24,
-        padding: 20,
+    titleBlock: {
+        marginBottom: 22,
+    },
+    workspaceTitle: {
+        color: '#09213F',
+        fontSize: 21,
+        fontWeight: '900',
+        marginBottom: 4,
+    },
+    pageTitle: {
+        color: '#071B35',
+        fontSize: 42,
+        fontWeight: '900',
+        lineHeight: 48,
+        letterSpacing: -1.1,
+    },
+    welcomeText: {
+        color: '#0C2442',
+        fontSize: 17,
+        fontWeight: '900',
+        marginTop: 18,
+    },
+    mainCard: {
+        backgroundColor: 'rgba(255, 255, 255, 0.96)',
+        borderRadius: 30,
+        paddingHorizontal: 22,
+        paddingTop: 26,
+        paddingBottom: 24,
         borderWidth: 1,
-        borderColor: '#E2B857',
+        borderColor: 'rgba(230, 202, 129, 0.75)',
         shadowColor: '#000',
         shadowOpacity: 0.18,
-        shadowOffset: { width: 0, height: 8 },
-        shadowRadius: 16,
-        elevation: 6,
+        shadowOffset: { width: 0, height: 10 },
+        shadowRadius: 20,
+        elevation: 8,
     },
-    heroLabel: {
-        color: '#F6D37A',
-        fontSize: 12,
+    cardHeaderBlock: {
+        marginBottom: 18,
+    },
+    sectionTitle: {
+        color: '#071B35',
+        fontSize: 27,
         fontWeight: '900',
-        textTransform: 'uppercase',
-        letterSpacing: 0.8,
+        lineHeight: 32,
     },
-    heroName: {
-        color: '#FFFFFF',
-        fontSize: 26,
-        fontWeight: '900',
-        marginTop: 6,
-    },
-    heroText: {
-        color: '#F8E8BC',
-        fontSize: 14,
-        lineHeight: 20,
+    sectionSubtitle: {
+        color: '#6B7280',
+        fontSize: 16,
+        fontWeight: '700',
+        lineHeight: 23,
         marginTop: 8,
     },
     summaryRow: {
         flexDirection: 'row',
-        gap: 10,
-        marginTop: 16,
+        gap: 9,
+        marginTop: 4,
     },
     summaryCard: {
         flex: 1,
         backgroundColor: '#FFFDF4',
-        borderRadius: 18,
-        paddingVertical: 15,
+        borderRadius: 17,
+        paddingVertical: 14,
         alignItems: 'center',
         borderWidth: 1,
-        borderColor: '#E3C36F',
+        borderColor: '#E8D28B',
     },
     summaryValue: {
         color: '#4B2E00',
@@ -459,18 +475,18 @@ const styles = StyleSheet.create({
     },
     summaryLabel: {
         color: '#7B5A14',
-        fontSize: 12,
-        fontWeight: '800',
+        fontSize: 11,
+        fontWeight: '900',
         marginTop: 3,
     },
     tabRow: {
         flexDirection: 'row',
-        backgroundColor: 'rgba(255, 253, 244, 0.9)',
+        backgroundColor: '#FFFDF4',
         borderRadius: 18,
         padding: 5,
         marginTop: 16,
         borderWidth: 1,
-        borderColor: '#E3C36F',
+        borderColor: '#E8D28B',
     },
     tabButton: {
         flex: 1,
@@ -507,7 +523,8 @@ const styles = StyleSheet.create({
         marginTop: 18,
         backgroundColor: '#FFFDF4',
         borderRadius: 22,
-        padding: 28,
+        paddingVertical: 30,
+        paddingHorizontal: 18,
         alignItems: 'center',
         borderWidth: 1,
         borderColor: '#E3C36F',
@@ -516,10 +533,11 @@ const styles = StyleSheet.create({
         fontSize: 34,
     },
     emptyTitle: {
-        fontSize: 18,
+        fontSize: 19,
         fontWeight: '900',
         color: '#3D2500',
         marginTop: 8,
+        textAlign: 'center',
     },
     emptyText: {
         fontSize: 14,
@@ -539,10 +557,10 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: '#DFC069',
         shadowColor: '#000',
-        shadowOpacity: 0.12,
-        shadowOffset: { width: 0, height: 6 },
-        shadowRadius: 12,
-        elevation: 4,
+        shadowOpacity: 0.1,
+        shadowOffset: { width: 0, height: 5 },
+        shadowRadius: 10,
+        elevation: 3,
     },
     cardTopRow: {
         flexDirection: 'row',

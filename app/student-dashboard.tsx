@@ -73,6 +73,7 @@ const examResults = {
 export default function StudentDashboard() {
     const params = useLocalSearchParams();
     const studentName = String(params.studentName || 'Student');
+    const studentId = String(params.studentId || params.userId || '1');
 
     const [menuOpen, setMenuOpen] = useState(false);
     const [currentView, setCurrentView] = useState<MenuView>('HOME');
@@ -157,7 +158,20 @@ export default function StudentDashboard() {
                         {topCenterTitle}
                     </Text>
 
-                    <TouchableOpacity style={styles.circleButton} onPress={openSchoolNotices} activeOpacity={0.85}>
+                    <TouchableOpacity
+                        style={styles.circleButton}
+                        onPress={() =>
+                            router.push({
+                                pathname: '/notifications',
+                                params: {
+                                    userId: studentId,
+                                    role: 'STUDENT',
+                                    studentName,
+                                },
+                            } as any)
+                        }
+                        activeOpacity={0.85}
+                    >
                         <Text style={styles.alertIcon}>🔔</Text>
                     </TouchableOpacity>
                 </View>

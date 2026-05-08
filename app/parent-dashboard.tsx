@@ -75,6 +75,7 @@ export default function ParentDashboard() {
 
     const parentName = String(params.parentName || 'Parent');
     const studentName = String(params.studentName || 'Demo Student');
+    const parentId = String(params.parentId || params.userId || '101');
 
     const [menuOpen, setMenuOpen] = useState(false);
     const [currentView, setCurrentView] = useState<MenuView>('HOME');
@@ -84,7 +85,6 @@ export default function ParentDashboard() {
     const [contentReady, setContentReady] = useState(true);
 
     const isHomePage = currentView === 'HOME' && !selectedAttendance;
-
     const backgroundSource = isHomePage ? darkBackground : goldBackground;
 
     useEffect(() => {
@@ -140,6 +140,16 @@ export default function ParentDashboard() {
     const goLogin = useCallback(() => {
         router.replace('/login' as any);
     }, []);
+
+    const goNotifications = useCallback(() => {
+        router.push({
+            pathname: '/notifications',
+            params: {
+                userId: parentId,
+                role: 'PARENT',
+            },
+        } as any);
+    }, [parentId]);
 
     const goHome = useCallback(() => {
         setCurrentView('HOME');
@@ -204,7 +214,11 @@ export default function ParentDashboard() {
                         <Text style={styles.topCenterTitle}>{topCenterTitle}</Text>
                     )}
 
-                    <TouchableOpacity style={styles.circleButton} activeOpacity={0.85}>
+                    <TouchableOpacity
+                        style={styles.circleButton}
+                        onPress={goNotifications}
+                        activeOpacity={0.85}
+                    >
                         <Text style={styles.alertIcon}>🔔</Text>
                     </TouchableOpacity>
                 </View>
