@@ -5,499 +5,421 @@ import {
     ScrollView,
     TouchableOpacity,
     StyleSheet,
-    Alert,
+    ImageBackground,
     Modal,
-    ActivityIndicator,
+    Alert,
 } from "react-native";
-import { Calendar } from "react-native-calendars";
-
-const BASE_URL = "http://192.168.1.75:8080";
+import { router } from "expo-router";
 
 export default function AdminDashboardScreen() {
-    const todayString = new Date().toISOString().split("T")[0];
+    const [menuVisible, setMenuVisible] = useState(false);
 
-    const [date, setDate] = useState(todayString);
-    const [selectedDate, setSelectedDate] = useState(todayString);
-    const [showCalendarModal, setShowCalendarModal] = useState(false);
-
-    const [summary, setSummary] = useState<any>(null);
-    const [classes, setClasses] = useState<any[]>([]);
-    const [teachers, setTeachers] = useState<any[]>([]);
-    const [subjects, setSubjects] = useState<any[]>([]);
-
-    const [loading, setLoading] = useState(false);
-    const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
-
-    const loadDashboard = async () => {
-        try {
-            setLoading(true);
-            setHasLoadedOnce(true);
-
-            const summaryRes = await fetch(
-                `${BASE_URL}/attendance/dashboard/admin?date=${date}`
-            );
-
-            const classesRes = await fetch(
-                `${BASE_URL}/attendance/dashboard/admin/classes?date=${date}`
-            );
-
-            const teachersRes = await fetch(
-                `${BASE_URL}/attendance/dashboard/admin/teachers?date=${date}`
-            );
-
-            const subjectsRes = await fetch(
-                `${BASE_URL}/attendance/dashboard/admin/subjects?date=${date}`
-            );
-
-            if (!summaryRes.ok || !classesRes.ok || !teachersRes.ok || !subjectsRes.ok) {
-                throw new Error("Failed to load dashboard data");
-            }
-
-            const summaryData = await summaryRes.json();
-            const classesData = await classesRes.json();
-            const teachersData = await teachersRes.json();
-            const subjectsData = await subjectsRes.json();
-
-            setSummary(summaryData || null);
-            setClasses(Array.isArray(classesData) ? classesData : []);
-            setTeachers(Array.isArray(teachersData) ? teachersData : []);
-            setSubjects(Array.isArray(subjectsData) ? subjectsData : []);
-        } catch (error) {
-            console.error(error);
-            setSummary(null);
-            setClasses([]);
-            setTeachers([]);
-            setSubjects([]);
-            Alert.alert("Error", "Unable to load admin dashboard");
-        } finally {
-            setLoading(false);
-        }
+    const openRoute = (path: string) => {
+        setMenuVisible(false);
+        router.push({ pathname: path as any });
     };
 
-    const confirmDate = () => {
-        setDate(selectedDate);
-        setShowCalendarModal(false);
+    const logout = () => {
+        setMenuVisible(false);
+        router.replace("/login");
     };
-
-    const getHealthStatus = (percentage: number) => {
-        if (percentage >= 80) return "Excellent";
-        if (percentage >= 60) return "Good";
-        return "Needs Attention";
-    };
-
-    const renderProgress = (percentage: number) => (
-        <>
-            <View style={styles.progressBarBackground}>
-                <View
-                    style={[
-                        styles.progressBarFill,
-                        { width: `${Math.min(Math.max(percentage, 0), 100)}%` },
-                    ]}
-                />
-            </View>
-
-            <Text style={styles.statusText}>
-                Status: {getHealthStatus(percentage)}
-            </Text>
-        </>
-    );
-
-    const noData =
-        !summary &&
-        classes.length === 0 &&
-        teachers.length === 0 &&
-        subjects.length === 0;
 
     return (
-        <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
-            <Text style={styles.title}>Admin Dashboard</Text>
-            <Text style={styles.subtitle}>Whole School Attendance Overview</Text>
+        <ImageBackground
+            source={require("../assets/branding/splash-dark.png")}
+            style={styles.background}
+            resizeMode="cover"
+        >
+            <ScrollView contentContainerStyle={styles.scrollContent}>
+                <View style={styles.topRow}>
+                    <TouchableOpacity
+                        style={styles.circleButton}
+                        onPress={() => setMenuVisible(true)}
+                    >
+                        <Text style={styles.circleButtonText}>☰</Text>
+                    </TouchableOpacity>
 
-            <Text style={styles.label}>Attendance Date</Text>
-
-            <TouchableOpacity
-                style={styles.dateBox}
-                onPress={() => {
-                    setSelectedDate(date);
-                    setShowCalendarModal(true);
-                }}
-            >
-                <Text style={styles.dateText}>{date}</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-                style={[styles.button, loading && styles.disabledButton]}
-                onPress={loadDashboard}
-                disabled={loading}
-            >
-                <Text style={styles.buttonText}>
-                    {loading ? "Loading..." : "Load Dashboard"}
-                </Text>
-            </TouchableOpacity>
-
-            {loading && (
-                <View style={styles.loadingContainer}>
-                    <ActivityIndicator size="large" />
-                    <Text style={styles.loadingText}>Loading dashboard...</Text>
+                    <TouchableOpacity
+                        style={styles.circleButton}
+                        onPress={() => openRoute("/create-school-notice")}
+                    >
+                        <Text style={styles.micText}>🎙️</Text>
+                    </TouchableOpacity>
                 </View>
-            )}
 
-            {!loading && hasLoadedOnce && noData && (
-                <View style={styles.noDataContainer}>
-                    <Text style={styles.noDataTitle}>No Data Found</Text>
-                    <Text style={styles.noDataText}>
-                        No admin dashboard data found for selected date.
-                    </Text>
+                <Text style={styles.greeting}>Good Morning 👋</Text>
+                <Text style={styles.principalText}>Principal</Text>
+
+                <View style={styles.overviewCard}>
+                    <Text style={styles.overviewTitle}>Today&apos;s Overview</Text>
+
+                    <View style={styles.statsGrid}>
+                        <View style={styles.statBox}>
+                            <Text style={styles.statIcon}>👥</Text>
+                            <Text style={styles.statNumber}>17</Text>
+                            <Text style={styles.statLabel}>Total</Text>
+                        </View>
+
+                        <View style={styles.statBox}>
+                            <Text style={styles.statIcon}>✅</Text>
+                            <Text style={styles.statNumber}>0</Text>
+                            <Text style={styles.statLabel}>Present</Text>
+                        </View>
+
+                        <View style={styles.statBox}>
+                            <Text style={styles.statIcon}>🚫</Text>
+                            <Text style={styles.statNumber}>0</Text>
+                            <Text style={styles.statLabel}>Absent</Text>
+                        </View>
+
+                        <View style={styles.statBox}>
+                            <Text style={styles.statIcon}>⏰</Text>
+                            <Text style={styles.statNumber}>0</Text>
+                            <Text style={styles.statLabel}>Late</Text>
+                        </View>
+                    </View>
+
+                    <View style={styles.percentageBox}>
+                        <Text style={styles.percentageLabel}>Attendance Percentage</Text>
+                        <Text style={styles.percentageValue}>0.00%</Text>
+                    </View>
                 </View>
-            )}
 
-            {!loading && summary && (
-                <View style={styles.summaryCard}>
-                    <Text style={styles.summaryTitle}>School Summary</Text>
+                <Text style={styles.sectionTitle}>Quick Actions</Text>
 
-                    <Text style={styles.cardText}>
-                        Total Records: {summary.totalRecords}
-                    </Text>
-                    <Text style={styles.present}>Present: {summary.present}</Text>
-                    <Text style={styles.absent}>Absent: {summary.absent}</Text>
-                    <Text style={styles.late}>Late: {summary.late}</Text>
+                <View style={styles.quickGrid}>
+                    <TouchableOpacity
+                        style={styles.quickCard}
+                        onPress={() => openRoute("/attendance-report")}
+                    >
+                        <Text style={styles.quickIcon}>🎓</Text>
+                        <Text style={styles.quickTitle}>Attendance Report</Text>
+                        <Text style={styles.quickText}>Daily attendance reports</Text>
+                    </TouchableOpacity>
 
-                    <Text style={styles.percentage}>
-                        Attendance: {Number(summary.attendancePercentage || 0).toFixed(2)}%
-                    </Text>
+                    <TouchableOpacity
+                        style={styles.quickCard}
+                        onPress={() => openRoute("/admin-teacher-dashboard")}
+                    >
+                        <Text style={styles.quickIcon}>✅</Text>
+                        <Text style={styles.quickTitle}>Teacher Replacements</Text>
+                        <Text style={styles.quickText}>Leave replacement flow</Text>
+                    </TouchableOpacity>
 
-                    {renderProgress(Number(summary.attendancePercentage || 0))}
+                    <TouchableOpacity
+                        style={styles.quickCard}
+                        onPress={() => openRoute("/teacher-leave-planning")}
+                    >
+                        <Text style={styles.quickIcon}>🗓️</Text>
+                        <Text style={styles.quickTitle}>Leave Planning</Text>
+                        <Text style={styles.quickText}>Plan teacher leave</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                        style={styles.quickCard}
+                        onPress={() => openRoute("/create-school-notice")}
+                    >
+                        <Text style={styles.quickIcon}>🎙️</Text>
+                        <Text style={styles.quickTitle}>Create Notice</Text>
+                        <Text style={styles.quickText}>Publish school notice</Text>
+                    </TouchableOpacity>
                 </View>
-            )}
+            </ScrollView>
 
-            {!loading && classes.length > 0 && (
-                <>
-                    <Text style={styles.sectionTitle}>Class-wise Summary</Text>
+            <Modal visible={menuVisible} transparent animationType="slide">
+                <View style={styles.menuOverlay}>
+                    <View style={styles.menuBox}>
+                        <TouchableOpacity
+                            style={styles.menuCloseButton}
+                            onPress={() => setMenuVisible(false)}
+                        >
+                            <Text style={styles.menuCloseText}>×</Text>
+                        </TouchableOpacity>
 
-                    {classes.map((item, index) => (
-                        <View key={index} style={styles.card}>
-                            <Text style={styles.cardTitle}>
-                                Class {item.className} - Section {item.section}
+                        <TouchableOpacity
+                            style={styles.menuItem}
+                            onPress={() => openRoute("/admin-teacher-dashboard")}
+                        >
+                            <Text style={styles.menuItemText}>
+                                Admin Teacher&apos;s Dashboard
                             </Text>
+                        </TouchableOpacity>
 
-                            <Text style={styles.cardText}>
-                                Total: {item.totalRecords}
-                            </Text>
-                            <Text style={styles.present}>Present: {item.present}</Text>
-                            <Text style={styles.absent}>Absent: {item.absent}</Text>
-                            <Text style={styles.late}>Late: {item.late}</Text>
+                        <TouchableOpacity
+                            style={styles.menuItem}
+                            onPress={() => openRoute("/teacher-leave-planning")}
+                        >
+                            <Text style={styles.menuItemText}>Teacher Leave Planning</Text>
+                        </TouchableOpacity>
 
-                            <Text style={styles.percentage}>
-                                Attendance: {Number(item.attendancePercentage || 0).toFixed(2)}%
-                            </Text>
+                        <TouchableOpacity
+                            style={styles.menuItem}
+                            onPress={() => openRoute("/attendance-report")}
+                        >
+                            <Text style={styles.menuItemText}>Attendance Report</Text>
+                        </TouchableOpacity>
 
-                            {renderProgress(Number(item.attendancePercentage || 0))}
-                        </View>
-                    ))}
-                </>
-            )}
+                        <TouchableOpacity
+                            style={styles.menuItem}
+                            onPress={() => openRoute("/create-school-notice")}
+                        >
+                            <Text style={styles.menuItemText}>Create School Notice</Text>
+                        </TouchableOpacity>
 
-            {!loading && teachers.length > 0 && (
-                <>
-                    <Text style={styles.sectionTitle}>Teacher-wise Summary</Text>
+                        <TouchableOpacity
+                            style={styles.menuItem}
+                            onPress={() =>
+                                Alert.alert(
+                                    "Coming Soon",
+                                    "Import School Data screen will be connected next."
+                                )
+                            }
+                        >
+                            <Text style={styles.menuItemText}>Import School Data</Text>
+                        </TouchableOpacity>
 
-                    {teachers.map((item, index) => (
-                        <View key={index} style={styles.card}>
-                            <Text style={styles.cardTitle}>{item.teacherName}</Text>
+                        <TouchableOpacity
+                            style={styles.menuItem}
+                            onPress={() =>
+                                Alert.alert(
+                                    "Coming Soon",
+                                    "Register Teacher screen will be connected next."
+                                )
+                            }
+                        >
+                            <Text style={styles.menuItemText}>Register Teacher</Text>
+                        </TouchableOpacity>
 
-                            <Text style={styles.cardText}>
-                                Teacher ID: {item.teacherId}
-                            </Text>
+                        <TouchableOpacity
+                            style={styles.menuItem}
+                            onPress={() =>
+                                Alert.alert(
+                                    "Coming Soon",
+                                    "Register Parent screen will be connected next."
+                                )
+                            }
+                        >
+                            <Text style={styles.menuItemText}>Register Parent</Text>
+                        </TouchableOpacity>
 
-                            <Text style={styles.cardText}>
-                                Total: {item.totalRecords}
-                            </Text>
+                        <TouchableOpacity
+                            style={styles.menuItem}
+                            onPress={() =>
+                                Alert.alert(
+                                    "Coming Soon",
+                                    "Register Student screen will be connected next."
+                                )
+                            }
+                        >
+                            <Text style={styles.menuItemText}>Register Student</Text>
+                        </TouchableOpacity>
 
-                            <Text style={styles.present}>Present: {item.present}</Text>
-                            <Text style={styles.absent}>Absent: {item.absent}</Text>
-                            <Text style={styles.late}>Late: {item.late}</Text>
+                        <TouchableOpacity
+                            style={styles.menuItem}
+                            onPress={() =>
+                                Alert.alert(
+                                    "Coming Soon",
+                                    "Teacher Assignments screen will be connected next."
+                                )
+                            }
+                        >
+                            <Text style={styles.menuItemText}>Teacher Assignments</Text>
+                        </TouchableOpacity>
 
-                            <Text style={styles.percentage}>
-                                Attendance: {Number(item.attendancePercentage || 0).toFixed(2)}%
-                            </Text>
-
-                            {renderProgress(Number(item.attendancePercentage || 0))}
-                        </View>
-                    ))}
-                </>
-            )}
-
-            {!loading && subjects.length > 0 && (
-                <>
-                    <Text style={styles.sectionTitle}>Subject-wise Summary</Text>
-
-                    {subjects.map((item, index) => (
-                        <View key={index} style={styles.card}>
-                            <Text style={styles.cardTitle}>{item.subjectName}</Text>
-
-                            <Text style={styles.cardText}>
-                                Total: {item.totalRecords}
-                            </Text>
-
-                            <Text style={styles.present}>Present: {item.present}</Text>
-                            <Text style={styles.absent}>Absent: {item.absent}</Text>
-                            <Text style={styles.late}>Late: {item.late}</Text>
-
-                            <Text style={styles.percentage}>
-                                Attendance: {Number(item.attendancePercentage || 0).toFixed(2)}%
-                            </Text>
-
-                            {renderProgress(Number(item.attendancePercentage || 0))}
-                        </View>
-                    ))}
-                </>
-            )}
-
-            <Modal visible={showCalendarModal} transparent animationType="fade">
-                <View style={styles.modalOverlay}>
-                    <View style={styles.modalBox}>
-                        <Text style={styles.modalTitle}>Select Dashboard Date</Text>
-
-                        <Calendar
-                            current={selectedDate}
-                            onDayPress={(day) => setSelectedDate(day.dateString)}
-                            markedDates={{
-                                [selectedDate]: {
-                                    selected: true,
-                                    selectedColor: "#c69214",
-                                },
-                            }}
-                        />
-
-                        <View style={styles.modalButtonRow}>
-                            <TouchableOpacity
-                                style={styles.cancelButton}
-                                onPress={() => setShowCalendarModal(false)}
-                            >
-                                <Text style={styles.modalButtonText}>Cancel</Text>
-                            </TouchableOpacity>
-
-                            <TouchableOpacity
-                                style={styles.confirmButton}
-                                onPress={confirmDate}
-                            >
-                                <Text style={styles.modalButtonText}>Confirm Date</Text>
-                            </TouchableOpacity>
-                        </View>
+                        <TouchableOpacity style={styles.menuItem} onPress={logout}>
+                            <Text style={styles.logoutText}>Logout</Text>
+                        </TouchableOpacity>
                     </View>
                 </View>
             </Modal>
-        </ScrollView>
+        </ImageBackground>
     );
 }
 
 const styles = StyleSheet.create({
-    container: {
+    background: {
         flex: 1,
-        backgroundColor: "#fffdf7",
+        backgroundColor: "#061B33",
     },
     scrollContent: {
-        padding: 25,
-        paddingBottom: 70,
+        paddingHorizontal: 24,
+        paddingTop: 70,
+        paddingBottom: 90,
     },
-    title: {
-        fontSize: 42,
-        fontWeight: "bold",
-        color: "#7a4f01",
-        marginBottom: 10,
-    },
-    subtitle: {
-        fontSize: 20,
-        fontWeight: "800",
-        color: "#374151",
-        marginBottom: 32,
-    },
-    label: {
-        fontSize: 18,
-        fontWeight: "800",
-        marginBottom: 10,
-        color: "#374151",
-    },
-    dateBox: {
-        backgroundColor: "#fff8e7",
-        borderWidth: 1.5,
-        borderColor: "#f0d58a",
-        borderRadius: 14,
-        padding: 16,
-        marginBottom: 22,
-    },
-    dateText: {
-        fontSize: 20,
-        color: "#111827",
-    },
-    button: {
-        backgroundColor: "#7a4f01",
-        padding: 17,
-        borderRadius: 14,
+    topRow: {
+        flexDirection: "row",
+        justifyContent: "space-between",
         alignItems: "center",
-        marginBottom: 24,
+        marginBottom: 56,
     },
-    disabledButton: {
-        backgroundColor: "#d8bd72",
+    circleButton: {
+        width: 58,
+        height: 58,
+        borderRadius: 29,
+        borderWidth: 2,
+        borderColor: "#e5be3f",
+        alignItems: "center",
+        justifyContent: "center",
+        backgroundColor: "rgba(2,18,38,0.65)",
     },
-    buttonText: {
-        color: "#fff",
-        fontSize: 20,
+    circleButtonText: {
+        fontSize: 30,
+        color: "#e5be3f",
         fontWeight: "bold",
     },
-    loadingContainer: {
-        alignItems: "center",
-        marginBottom: 20,
+    micText: {
+        fontSize: 29,
     },
-    loadingText: {
-        marginTop: 10,
-        fontSize: 16,
-        fontWeight: "700",
-        color: "#374151",
-    },
-    noDataContainer: {
-        backgroundColor: "#fff8e7",
-        borderRadius: 16,
-        padding: 18,
-        borderWidth: 1.5,
-        borderColor: "#f0d58a",
-        alignItems: "center",
-        marginBottom: 20,
-    },
-    noDataTitle: {
-        fontSize: 22,
-        fontWeight: "bold",
-        color: "#7a4f01",
+    greeting: {
+        fontSize: 28,
+        fontWeight: "900",
+        color: "#e5be3f",
         marginBottom: 6,
     },
-    noDataText: {
-        fontSize: 16,
-        color: "#7a4f01",
-        textAlign: "center",
+    principalText: {
+        fontSize: 52,
+        fontWeight: "900",
+        color: "#ffffff",
+        marginBottom: 36,
     },
-    summaryCard: {
-        backgroundColor: "#fff8e7",
-        padding: 20,
-        borderRadius: 18,
-        marginBottom: 24,
+    overviewCard: {
+        backgroundColor: "rgba(255,255,255,0.96)",
+        borderRadius: 28,
         borderWidth: 1.5,
-        borderColor: "#f0d58a",
+        borderColor: "#e5be3f",
+        padding: 20,
+        marginBottom: 30,
+    },
+    overviewTitle: {
+        fontSize: 28,
+        fontWeight: "900",
+        color: "#061B33",
+        marginBottom: 20,
+    },
+    statsGrid: {
+        flexDirection: "row",
+        flexWrap: "wrap",
+        justifyContent: "space-between",
+    },
+    statBox: {
+        width: "48%",
+        backgroundColor: "#ffffff",
+        borderRadius: 18,
+        borderWidth: 1.5,
+        borderColor: "#e5be3f",
+        alignItems: "center",
+        paddingVertical: 20,
+        marginBottom: 14,
+    },
+    statIcon: {
+        fontSize: 30,
+        marginBottom: 8,
+    },
+    statNumber: {
+        fontSize: 32,
+        fontWeight: "900",
+        color: "#061B33",
+    },
+    statLabel: {
+        fontSize: 17,
+        fontWeight: "800",
+        color: "#6b7280",
+        marginTop: 4,
+    },
+    percentageBox: {
+        backgroundColor: "#061B33",
+        borderRadius: 18,
+        borderWidth: 1.5,
+        borderColor: "#e5be3f",
+        padding: 18,
+        marginTop: 6,
+    },
+    percentageLabel: {
+        color: "#e5be3f",
+        fontSize: 19,
+        fontWeight: "900",
+        marginBottom: 8,
+    },
+    percentageValue: {
+        color: "#ffffff",
+        fontSize: 42,
+        fontWeight: "900",
     },
     sectionTitle: {
-        fontSize: 26,
-        fontWeight: "bold",
-        marginBottom: 14,
-        color: "#7a4f01",
+        fontSize: 28,
+        fontWeight: "900",
+        color: "#e5be3f",
+        marginBottom: 16,
     },
-    card: {
-        backgroundColor: "#fffdf7",
-        padding: 20,
-        borderRadius: 18,
-        marginBottom: 18,
+    quickGrid: {
+        flexDirection: "row",
+        flexWrap: "wrap",
+        justifyContent: "space-between",
+    },
+    quickCard: {
+        width: "48%",
+        backgroundColor: "rgba(255,255,255,0.94)",
+        borderRadius: 20,
         borderWidth: 1.5,
-        borderColor: "#f0d58a",
+        borderColor: "#e5be3f",
+        padding: 14,
+        minHeight: 142,
+        marginBottom: 16,
+        justifyContent: "center",
     },
-    summaryTitle: {
-        fontSize: 24,
-        fontWeight: "bold",
-        marginBottom: 14,
-        color: "#7a4f01",
+    quickIcon: {
+        fontSize: 30,
+        marginBottom: 10,
     },
-    cardTitle: {
-        fontSize: 22,
+    quickTitle: {
+        fontSize: 17,
+        fontWeight: "900",
+        color: "#061B33",
+        marginBottom: 6,
+    },
+    quickText: {
+        fontSize: 13,
+        fontWeight: "700",
+        color: "#6b7280",
+        lineHeight: 18,
+    },
+    menuOverlay: {
+        flex: 1,
+        backgroundColor: "rgba(0,0,0,0.35)",
+        justifyContent: "flex-start",
+    },
+    menuBox: {
+        marginTop: 70,
+        marginHorizontal: 18,
+        backgroundColor: "#ffffff",
+        borderRadius: 22,
+        overflow: "hidden",
+        maxHeight: "88%",
+    },
+    menuCloseButton: {
+        alignSelf: "flex-end",
+        paddingHorizontal: 22,
+        paddingTop: 12,
+    },
+    menuCloseText: {
+        fontSize: 34,
         fontWeight: "bold",
-        marginBottom: 12,
         color: "#111827",
     },
-    cardText: {
-        fontSize: 17,
-        marginBottom: 7,
-        color: "#374151",
-        fontWeight: "600",
+    menuItem: {
+        paddingVertical: 20,
+        paddingHorizontal: 24,
+        borderBottomWidth: 1,
+        borderBottomColor: "#e5e7eb",
     },
-    present: {
-        fontSize: 17,
-        color: "#166534",
-        fontWeight: "800",
-        marginBottom: 7,
-    },
-    absent: {
-        fontSize: 17,
-        color: "#991b1b",
-        fontWeight: "800",
-        marginBottom: 7,
-    },
-    late: {
-        fontSize: 17,
-        color: "#92400e",
-        fontWeight: "800",
-        marginBottom: 7,
-    },
-    percentage: {
-        fontSize: 22,
-        fontWeight: "bold",
-        marginTop: 10,
-        color: "#7a4f01",
-    },
-    progressBarBackground: {
-        height: 12,
-        backgroundColor: "#f3ead1",
-        borderRadius: 12,
-        marginTop: 12,
-        overflow: "hidden",
-    },
-    progressBarFill: {
-        height: "100%",
-        backgroundColor: "#c69214",
-        borderRadius: 12,
-    },
-    statusText: {
-        fontSize: 17,
-        fontWeight: "bold",
-        marginTop: 12,
-        color: "#374151",
-    },
-    modalOverlay: {
-        flex: 1,
-        backgroundColor: "rgba(0,0,0,0.4)",
-        justifyContent: "center",
-        padding: 25,
-    },
-    modalBox: {
-        backgroundColor: "#fffdf7",
-        borderRadius: 20,
-        padding: 20,
-        borderWidth: 1.5,
-        borderColor: "#f0d58a",
-    },
-    modalTitle: {
+    menuItemText: {
         fontSize: 24,
-        fontWeight: "bold",
-        marginBottom: 18,
-        color: "#7a4f01",
+        fontWeight: "800",
+        color: "#111827",
     },
-    modalButtonRow: {
-        flexDirection: "row",
-        gap: 12,
-        marginTop: 18,
-    },
-    cancelButton: {
-        flex: 1,
-        backgroundColor: "#6b7280",
-        padding: 14,
-        borderRadius: 12,
-        alignItems: "center",
-    },
-    confirmButton: {
-        flex: 1,
-        backgroundColor: "#7a4f01",
-        padding: 14,
-        borderRadius: 12,
-        alignItems: "center",
-    },
-    modalButtonText: {
-        color: "#fff",
-        fontWeight: "bold",
-        fontSize: 16,
+    logoutText: {
+        fontSize: 24,
+        fontWeight: "900",
+        color: "#dc2626",
     },
 });
