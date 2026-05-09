@@ -13,6 +13,7 @@ import {
 import { Calendar } from 'react-native-calendars';
 import { API_ENDPOINTS } from '../src/services/api';
 import { images } from '../src/constants/images';
+import { router } from 'expo-router';
 
 type TeacherSchedule = {
     id: number;
@@ -808,6 +809,15 @@ Still Unassigned: ${result.stillUnassigned}`
         );
     };
 
+    const goBackToAdminDashboard = () => {
+        router.replace({
+            pathname: '/admin-dashboard',
+            params: {
+                role: 'ADMIN',
+            },
+        } as any);
+    };
+
     return (
         <ImageBackground
             source={images.splashGold}
@@ -820,8 +830,23 @@ Still Unassigned: ${result.stillUnassigned}`
                     contentContainerStyle={styles.scrollContent}
                     showsVerticalScrollIndicator={false}
                 >
-                    <Text style={styles.title}>Admin Teacher&apos;s Dashboard</Text>
-                    <Text style={styles.subtitle}>Single Period Leave & Replacement</Text>
+                    <View style={styles.topBar}>
+                        <TouchableOpacity
+                            style={styles.backButton}
+                            onPress={goBackToAdminDashboard}
+                            activeOpacity={0.85}
+                        >
+                            <Text style={styles.backButtonText}>‹</Text>
+                        </TouchableOpacity>
+
+                        <View style={styles.topBarSpacer} />
+                    </View>
+
+                    <View style={styles.headerCard}>
+                        <Text style={styles.workspaceTitle}>Admin Workspace</Text>
+                        <Text style={styles.title}>Admin Teacher&apos;s Dashboard</Text>
+                        <Text style={styles.subtitle}>Single Period Leave & Replacement</Text>
+                    </View>
 
                     <Text style={styles.label}>Schedule Date</Text>
 
@@ -1402,41 +1427,89 @@ const styles = StyleSheet.create({
     },
     pageOverlay: {
         flex: 1,
-        backgroundColor: 'rgba(255, 255, 255, 0.18)',
+        backgroundColor: 'rgba(255, 248, 225, 0.18)',
     },
     container: {
         flex: 1,
         backgroundColor: 'transparent',
     },
     scrollContent: {
-        padding: 25,
+        paddingHorizontal: 24,
+        paddingTop: 58,
         paddingBottom: 120,
     },
+    topBar: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: 24,
+    },
+    backButton: {
+        width: 50,
+        height: 50,
+        borderRadius: 25,
+        backgroundColor: 'rgba(255, 248, 225, 0.18)',
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderWidth: 1,
+        borderColor: 'rgba(214, 169, 74, 0.7)',
+        shadowColor: '#000',
+        shadowOpacity: 0.12,
+        shadowOffset: { width: 0, height: 5 },
+        shadowRadius: 10,
+        elevation: 4,
+    },
+    backButtonText: {
+        fontSize: 42,
+        lineHeight: 44,
+        fontWeight: '900',
+        color: '#09213F',
+        marginTop: -6,
+    },
+    topBarSpacer: {
+        width: 50,
+        height: 50,
+    },
+    headerCard: {
+        backgroundColor: 'rgba(255, 248, 225, 0.18)',
+        borderRadius: 24,
+        borderWidth: 1,
+        borderColor: 'rgba(230, 202, 129, 0.65)',
+        padding: 18,
+        marginBottom: 24,
+    },
+    workspaceTitle: {
+        fontSize: 17,
+        fontWeight: '900',
+        color: '#09213F',
+        marginBottom: 4,
+    },
     title: {
-        fontSize: 32,
-        fontWeight: 'bold',
-        color: '#041226',
+        fontSize: 34,
+        fontWeight: '900',
+        color: '#071B35',
+        lineHeight: 40,
+        letterSpacing: -0.5,
         marginBottom: 8,
     },
     subtitle: {
-        fontSize: 18,
-        fontWeight: '700',
-        color: '#041226',
-        marginBottom: 25,
+        fontSize: 17,
+        fontWeight: '800',
+        color: '#0C2442',
     },
     label: {
-        fontSize: 16,
-        fontWeight: '700',
-        marginBottom: 8,
-        color: '#041226',
+        fontSize: 17,
+        fontWeight: '900',
+        marginBottom: 9,
+        color: '#071B35',
     },
     dateBox: {
         borderWidth: 1,
         borderColor: '#D8B84A',
-        borderRadius: 10,
-        padding: 14,
-        marginBottom: 18,
-        backgroundColor: 'rgba(255, 255, 255, 0.92)',
+        borderRadius: 14,
+        padding: 16,
+        marginBottom: 22,
+        backgroundColor: 'rgba(255, 255, 255, 0.96)',
     },
     dateText: {
         fontSize: 16,
@@ -1444,17 +1517,21 @@ const styles = StyleSheet.create({
     },
     smallLoadButton: {
         backgroundColor: '#041226',
-        padding: 13,
-        borderRadius: 10,
+        padding: 17,
+        borderRadius: 16,
         alignItems: 'center',
-        marginBottom: 20,
+        marginBottom: 22,
+        borderWidth: 1,
+        borderColor: '#D8B84A',
     },
     button: {
         backgroundColor: '#041226',
-        padding: 15,
-        borderRadius: 10,
+        padding: 17,
+        borderRadius: 16,
         alignItems: 'center',
-        marginBottom: 20,
+        marginBottom: 22,
+        borderWidth: 1,
+        borderColor: '#D8B84A',
     },
     disabledButton: {
         backgroundColor: '#d8bd72',
@@ -1466,7 +1543,7 @@ const styles = StyleSheet.create({
         textAlign: 'center',
     },
     resultSummaryBox: {
-        backgroundColor: 'rgba(255, 255, 255, 0.92)',
+        backgroundColor: 'rgba(255, 248, 225, 0.18)',
         borderWidth: 1,
         borderColor: '#D8B84A',
         borderRadius: 12,
@@ -1499,7 +1576,7 @@ const styles = StyleSheet.create({
         flexGrow: 0,
     },
     filterChip: {
-        backgroundColor: 'rgba(255, 255, 255, 0.92)',
+        backgroundColor: 'rgba(255, 248, 225, 0.18)',
         paddingVertical: 10,
         paddingHorizontal: 14,
         borderRadius: 20,
@@ -1553,7 +1630,7 @@ const styles = StyleSheet.create({
         fontWeight: '600',
     },
     card: {
-        backgroundColor: 'rgba(255, 255, 255, 0.96)',
+        backgroundColor: 'rgba(255, 248, 225, 0.18)',
         borderRadius: 14,
         padding: 18,
         borderWidth: 1,
@@ -1651,12 +1728,12 @@ const styles = StyleSheet.create({
         padding: 25,
     },
     modalBox: {
-        backgroundColor: 'rgba(255, 255, 255, 0.96)',
+        backgroundColor: 'rgba(255, 248, 225, 0.18)',
         borderRadius: 18,
         padding: 20,
     },
     replacementModalBox: {
-        backgroundColor: 'rgba(255, 255, 255, 0.96)',
+        backgroundColor: 'rgba(255, 248, 225, 0.18)',
         borderRadius: 18,
         padding: 20,
         maxHeight: '85%',
@@ -1668,7 +1745,7 @@ const styles = StyleSheet.create({
         marginBottom: 18,
     },
     selectedDateBox: {
-        backgroundColor: 'rgba(255, 255, 255, 0.92)',
+        backgroundColor: 'rgba(255, 248, 225, 0.18)',
         borderRadius: 10,
         padding: 14,
         alignItems: 'center',
@@ -1710,7 +1787,7 @@ const styles = StyleSheet.create({
         textAlign: 'center',
     },
     leaveInfoBox: {
-        backgroundColor: 'rgba(255, 255, 255, 0.92)',
+        backgroundColor: 'rgba(255, 248, 225, 0.18)',
         borderRadius: 12,
         borderWidth: 1,
         borderColor: '#D8B84A',
@@ -1736,7 +1813,7 @@ const styles = StyleSheet.create({
     },
     replacementTab: {
         flex: 1,
-        backgroundColor: 'rgba(255, 255, 255, 0.92)',
+        backgroundColor: 'rgba(255, 248, 225, 0.18)',
         paddingVertical: 14,
         paddingHorizontal: 10,
         borderRadius: 12,
@@ -1760,7 +1837,7 @@ const styles = StyleSheet.create({
         maxHeight: 260,
     },
     groupedReplacementCard: {
-        backgroundColor: 'rgba(255, 255, 255, 0.92)',
+        backgroundColor: 'rgba(255, 248, 225, 0.18)',
         borderWidth: 1,
         borderColor: '#D8B84A',
         borderRadius: 12,
@@ -1794,7 +1871,7 @@ const styles = StyleSheet.create({
         marginTop: 4,
     },
     noReplacementSelectButton: {
-        backgroundColor: 'rgba(255, 255, 255, 0.92)',
+        backgroundColor: 'rgba(255, 248, 225, 0.18)',
         borderWidth: 1,
         borderColor: '#D8B84A',
         borderRadius: 12,

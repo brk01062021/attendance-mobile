@@ -499,7 +499,20 @@ export default function HomeScreen() {
                             <View style={styles.heroTopRow}>
                                 <TouchableOpacity
                                     style={styles.backButton}
-                                    onPress={() =>
+                                    onPress={() => {
+                                        if (isAdmin) {
+                                            router.replace({
+                                                pathname: '/admin-dashboard',
+                                                params: {
+                                                    role: 'ADMIN',
+                                                    userId: '1',
+                                                    name: 'Admin',
+                                                },
+                                            } as any);
+
+                                            return;
+                                        }
+
                                         router.replace({
                                             pathname: '/teacher-dashboard',
                                             params: {
@@ -507,8 +520,8 @@ export default function HomeScreen() {
                                                 teacherId,
                                                 teacherName,
                                             },
-                                        } as any)
-                                    }
+                                        } as any);
+                                    }}
                                 >
                                     <Text style={styles.backButtonText}>‹</Text>
                                 </TouchableOpacity>

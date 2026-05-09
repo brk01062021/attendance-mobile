@@ -146,7 +146,17 @@ export default function AttendanceReportScreen() {
         loadAdminReport();
     };
 
-    const goBackToTeacherDashboard = () => {
+    const goBack = () => {
+        if (isAdmin) {
+            router.replace({
+                pathname: '/admin-dashboard',
+                params: {
+                    role: 'ADMIN',
+                },
+            } as any);
+            return;
+        }
+
         router.replace({
             pathname: '/teacher-dashboard',
             params: {
@@ -195,7 +205,7 @@ export default function AttendanceReportScreen() {
                 <View style={styles.headerRow}>
                     <TouchableOpacity
                         style={styles.backButton}
-                        onPress={goBackToTeacherDashboard}
+                        onPress={goBack}
                         activeOpacity={0.85}
                     >
                         <Text style={styles.backButtonText}>‹</Text>
@@ -389,7 +399,7 @@ const styles = StyleSheet.create({
         width: 48,
         height: 48,
         borderRadius: 24,
-        backgroundColor: 'rgba(255,255,255,0.42)',
+        backgroundColor: 'rgba(255, 248, 225, 0.18)',
         borderWidth: 1,
         borderColor: 'rgba(255,255,255,0.65)',
         alignItems: 'center',
@@ -417,7 +427,7 @@ const styles = StyleSheet.create({
     },
 
     filterCard: {
-        backgroundColor: 'rgba(255,255,255,0.96)',
+        backgroundColor: 'rgba(255, 248, 225, 0.18)',
         borderRadius: 24,
         borderWidth: 1.5,
         borderColor: colors.cardGoldBorder,
@@ -508,7 +518,7 @@ const styles = StyleSheet.create({
     },
 
     reportCard: {
-        backgroundColor: 'rgba(255,255,255,0.97)',
+        backgroundColor: 'rgba(255, 248, 225, 0.18)',
         borderRadius: 24,
         borderWidth: 1.5,
         borderColor: colors.cardGoldBorder,

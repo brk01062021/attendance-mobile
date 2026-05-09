@@ -442,7 +442,7 @@ const styles = StyleSheet.create({
     },
     overlay: {
         flex: 1,
-        backgroundColor: 'rgba(255, 248, 225, 0.35)',
+        backgroundColor: 'rgba(255, 248, 225, 0.18)',
     },
     topBar: {
         paddingTop: 58,
@@ -455,7 +455,7 @@ const styles = StyleSheet.create({
         width: 48,
         height: 48,
         borderRadius: 24,
-        backgroundColor: 'rgba(255, 248, 225, 0.92)',
+        backgroundColor: 'rgba(255, 248, 225, 0.18)',
         alignItems: 'center',
         justifyContent: 'center',
         borderWidth: 1,
@@ -506,7 +506,7 @@ const styles = StyleSheet.create({
         marginTop: 18,
     },
     mainCard: {
-        backgroundColor: 'rgba(255, 255, 255, 0.96)',
+        backgroundColor: 'rgba(255, 248, 225, 0.18)',
         borderRadius: 30,
         paddingHorizontal: 22,
         paddingTop: 26,

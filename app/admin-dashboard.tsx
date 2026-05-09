@@ -1,425 +1,663 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from 'react';
 import {
-    View,
-    Text,
-    ScrollView,
-    TouchableOpacity,
-    StyleSheet,
     ImageBackground,
     Modal,
-    Alert,
-} from "react-native";
-import { router } from "expo-router";
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
+} from 'react-native';
+import { router } from 'expo-router';
+import { colors, shadows, spacing } from '../src/theme';
 
 export default function AdminDashboardScreen() {
     const [menuVisible, setMenuVisible] = useState(false);
 
-    const openRoute = (path: string) => {
+    const adminName = useMemo(() => 'Principal', []);
+
+    const todayStats = {
+        totalStudents: '17',
+        present: '0',
+        absent: '0',
+        late: '0',
+        attendancePercent: '0.00%',
+    };
+
+    const openRoute = (path: string, params: Record<string, string> = {}) => {
         setMenuVisible(false);
-        router.push({ pathname: path as any });
+
+        router.push({
+            pathname: path as any,
+            params: {
+                role: 'ADMIN',
+                userId: '1',
+                name: 'Admin',
+                ...params,
+            },
+        } as any);
+    };
+
+    const goToTakeAttendance = () => {
+        setMenuVisible(false);
+
+        router.push({
+            pathname: '/home',
+            params: {
+                role: 'ADMIN',
+                userId: '1',
+                name: 'Admin',
+            },
+        } as any);
     };
 
     const logout = () => {
         setMenuVisible(false);
-        router.replace("/login");
+        router.replace('/login' as any);
     };
 
     return (
         <ImageBackground
-            source={require("../assets/branding/splash-dark.png")}
+            source={require('../assets/branding/splash-dark.png')}
             style={styles.background}
             resizeMode="cover"
         >
-            <ScrollView contentContainerStyle={styles.scrollContent}>
-                <View style={styles.topRow}>
+            <ScrollView
+                contentContainerStyle={styles.container}
+                showsVerticalScrollIndicator={false}
+            >
+                <View style={styles.topHeader}>
                     <TouchableOpacity
                         style={styles.circleButton}
                         onPress={() => setMenuVisible(true)}
+                        activeOpacity={0.85}
                     >
                         <Text style={styles.circleButtonText}>☰</Text>
                     </TouchableOpacity>
 
+                    <Text style={styles.headerTitle}>Admin Dashboard</Text>
+
                     <TouchableOpacity
                         style={styles.circleButton}
-                        onPress={() => openRoute("/create-school-notice")}
+                        onPress={() => openRoute('/create-school-notice')}
+                        activeOpacity={0.85}
                     >
-                        <Text style={styles.micText}>🎙️</Text>
+                        <Text style={styles.circleButtonText}>📣</Text>
                     </TouchableOpacity>
                 </View>
 
-                <Text style={styles.greeting}>Good Morning 👋</Text>
-                <Text style={styles.principalText}>Principal</Text>
+                <View style={styles.heroCard}>
+                    <Text style={styles.heroSmallText}>Good morning</Text>
+
+                    <Text style={styles.heroName}>{adminName}</Text>
+
+                    <Text style={styles.heroSubText}>
+                        Manage attendance, reports, teacher replacements, notices and school operations.
+                    </Text>
+                </View>
 
                 <View style={styles.overviewCard}>
-                    <Text style={styles.overviewTitle}>Today&apos;s Overview</Text>
+                    <View style={styles.sectionHeaderRow}>
+                        <View style={styles.sectionHeaderTextBox}>
+                            <Text style={styles.sectionEyebrow}>Today</Text>
+                            <Text style={styles.sectionTitle}>School Overview</Text>
+                        </View>
+
+                        <View style={styles.statusPill}>
+                            <Text style={styles.statusPillText}>Live</Text>
+                        </View>
+                    </View>
 
                     <View style={styles.statsGrid}>
-                        <View style={styles.statBox}>
-                            <Text style={styles.statIcon}>👥</Text>
-                            <Text style={styles.statNumber}>17</Text>
-                            <Text style={styles.statLabel}>Total</Text>
-                        </View>
-
-                        <View style={styles.statBox}>
-                            <Text style={styles.statIcon}>✅</Text>
-                            <Text style={styles.statNumber}>0</Text>
-                            <Text style={styles.statLabel}>Present</Text>
-                        </View>
-
-                        <View style={styles.statBox}>
-                            <Text style={styles.statIcon}>🚫</Text>
-                            <Text style={styles.statNumber}>0</Text>
-                            <Text style={styles.statLabel}>Absent</Text>
-                        </View>
-
-                        <View style={styles.statBox}>
-                            <Text style={styles.statIcon}>⏰</Text>
-                            <Text style={styles.statNumber}>0</Text>
-                            <Text style={styles.statLabel}>Late</Text>
-                        </View>
+                        <StatCard emoji="👥" value={todayStats.totalStudents} label="Total" />
+                        <StatCard emoji="✅" value={todayStats.present} label="Present" />
+                        <StatCard emoji="🚫" value={todayStats.absent} label="Absent" />
+                        <StatCard emoji="⏰" value={todayStats.late} label="Late" />
                     </View>
 
                     <View style={styles.percentageBox}>
                         <Text style={styles.percentageLabel}>Attendance Percentage</Text>
-                        <Text style={styles.percentageValue}>0.00%</Text>
+                        <Text style={styles.percentageValue}>{todayStats.attendancePercent}</Text>
                     </View>
                 </View>
 
-                <Text style={styles.sectionTitle}>Quick Actions</Text>
+                <TouchableOpacity
+                    style={styles.primaryAction}
+                    onPress={goToTakeAttendance}
+                    activeOpacity={0.9}
+                >
+                    <View style={styles.primaryActionTextBox}>
+                        <Text style={styles.primaryActionTitle}>Take Attendance</Text>
 
-                <View style={styles.quickGrid}>
-                    <TouchableOpacity
-                        style={styles.quickCard}
-                        onPress={() => openRoute("/attendance-report")}
-                    >
-                        <Text style={styles.quickIcon}>🎓</Text>
-                        <Text style={styles.quickTitle}>Attendance Report</Text>
-                        <Text style={styles.quickText}>Daily attendance reports</Text>
-                    </TouchableOpacity>
+                        <Text style={styles.primaryActionSubtitle}>
+                            Select class, section and subject
+                        </Text>
+                    </View>
 
-                    <TouchableOpacity
-                        style={styles.quickCard}
-                        onPress={() => openRoute("/admin-teacher-dashboard")}
-                    >
-                        <Text style={styles.quickIcon}>✅</Text>
-                        <Text style={styles.quickTitle}>Teacher Replacements</Text>
-                        <Text style={styles.quickText}>Leave replacement flow</Text>
-                    </TouchableOpacity>
+                    <Text style={styles.primaryActionArrow}>›</Text>
+                </TouchableOpacity>
 
-                    <TouchableOpacity
-                        style={styles.quickCard}
-                        onPress={() => openRoute("/teacher-leave-planning")}
-                    >
-                        <Text style={styles.quickIcon}>🗓️</Text>
-                        <Text style={styles.quickTitle}>Leave Planning</Text>
-                        <Text style={styles.quickText}>Plan teacher leave</Text>
-                    </TouchableOpacity>
+                <View style={styles.quickActionsCard}>
+                    <Text style={styles.sectionEyebrow}>Quick Actions</Text>
+                    <Text style={styles.sectionTitle}>Admin Tools</Text>
 
-                    <TouchableOpacity
-                        style={styles.quickCard}
-                        onPress={() => openRoute("/create-school-notice")}
-                    >
-                        <Text style={styles.quickIcon}>🎙️</Text>
-                        <Text style={styles.quickTitle}>Create Notice</Text>
-                        <Text style={styles.quickText}>Publish school notice</Text>
-                    </TouchableOpacity>
+                    <View style={styles.quickGrid}>
+                        <QuickAction
+                            emoji="✅"
+                            title="Teacher Replacements"
+                            subtitle="Leave replacement flow"
+                            onPress={() => openRoute('/admin-teacher-dashboard')}
+                        />
+
+                        <QuickAction
+                            emoji="👨‍🏫"
+                            title="Register Teacher"
+                            subtitle="Add teacher account"
+                            onPress={() => openRoute('/register-teacher')}
+                        />
+
+                        <QuickAction
+                            emoji="👨‍👩‍👧"
+                            title="Register Parent"
+                            subtitle="Add parent account"
+                            onPress={() => openRoute('/register-parent')}
+                        />
+
+                        <QuickAction
+                            emoji="🎒"
+                            title="Register Student"
+                            subtitle="Add student account"
+                            onPress={() => openRoute('/register-student')}
+                        />
+                    </View>
                 </View>
+
+                <TouchableOpacity
+                    style={styles.logoutButton}
+                    onPress={logout}
+                    activeOpacity={0.9}
+                >
+                    <Text style={styles.logoutButtonText}>Logout</Text>
+                </TouchableOpacity>
             </ScrollView>
 
             <Modal visible={menuVisible} transparent animationType="slide">
-                <View style={styles.menuOverlay}>
-                    <View style={styles.menuBox}>
-                        <TouchableOpacity
-                            style={styles.menuCloseButton}
-                            onPress={() => setMenuVisible(false)}
+                <TouchableOpacity
+                    style={styles.modalOverlay}
+                    activeOpacity={1}
+                    onPress={() => setMenuVisible(false)}
+                >
+                    <View style={styles.menuContainer}>
+                        <ScrollView
+                            showsVerticalScrollIndicator={false}
+                            contentContainerStyle={styles.menuScrollContent}
                         >
-                            <Text style={styles.menuCloseText}>×</Text>
-                        </TouchableOpacity>
+                            <Text style={styles.menuTitle}>Admin Menu</Text>
 
-                        <TouchableOpacity
-                            style={styles.menuItem}
-                            onPress={() => openRoute("/admin-teacher-dashboard")}
-                        >
-                            <Text style={styles.menuItemText}>
-                                Admin Teacher&apos;s Dashboard
-                            </Text>
-                        </TouchableOpacity>
+                            <MenuItem
+                                title="Dashboard"
+                                onPress={() => setMenuVisible(false)}
+                            />
 
-                        <TouchableOpacity
-                            style={styles.menuItem}
-                            onPress={() => openRoute("/teacher-leave-planning")}
-                        >
-                            <Text style={styles.menuItemText}>Teacher Leave Planning</Text>
-                        </TouchableOpacity>
+                            <MenuItem
+                                title="Take Attendance"
+                                onPress={goToTakeAttendance}
+                            />
 
-                        <TouchableOpacity
-                            style={styles.menuItem}
-                            onPress={() => openRoute("/attendance-report")}
-                        >
-                            <Text style={styles.menuItemText}>Attendance Report</Text>
-                        </TouchableOpacity>
+                            <MenuItem
+                                title="Attendance Report"
+                                onPress={() => openRoute('/attendance-report')}
+                            />
 
-                        <TouchableOpacity
-                            style={styles.menuItem}
-                            onPress={() => openRoute("/create-school-notice")}
-                        >
-                            <Text style={styles.menuItemText}>Create School Notice</Text>
-                        </TouchableOpacity>
+                            <MenuItem
+                                title="Admin Teacher Dashboard"
+                                onPress={() => openRoute('/admin-teacher-dashboard')}
+                            />
 
-                        <TouchableOpacity
-                            style={styles.menuItem}
-                            onPress={() =>
-                                Alert.alert(
-                                    "Coming Soon",
-                                    "Import School Data screen will be connected next."
-                                )
-                            }
-                        >
-                            <Text style={styles.menuItemText}>Import School Data</Text>
-                        </TouchableOpacity>
+                            <MenuItem
+                                title="Teacher Leave Planning"
+                                onPress={() => openRoute('/teacher-leave-planning')}
+                            />
 
-                        <TouchableOpacity
-                            style={styles.menuItem}
-                            onPress={() =>
-                                Alert.alert(
-                                    "Coming Soon",
-                                    "Register Teacher screen will be connected next."
-                                )
-                            }
-                        >
-                            <Text style={styles.menuItemText}>Register Teacher</Text>
-                        </TouchableOpacity>
+                            <MenuItem
+                                title="Create School Notice"
+                                onPress={() => openRoute('/create-school-notice')}
+                            />
 
-                        <TouchableOpacity
-                            style={styles.menuItem}
-                            onPress={() =>
-                                Alert.alert(
-                                    "Coming Soon",
-                                    "Register Parent screen will be connected next."
-                                )
-                            }
-                        >
-                            <Text style={styles.menuItemText}>Register Parent</Text>
-                        </TouchableOpacity>
+                            <MenuItem
+                                title="Import School Data"
+                                onPress={() => openRoute('/import-school-data')}
+                            />
 
-                        <TouchableOpacity
-                            style={styles.menuItem}
-                            onPress={() =>
-                                Alert.alert(
-                                    "Coming Soon",
-                                    "Register Student screen will be connected next."
-                                )
-                            }
-                        >
-                            <Text style={styles.menuItemText}>Register Student</Text>
-                        </TouchableOpacity>
+                            <MenuItem
+                                title="Register Teacher"
+                                onPress={() => openRoute('/register-teacher')}
+                            />
 
-                        <TouchableOpacity
-                            style={styles.menuItem}
-                            onPress={() =>
-                                Alert.alert(
-                                    "Coming Soon",
-                                    "Teacher Assignments screen will be connected next."
-                                )
-                            }
-                        >
-                            <Text style={styles.menuItemText}>Teacher Assignments</Text>
-                        </TouchableOpacity>
+                            <MenuItem
+                                title="Register Parent"
+                                onPress={() => openRoute('/register-parent')}
+                            />
 
-                        <TouchableOpacity style={styles.menuItem} onPress={logout}>
-                            <Text style={styles.logoutText}>Logout</Text>
-                        </TouchableOpacity>
+                            <MenuItem
+                                title="Register Student"
+                                onPress={() => openRoute('/register-student')}
+                            />
+
+                            <MenuItem
+                                title="Teacher Assignments"
+                                onPress={() => openRoute('/teacher-assignments')}
+                            />
+
+                            <MenuItem
+                                title="Logout"
+                                danger
+                                onPress={logout}
+                            />
+                        </ScrollView>
                     </View>
-                </View>
+                </TouchableOpacity>
             </Modal>
         </ImageBackground>
+    );
+}
+
+function StatCard({
+                      emoji,
+                      value,
+                      label,
+                  }: {
+    emoji: string;
+    value: string;
+    label: string;
+}) {
+    return (
+        <View style={styles.statCard}>
+            <Text style={styles.statEmoji}>{emoji}</Text>
+            <Text style={styles.statValue}>{value}</Text>
+            <Text style={styles.statLabel}>{label}</Text>
+        </View>
+    );
+}
+
+function QuickAction({
+                         emoji,
+                         title,
+                         subtitle,
+                         onPress,
+                     }: {
+    emoji: string;
+    title: string;
+    subtitle: string;
+    onPress: () => void;
+}) {
+    return (
+        <TouchableOpacity
+            style={styles.quickCard}
+            onPress={onPress}
+            activeOpacity={0.88}
+        >
+            <Text style={styles.quickIcon}>{emoji}</Text>
+            <Text style={styles.quickTitle}>{title}</Text>
+            <Text style={styles.quickText}>{subtitle}</Text>
+        </TouchableOpacity>
+    );
+}
+
+function MenuItem({
+                      title,
+                      onPress,
+                      danger = false,
+                  }: {
+    title: string;
+    onPress: () => void;
+    danger?: boolean;
+}) {
+    return (
+        <TouchableOpacity
+            style={[styles.menuItem, danger && styles.menuItemDanger]}
+            onPress={onPress}
+            activeOpacity={0.85}
+        >
+            <Text style={[styles.menuItemText, danger && styles.menuItemTextDanger]}>
+                {title}
+            </Text>
+        </TouchableOpacity>
     );
 }
 
 const styles = StyleSheet.create({
     background: {
         flex: 1,
-        backgroundColor: "#061B33",
+        backgroundColor: '#061B33',
     },
-    scrollContent: {
-        paddingHorizontal: 24,
-        paddingTop: 70,
-        paddingBottom: 90,
+
+    container: {
+        paddingHorizontal: spacing.screenPadding,
+        paddingTop: 72,
+        paddingBottom: 140,
     },
-    topRow: {
-        flexDirection: "row",
-        justifyContent: "space-between",
-        alignItems: "center",
-        marginBottom: 56,
+
+    topHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: spacing.xl,
     },
+
     circleButton: {
-        width: 58,
-        height: 58,
-        borderRadius: 29,
-        borderWidth: 2,
-        borderColor: "#e5be3f",
-        alignItems: "center",
-        justifyContent: "center",
-        backgroundColor: "rgba(2,18,38,0.65)",
+        width: 52,
+        height: 52,
+        borderRadius: 26,
+        backgroundColor: 'rgba(255,255,255,0.14)',
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.28)',
+        alignItems: 'center',
+        justifyContent: 'center',
     },
+
     circleButtonText: {
-        fontSize: 30,
-        color: "#e5be3f",
-        fontWeight: "bold",
+        fontSize: 24,
+        fontWeight: '900',
+        color: colors.white,
     },
-    micText: {
-        fontSize: 29,
+
+    headerTitle: {
+        flex: 1,
+        textAlign: 'center',
+        fontSize: 21,
+        fontWeight: '900',
+        color: colors.white,
+        paddingHorizontal: spacing.sm,
     },
-    greeting: {
-        fontSize: 28,
-        fontWeight: "900",
-        color: "#e5be3f",
-        marginBottom: 6,
+
+    heroCard: {
+        backgroundColor: 'rgba(255,255,255,0.12)',
+        borderRadius: 34,
+        borderWidth: 1.2,
+        borderColor: 'rgba(255,255,255,0.25)',
+        padding: spacing.xl,
+        marginBottom: spacing.xl,
     },
-    principalText: {
-        fontSize: 52,
-        fontWeight: "900",
-        color: "#ffffff",
-        marginBottom: 36,
+
+    heroSmallText: {
+        fontSize: 18,
+        fontWeight: '800',
+        color: colors.premiumGold,
     },
+
+    heroName: {
+        fontSize: 38,
+        lineHeight: 44,
+        fontWeight: '900',
+        color: colors.white,
+        marginTop: spacing.sm,
+    },
+
+    heroSubText: {
+        fontSize: 16,
+        lineHeight: 24,
+        fontWeight: '700',
+        color: 'rgba(255,255,255,0.82)',
+        marginTop: spacing.md,
+    },
+
     overviewCard: {
-        backgroundColor: "rgba(255,255,255,0.96)",
+        backgroundColor: 'rgba(255,255,255,0.96)',
+        borderRadius: 34,
+        borderWidth: 1.5,
+        borderColor: colors.cardGoldBorder,
+        padding: spacing.xl,
+        marginBottom: spacing.xl,
+        ...shadows.medium,
+    },
+
+    sectionHeaderRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: spacing.lg,
+    },
+
+    sectionHeaderTextBox: {
+        flex: 1,
+        paddingRight: spacing.md,
+    },
+
+    sectionEyebrow: {
+        fontSize: 14,
+        fontWeight: '900',
+        color: colors.premiumGold,
+        textTransform: 'uppercase',
+        letterSpacing: 1,
+    },
+
+    sectionTitle: {
+        fontSize: 23,
+        fontWeight: '900',
+        color: colors.primaryNavy,
+        marginTop: spacing.xs,
+    },
+
+    statusPill: {
+        backgroundColor: '#E8F8EF',
+        paddingHorizontal: spacing.lg,
+        paddingVertical: spacing.sm,
+        borderRadius: 20,
+    },
+
+    statusPillText: {
+        fontSize: 14,
+        fontWeight: '900',
+        color: '#16834A',
+    },
+
+    statsGrid: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        justifyContent: 'space-between',
+    },
+
+    statCard: {
+        width: '48%',
+        backgroundColor: colors.white,
+        borderRadius: 26,
+        borderWidth: 1.4,
+        borderColor: colors.cardGoldBorder,
+        alignItems: 'center',
+        paddingVertical: spacing.lg,
+        marginBottom: spacing.lg,
+    },
+
+    statEmoji: {
+        fontSize: 30,
+        marginBottom: spacing.sm,
+    },
+
+    statValue: {
+        fontSize: 30,
+        fontWeight: '900',
+        color: colors.primaryNavy,
+    },
+
+    statLabel: {
+        fontSize: 14,
+        fontWeight: '800',
+        color: colors.slateText,
+        marginTop: spacing.xs,
+    },
+
+    percentageBox: {
+        backgroundColor: colors.primaryNavy,
+        borderRadius: 24,
+        borderWidth: 1.5,
+        borderColor: colors.cardGoldBorder,
+        padding: spacing.lg,
+        marginTop: spacing.sm,
+    },
+
+    percentageLabel: {
+        color: colors.premiumGold,
+        fontSize: 18,
+        fontWeight: '900',
+        marginBottom: spacing.sm,
+    },
+
+    percentageValue: {
+        color: colors.white,
+        fontSize: 38,
+        fontWeight: '900',
+    },
+
+    primaryAction: {
+        backgroundColor: colors.primaryNavy,
         borderRadius: 28,
         borderWidth: 1.5,
-        borderColor: "#e5be3f",
-        padding: 20,
-        marginBottom: 30,
+        borderColor: colors.cardGoldBorder,
+        padding: spacing.xl,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: spacing.xl,
+        ...shadows.medium,
     },
-    overviewTitle: {
-        fontSize: 28,
-        fontWeight: "900",
-        color: "#061B33",
-        marginBottom: 20,
-    },
-    statsGrid: {
-        flexDirection: "row",
-        flexWrap: "wrap",
-        justifyContent: "space-between",
-    },
-    statBox: {
-        width: "48%",
-        backgroundColor: "#ffffff",
-        borderRadius: 18,
-        borderWidth: 1.5,
-        borderColor: "#e5be3f",
-        alignItems: "center",
-        paddingVertical: 20,
-        marginBottom: 14,
-    },
-    statIcon: {
-        fontSize: 30,
-        marginBottom: 8,
-    },
-    statNumber: {
-        fontSize: 32,
-        fontWeight: "900",
-        color: "#061B33",
-    },
-    statLabel: {
-        fontSize: 17,
-        fontWeight: "800",
-        color: "#6b7280",
-        marginTop: 4,
-    },
-    percentageBox: {
-        backgroundColor: "#061B33",
-        borderRadius: 18,
-        borderWidth: 1.5,
-        borderColor: "#e5be3f",
-        padding: 18,
-        marginTop: 6,
-    },
-    percentageLabel: {
-        color: "#e5be3f",
-        fontSize: 19,
-        fontWeight: "900",
-        marginBottom: 8,
-    },
-    percentageValue: {
-        color: "#ffffff",
-        fontSize: 42,
-        fontWeight: "900",
-    },
-    sectionTitle: {
-        fontSize: 28,
-        fontWeight: "900",
-        color: "#e5be3f",
-        marginBottom: 16,
-    },
-    quickGrid: {
-        flexDirection: "row",
-        flexWrap: "wrap",
-        justifyContent: "space-between",
-    },
-    quickCard: {
-        width: "48%",
-        backgroundColor: "rgba(255,255,255,0.94)",
-        borderRadius: 20,
-        borderWidth: 1.5,
-        borderColor: "#e5be3f",
-        padding: 14,
-        minHeight: 142,
-        marginBottom: 16,
-        justifyContent: "center",
-    },
-    quickIcon: {
-        fontSize: 30,
-        marginBottom: 10,
-    },
-    quickTitle: {
-        fontSize: 17,
-        fontWeight: "900",
-        color: "#061B33",
-        marginBottom: 6,
-    },
-    quickText: {
-        fontSize: 13,
-        fontWeight: "700",
-        color: "#6b7280",
-        lineHeight: 18,
-    },
-    menuOverlay: {
+
+    primaryActionTextBox: {
         flex: 1,
-        backgroundColor: "rgba(0,0,0,0.35)",
-        justifyContent: "flex-start",
+        paddingRight: spacing.md,
     },
-    menuBox: {
-        marginTop: 70,
-        marginHorizontal: 18,
-        backgroundColor: "#ffffff",
+
+    primaryActionTitle: {
+        fontSize: 24,
+        fontWeight: '900',
+        color: colors.white,
+    },
+
+    primaryActionSubtitle: {
+        fontSize: 15,
+        fontWeight: '700',
+        color: 'rgba(255,255,255,0.78)',
+        marginTop: spacing.sm,
+    },
+
+    primaryActionArrow: {
+        fontSize: 46,
+        fontWeight: '900',
+        color: colors.premiumGold,
+    },
+
+    quickActionsCard: {
+        backgroundColor: 'rgba(255,255,255,0.96)',
+        borderRadius: 34,
+        borderWidth: 1.5,
+        borderColor: colors.cardGoldBorder,
+        padding: spacing.xl,
+        marginBottom: spacing.xl,
+        ...shadows.medium,
+    },
+
+    quickGrid: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        justifyContent: 'space-between',
+        marginTop: spacing.lg,
+    },
+
+    quickCard: {
+        width: '48%',
+        backgroundColor: '#FFF8E1',
         borderRadius: 22,
-        overflow: "hidden",
-        maxHeight: "88%",
+        borderWidth: 1.2,
+        borderColor: colors.cardGoldBorder,
+        padding: spacing.md,
+        minHeight: 132,
+        marginBottom: spacing.md,
+        justifyContent: 'center',
     },
-    menuCloseButton: {
-        alignSelf: "flex-end",
-        paddingHorizontal: 22,
-        paddingTop: 12,
+
+    quickIcon: {
+        fontSize: 28,
+        marginBottom: spacing.sm,
     },
-    menuCloseText: {
-        fontSize: 34,
-        fontWeight: "bold",
-        color: "#111827",
+
+    quickTitle: {
+        fontSize: 16,
+        fontWeight: '900',
+        color: colors.primaryNavy,
+        marginBottom: spacing.xs,
     },
+
+    quickText: {
+        fontSize: 12,
+        fontWeight: '700',
+        color: colors.slateText,
+        lineHeight: 17,
+    },
+
+    logoutButton: {
+        backgroundColor: colors.primaryNavy,
+        borderRadius: 28,
+        borderWidth: 1.5,
+        borderColor: colors.cardGoldBorder,
+        paddingVertical: spacing.lg,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginTop: spacing.xl,
+        marginBottom: spacing.xl,
+        ...shadows.medium,
+    },
+
+    logoutButtonText: {
+        fontSize: 20,
+        fontWeight: '900',
+        color: colors.premiumGold,
+    },
+
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.45)',
+        justifyContent: 'flex-end',
+    },
+
+    menuContainer: {
+        backgroundColor: colors.white,
+        borderTopLeftRadius: 32,
+        borderTopRightRadius: 32,
+        paddingHorizontal: spacing.xl,
+        paddingTop: spacing.xl,
+        maxHeight: '82%',
+    },
+
+    menuScrollContent: {
+        paddingBottom: spacing.xl,
+    },
+
+    menuTitle: {
+        fontSize: 24,
+        fontWeight: '900',
+        color: colors.primaryNavy,
+        marginBottom: spacing.lg,
+    },
+
     menuItem: {
-        paddingVertical: 20,
-        paddingHorizontal: 24,
-        borderBottomWidth: 1,
-        borderBottomColor: "#e5e7eb",
+        backgroundColor: '#FFF8E1',
+        borderRadius: 18,
+        paddingVertical: spacing.lg,
+        paddingHorizontal: spacing.lg,
+        marginBottom: spacing.md,
     },
+
+    menuItemDanger: {
+        backgroundColor: '#FFE8E8',
+    },
+
     menuItemText: {
-        fontSize: 24,
-        fontWeight: "800",
-        color: "#111827",
+        fontSize: 18,
+        fontWeight: '800',
+        color: colors.primaryNavy,
     },
-    logoutText: {
-        fontSize: 24,
-        fontWeight: "900",
-        color: "#dc2626",
+
+    menuItemTextDanger: {
+        color: '#B42318',
     },
 });

@@ -11,6 +11,7 @@ import {
     ImageBackground,
 } from "react-native";
 import { Calendar } from "react-native-calendars";
+import { router } from "expo-router";
 import { API_ENDPOINTS } from "../src/services/api";
 import { images } from "../src/constants/images";
 
@@ -758,6 +759,13 @@ export default function TeacherLeavePlanningScreen() {
         }
     };
 
+
+    const goBackToAdminDashboard = () => {
+        router.replace({
+            pathname: "/admin-dashboard",
+        } as any);
+    };
+
     const applyButtonText = useMemo(() => {
         const count = visibleSchedules.length;
 
@@ -784,84 +792,80 @@ export default function TeacherLeavePlanningScreen() {
                     contentContainerStyle={styles.scrollContent}
                     showsVerticalScrollIndicator={false}
                 >
-                    <Text style={styles.title}>Teacher Leave Planning</Text>
-                    <Text style={styles.subtitle}>
-                        Planned & Unplanned Leave Workflow
-                    </Text>
-
-                    <Text style={styles.label}>Leave Type</Text>
-                    <View style={styles.optionRow}>
+                    <View style={styles.topBar}>
                         <TouchableOpacity
-                            style={[
-                                styles.optionChip,
-                                leaveType === "PLANNED_LEAVE" && styles.activeOptionChip,
-                            ]}
-                            onPress={() => onLeaveTypeChange("PLANNED_LEAVE")}
+                            style={styles.backButton}
+                            onPress={goBackToAdminDashboard}
+                            activeOpacity={0.85}
                         >
-                            <Text
-                                style={[
-                                    styles.optionChipText,
-                                    leaveType === "PLANNED_LEAVE" && styles.activeOptionChipText,
-                                ]}
-                            >
-                                Planned Leave
-                            </Text>
+                            <Text style={styles.backButtonText}>‹</Text>
                         </TouchableOpacity>
 
-                        <TouchableOpacity
-                            style={[
-                                styles.optionChip,
-                                leaveType === "UNPLANNED_LEAVE" && styles.activeOptionChip,
-                            ]}
-                            onPress={() => onLeaveTypeChange("UNPLANNED_LEAVE")}
-                        >
-                            <Text
-                                style={[
-                                    styles.optionChipText,
-                                    leaveType === "UNPLANNED_LEAVE" &&
-                                    styles.activeOptionChipText,
-                                ]}
-                            >
-                                Unplanned Leave
-                            </Text>
-                        </TouchableOpacity>
+                        <View style={styles.topBarSpacer} />
                     </View>
 
-                    <Text style={styles.label}>Leave Duration</Text>
-                    <View style={styles.optionRow}>
-                        <TouchableOpacity
-                            style={[
-                                styles.optionChip,
-                                durationType === "ONE_DAY" && styles.activeOptionChip,
-                            ]}
-                            onPress={() => {
-                                setDurationType("ONE_DAY");
-                                setToDate(fromDate);
-                                setSchedules([]);
-                                setSelectedBulkScheduleIds([]);
-                                setCurrentBatchStartIndex(0);
-                                setHasLoadedOnce(false);
-                                loadTeacherOptions(fromDate);
-                            }}
-                        >
-                            <Text
-                                style={[
-                                    styles.optionChipText,
-                                    durationType === "ONE_DAY" && styles.activeOptionChipText,
-                                ]}
-                            >
-                                One Day
-                            </Text>
-                        </TouchableOpacity>
+                    <View style={styles.titleBlock}>
+                        <Text style={styles.workspaceTitle}>Admin Workspace</Text>
+                        <Text style={styles.title}>Teacher Leave Planning</Text>
+                        <Text style={styles.subtitle}>
+                            Planned & Unplanned Leave Workflow
+                        </Text>
+                    </View>
 
-                        {leaveType === "PLANNED_LEAVE" && (
+                    <View style={styles.filterCard}>
+                        <Text style={styles.filterCardTitle}>Leave Filters</Text>
+                        <Text style={styles.filterCardSubtitle}>
+                            Select leave type, duration, teacher and date to load schedule.
+                        </Text>
+
+                        <Text style={styles.label}>Leave Type</Text>
+                        <View style={styles.optionRow}>
                             <TouchableOpacity
                                 style={[
                                     styles.optionChip,
-                                    durationType === "MULTI_DAY" && styles.activeOptionChip,
+                                    leaveType === "PLANNED_LEAVE" && styles.activeOptionChip,
+                                ]}
+                                onPress={() => onLeaveTypeChange("PLANNED_LEAVE")}
+                            >
+                                <Text
+                                    style={[
+                                        styles.optionChipText,
+                                        leaveType === "PLANNED_LEAVE" && styles.activeOptionChipText,
+                                    ]}
+                                >
+                                    Planned Leave
+                                </Text>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity
+                                style={[
+                                    styles.optionChip,
+                                    leaveType === "UNPLANNED_LEAVE" && styles.activeOptionChip,
+                                ]}
+                                onPress={() => onLeaveTypeChange("UNPLANNED_LEAVE")}
+                            >
+                                <Text
+                                    style={[
+                                        styles.optionChipText,
+                                        leaveType === "UNPLANNED_LEAVE" &&
+                                        styles.activeOptionChipText,
+                                    ]}
+                                >
+                                    Unplanned Leave
+                                </Text>
+                            </TouchableOpacity>
+                        </View>
+
+                        <Text style={styles.label}>Leave Duration</Text>
+                        <View style={styles.optionRow}>
+                            <TouchableOpacity
+                                style={[
+                                    styles.optionChip,
+                                    durationType === "ONE_DAY" && styles.activeOptionChip,
                                 ]}
                                 onPress={() => {
-                                    setDurationType("MULTI_DAY");
+                                    setDurationType("ONE_DAY");
+                                    setToDate(fromDate);
                                     setSchedules([]);
                                     setSelectedBulkScheduleIds([]);
                                     setCurrentBatchStartIndex(0);
@@ -872,83 +876,109 @@ export default function TeacherLeavePlanningScreen() {
                                 <Text
                                     style={[
                                         styles.optionChipText,
-                                        durationType === "MULTI_DAY" && styles.activeOptionChipText,
+                                        durationType === "ONE_DAY" && styles.activeOptionChipText,
                                     ]}
                                 >
-                                    Multiple Days
+                                    One Day
                                 </Text>
                             </TouchableOpacity>
-                        )}
-                    </View>
 
-                    {teacherOptions.length > 0 && (
-                        <>
-                            <Text style={styles.label}>Teacher Name</Text>
-                            <ScrollView
-                                horizontal
-                                showsHorizontalScrollIndicator={false}
-                                style={styles.filterScroll}
-                            >
-                                {teacherOptions.map((teacher) => (
-                                    <TouchableOpacity
-                                        key={teacher.teacherId}
+                            {leaveType === "PLANNED_LEAVE" && (
+                                <TouchableOpacity
+                                    style={[
+                                        styles.optionChip,
+                                        durationType === "MULTI_DAY" && styles.activeOptionChip,
+                                    ]}
+                                    onPress={() => {
+                                        setDurationType("MULTI_DAY");
+                                        setSchedules([]);
+                                        setSelectedBulkScheduleIds([]);
+                                        setCurrentBatchStartIndex(0);
+                                        setHasLoadedOnce(false);
+                                        loadTeacherOptions(fromDate);
+                                    }}
+                                >
+                                    <Text
                                         style={[
-                                            styles.filterChip,
-                                            selectedTeacherId === String(teacher.teacherId) &&
-                                            styles.activeFilterChip,
+                                            styles.optionChipText,
+                                            durationType === "MULTI_DAY" && styles.activeOptionChipText,
                                         ]}
-                                        onPress={() => {
-                                            setSelectedTeacherId(String(teacher.teacherId));
-                                            setSelectedBulkScheduleIds([]);
-                                        }}
                                     >
-                                        <Text
+                                        Multiple Days
+                                    </Text>
+                                </TouchableOpacity>
+                            )}
+                        </View>
+
+                        {teacherOptions.length > 0 && (
+                            <>
+                                <Text style={styles.label}>Teacher Name</Text>
+                                <ScrollView
+                                    horizontal
+                                    showsHorizontalScrollIndicator={false}
+                                    style={styles.filterScroll}
+                                >
+                                    {teacherOptions.map((teacher) => (
+                                        <TouchableOpacity
+                                            key={teacher.teacherId}
                                             style={[
-                                                styles.filterChipText,
+                                                styles.filterChip,
                                                 selectedTeacherId === String(teacher.teacherId) &&
-                                                styles.activeFilterChipText,
+                                                styles.activeFilterChip,
                                             ]}
+                                            onPress={() => {
+                                                setSelectedTeacherId(String(teacher.teacherId));
+                                                setSelectedBulkScheduleIds([]);
+                                            }}
                                         >
-                                            {teacher.teacherName}
-                                        </Text>
-                                    </TouchableOpacity>
-                                ))}
-                            </ScrollView>
-                        </>
-                    )}
+                                            <Text
+                                                style={[
+                                                    styles.filterChipText,
+                                                    selectedTeacherId === String(teacher.teacherId) &&
+                                                    styles.activeFilterChipText,
+                                                ]}
+                                            >
+                                                {teacher.teacherName}
+                                            </Text>
+                                        </TouchableOpacity>
+                                    ))}
+                                </ScrollView>
+                            </>
+                        )}
 
-                    <Text style={styles.label}>
-                        {durationType === "ONE_DAY" ? "Leave Date" : "From Date"}
-                    </Text>
-
-                    <TouchableOpacity
-                        style={styles.dateBox}
-                        onPress={() => openCalendar("FROM")}
-                    >
-                        <Text style={styles.dateText}>{fromDate}</Text>
-                    </TouchableOpacity>
-
-                    {durationType === "MULTI_DAY" && (
-                        <>
-                            <Text style={styles.label}>To Date</Text>
-                            <TouchableOpacity
-                                style={styles.dateBox}
-                                onPress={() => openCalendar("TO")}
-                            >
-                                <Text style={styles.dateText}>{toDate}</Text>
-                            </TouchableOpacity>
-                        </>
-                    )}
-
-                    <TouchableOpacity
-                        style={[styles.button, loading && styles.disabledButton]}
-                        onPress={loadSchedules}
-                        disabled={loading}
-                    >
-                        <Text style={styles.buttonText}>
-                            {loading ? "Loading..." : "Load Teacher Schedule"}
+                        <Text style={styles.label}>
+                            {durationType === "ONE_DAY" ? "Leave Date" : "From Date"}
                         </Text>
-                    </TouchableOpacity>
+
+                        <TouchableOpacity
+                            style={styles.dateBox}
+                            onPress={() => openCalendar("FROM")}
+                        >
+                            <Text style={styles.dateText}>{fromDate}</Text>
+                        </TouchableOpacity>
+
+                        {durationType === "MULTI_DAY" && (
+                            <>
+                                <Text style={styles.label}>To Date</Text>
+                                <TouchableOpacity
+                                    style={styles.dateBox}
+                                    onPress={() => openCalendar("TO")}
+                                >
+                                    <Text style={styles.dateText}>{toDate}</Text>
+                                </TouchableOpacity>
+                            </>
+                        )}
+
+                        <TouchableOpacity
+                            style={[styles.button, loading && styles.disabledButton]}
+                            onPress={loadSchedules}
+                            disabled={loading}
+                        >
+                            <Text style={styles.buttonText}>
+                                {loading ? "Loading..." : "Load Teacher Schedule"}
+                            </Text>
+                        </TouchableOpacity>
+                    </View>
 
                     {loading && (
                         <View style={styles.loadingContainer}>
@@ -1595,48 +1625,122 @@ const styles = StyleSheet.create({
     },
     goldOverlay: {
         flex: 1,
-        backgroundColor: "rgba(255, 255, 255, 0.15)",
+        backgroundColor: 'rgba(255, 248, 225, 0.18)',
     },
     container: {
         flex: 1,
         backgroundColor: "transparent",
-        padding: 25,
     },
     scrollContent: {
+        paddingHorizontal: 24,
+        paddingTop: 58,
         paddingBottom: 150,
     },
+    topBar: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "space-between",
+        marginBottom: 26,
+    },
+    backButton: {
+        width: 50,
+        height: 50,
+        borderRadius: 25,
+        backgroundColor: 'rgba(255, 248, 225, 0.18)',
+        alignItems: "center",
+        justifyContent: "center",
+        borderWidth: 1,
+        borderColor: "rgba(214, 169, 74, 0.7)",
+        shadowColor: "#000",
+        shadowOpacity: 0.12,
+        shadowOffset: { width: 0, height: 5 },
+        shadowRadius: 10,
+        elevation: 4,
+    },
+    backButtonText: {
+        fontSize: 42,
+        lineHeight: 44,
+        fontWeight: "900",
+        color: "#09213F",
+        marginTop: -6,
+    },
+    topBarSpacer: {
+        width: 50,
+        height: 50,
+    },
+    titleBlock: {
+        backgroundColor: 'rgba(255, 248, 225, 0.18)',
+        borderRadius: 24,
+        borderWidth: 1,
+        borderColor: "rgba(230, 202, 129, 0.65)",
+        padding: 18,
+        marginBottom: 24,
+    },
+    workspaceTitle: {
+        fontSize: 17,
+        fontWeight: "900",
+        color: "#09213F",
+        marginBottom: 4,
+    },
     title: {
-        fontSize: 32,
-        fontWeight: "bold",
-        color: "#041226",
-        marginBottom: 8,
+        fontSize: 34,
+        fontWeight: "900",
+        color: "#071B35",
+        lineHeight: 40,
+        letterSpacing: -0.5,
     },
     subtitle: {
-        fontSize: 18,
+        fontSize: 17,
+        fontWeight: "800",
+        color: "#0C2442",
+        marginTop: 8,
+    },
+    filterCard: {
+        backgroundColor: "#FFFFFF",
+        borderRadius: 26,
+        borderWidth: 1,
+        borderColor: "#F0D58A",
+        padding: 24,
+        marginBottom: 22,
+        shadowColor: "#000",
+        shadowOpacity: 0.12,
+        shadowOffset: { width: 0, height: 6 },
+        shadowRadius: 12,
+        elevation: 5,
+    },
+    filterCardTitle: {
+        fontSize: 24,
+        fontWeight: "900",
+        color: "#071B35",
+        marginBottom: 6,
+    },
+    filterCardSubtitle: {
+        fontSize: 14,
+        lineHeight: 20,
         fontWeight: "700",
-        color: "#041226",
-        marginBottom: 25,
+        color: "#5D6675",
+        marginBottom: 18,
     },
     label: {
-        fontSize: 16,
-        fontWeight: "700",
-        marginBottom: 8,
-        color: "#041226",
+        fontSize: 17,
+        fontWeight: "900",
+        marginBottom: 9,
+        color: "#071B35",
     },
     optionRow: {
         flexDirection: "row",
         gap: 10,
-        marginBottom: 20,
+        marginBottom: 22,
     },
     optionChip: {
         flex: 1,
-        backgroundColor: "rgba(255, 255, 255, 0.90)",
-        paddingVertical: 12,
+        backgroundColor: "#FFFDF7",
+        paddingVertical: 14,
         paddingHorizontal: 12,
-        borderRadius: 12,
+        borderRadius: 16,
         alignItems: "center",
-        borderWidth: 1,
-        borderColor: "#D8B84A",
+        borderWidth: 1.5,
+        borderColor: "#F0D58A",
     },
     activeOptionChip: {
         backgroundColor: "#041226",
@@ -1652,12 +1756,12 @@ const styles = StyleSheet.create({
         color: "#D8B84A",
     },
     dateBox: {
-        borderWidth: 1,
-        borderColor: "#D8B84A",
-        borderRadius: 10,
-        padding: 14,
-        marginBottom: 18,
-        backgroundColor: "rgba(255, 255, 255, 0.94)",
+        borderWidth: 1.5,
+        borderColor: "#F0D58A",
+        borderRadius: 16,
+        padding: 16,
+        marginBottom: 22,
+        backgroundColor: "#FFFDF7",
     },
     dateText: {
         fontSize: 16,
@@ -1665,10 +1769,13 @@ const styles = StyleSheet.create({
     },
     button: {
         backgroundColor: "#041226",
-        padding: 15,
-        borderRadius: 10,
+        padding: 17,
+        borderRadius: 16,
         alignItems: "center",
-        marginBottom: 20,
+        marginTop: 6,
+        marginBottom: 22,
+        borderWidth: 1,
+        borderColor: "#D8B84A",
     },
     disabledButton: {
         backgroundColor: "#d8bd72",
@@ -1692,23 +1799,30 @@ const styles = StyleSheet.create({
         color: "#041226",
     },
     summaryBox: {
-        backgroundColor: "rgba(255, 255, 255, 0.94)",
+        backgroundColor: "#FFFFFF",
         borderWidth: 1,
-        borderColor: "#D8B84A",
-        borderRadius: 12,
-        padding: 12,
+        borderColor: "#F0D58A",
+        borderRadius: 22,
+        padding: 18,
         marginBottom: 18,
+        shadowColor: "#000",
+        shadowOpacity: 0.10,
+        shadowOffset: { width: 0, height: 5 },
+        shadowRadius: 10,
+        elevation: 4,
     },
     summaryText: {
-        fontSize: 16,
-        fontWeight: "bold",
+        fontSize: 18,
+        fontWeight: "900",
         color: "#041226",
+        marginBottom: 6,
     },
     summarySubText: {
-        fontSize: 14,
-        fontWeight: "700",
+        fontSize: 15,
+        fontWeight: "800",
         color: "#041226",
-        marginTop: 4,
+        marginTop: 6,
+        lineHeight: 21,
     },
     summaryWarning: {
         fontSize: 13,
@@ -1718,16 +1832,16 @@ const styles = StyleSheet.create({
     },
     filterScroll: {
         flexGrow: 0,
-        marginBottom: 18,
+        marginBottom: 22,
     },
     filterChip: {
-        backgroundColor: "rgba(255, 255, 255, 0.90)",
-        paddingVertical: 10,
-        paddingHorizontal: 14,
-        borderRadius: 20,
+        backgroundColor: "#FFFDF7",
+        paddingVertical: 11,
+        paddingHorizontal: 16,
+        borderRadius: 22,
         marginRight: 10,
-        borderWidth: 1,
-        borderColor: "#D8B84A",
+        borderWidth: 1.5,
+        borderColor: "#F0D58A",
     },
     activeFilterChip: {
         backgroundColor: "#041226",
@@ -1830,7 +1944,7 @@ const styles = StyleSheet.create({
         left: 0,
         right: 0,
         bottom: 0,
-        backgroundColor: "rgba(255, 255, 255, 0.96)",
+        backgroundColor: 'rgba(255, 248, 225, 0.18)',
         paddingHorizontal: 22,
         paddingTop: 12,
         paddingBottom: 22,
@@ -1882,7 +1996,7 @@ const styles = StyleSheet.create({
         marginBottom: 18,
     },
     applySummaryBox: {
-        backgroundColor: "rgba(255, 255, 255, 0.94)",
+        backgroundColor: 'rgba(255, 248, 225, 0.18)',
         borderRadius: 12,
         borderWidth: 1,
         borderColor: "#D8B84A",
@@ -1909,7 +2023,7 @@ const styles = StyleSheet.create({
         marginBottom: 10,
     },
     selectedDateBox: {
-        backgroundColor: "rgba(255, 255, 255, 0.94)",
+        backgroundColor: 'rgba(255, 248, 225, 0.18)',
         borderRadius: 10,
         padding: 14,
         alignItems: "center",
@@ -1951,7 +2065,7 @@ const styles = StyleSheet.create({
         textAlign: "center",
     },
     leaveInfoBox: {
-        backgroundColor: "rgba(255, 255, 255, 0.94)",
+        backgroundColor: 'rgba(255, 248, 225, 0.18)',
         borderRadius: 12,
         borderWidth: 1,
         borderColor: "#D8B84A",
@@ -1977,7 +2091,7 @@ const styles = StyleSheet.create({
     },
     replacementTab: {
         flex: 1,
-        backgroundColor: "rgba(255, 255, 255, 0.90)",
+        backgroundColor: 'rgba(255, 248, 225, 0.18)',
         paddingVertical: 14,
         paddingHorizontal: 10,
         borderRadius: 12,
@@ -2001,7 +2115,7 @@ const styles = StyleSheet.create({
         maxHeight: 260,
     },
     groupedReplacementCard: {
-        backgroundColor: "rgba(255, 255, 255, 0.94)",
+        backgroundColor: 'rgba(255, 248, 225, 0.18)',
         borderWidth: 1,
         borderColor: "#D8B84A",
         borderRadius: 12,
@@ -2035,7 +2149,7 @@ const styles = StyleSheet.create({
         marginTop: 4,
     },
     noReplacementSelectButton: {
-        backgroundColor: "rgba(255, 255, 255, 0.94)",
+        backgroundColor: 'rgba(255, 248, 225, 0.18)',
         borderWidth: 1,
         borderColor: "#D8B84A",
         borderRadius: 12,
@@ -2101,7 +2215,7 @@ const styles = StyleSheet.create({
         fontWeight: "700",
     },
     bulkSelectBox: {
-        backgroundColor: "rgba(255, 255, 255, 0.94)",
+        backgroundColor: 'rgba(255, 248, 225, 0.18)',
         borderWidth: 1,
         borderColor: "#D8B84A",
         borderRadius: 10,

@@ -103,7 +103,7 @@ const styles = StyleSheet.create({
 
     overlay: {
         flex: 1,
-        backgroundColor: 'rgba(255,255,255,0.15)',
+        backgroundColor: 'rgba(255, 248, 225, 0.18)',
     },
 
     container: {
@@ -123,7 +123,7 @@ const styles = StyleSheet.create({
         width: 48,
         height: 48,
         borderRadius: 24,
-        backgroundColor: 'rgba(255,255,255,0.42)',
+        backgroundColor: 'rgba(255, 248, 225, 0.18)',
         borderWidth: 1,
         borderColor: 'rgba(255,255,255,0.65)',
         alignItems: 'center',
@@ -151,7 +151,7 @@ const styles = StyleSheet.create({
     },
 
     card: {
-        backgroundColor: 'rgba(255,255,255,0.96)',
+        backgroundColor: 'rgba(255, 248, 225, 0.18)',
         borderRadius: 28,
         borderWidth: 1.5,
         borderColor: colors.cardGoldBorder,
