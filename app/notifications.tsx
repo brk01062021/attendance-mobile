@@ -40,7 +40,7 @@ const getNotificationsEndpoint = () => {
         return String(endpoints.teacherSchedules).replace('/teacher-schedules', '/notifications');
     }
 
-    return 'http://localhost:8080/notifications';
+    return 'http://192.168.1.75:8080/notifications';
 };
 
 const getRoleLabel = (role: string) => {

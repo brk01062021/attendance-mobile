@@ -1,5 +1,6 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
+    ActivityIndicator,
     ImageBackground,
     Modal,
     ScrollView,
@@ -11,18 +12,149 @@ import {
 import { router } from 'expo-router';
 import { colors, shadows, spacing } from '../src/theme';
 
+const API_BASE_URL = 'http://192.168.1.75:8080';
+const DASHBOARD_TEST_DATE = '2026-04-27';
+const SHOW_ADVANCED_ANALYTICS = false;
+
+type AdminDashboardStats = {
+    attendanceDate: string;
+    totalStudents: number;
+    presentStudents: number;
+    absentStudents: number;
+    lateStudents: number;
+    attendancePercentage: number;
+};
+
+const defaultAdminStats: AdminDashboardStats = {
+    attendanceDate: DASHBOARD_TEST_DATE,
+    totalStudents: 17,
+    presentStudents: 0,
+    absentStudents: 0,
+    lateStudents: 0,
+    attendancePercentage: 0,
+};
+
+type ClassDashboardStats = {
+    className: string;
+    section: string;
+    totalRecords: number;
+    present: number;
+    absent: number;
+    late: number;
+    attendancePercentage: number;
+};
+
+type TeacherWiseDashboardStats = {
+    teacherId: number | null;
+    teacherName: string;
+    totalRecords: number;
+    present: number;
+    absent: number;
+    late: number;
+    attendancePercentage: number;
+};
+
+type SubjectDashboardStats = {
+    subjectName: string;
+    totalRecords: number;
+    present: number;
+    absent: number;
+    late: number;
+    attendancePercentage: number;
+};
+
 export default function AdminDashboardScreen() {
     const [menuVisible, setMenuVisible] = useState(false);
+    const [dashboardStats, setDashboardStats] = useState<AdminDashboardStats>(defaultAdminStats);
+    const [loadingStats, setLoadingStats] = useState(false);
+    const [statsError, setStatsError] = useState('');
+    const [classBreakdown, setClassBreakdown] = useState<ClassDashboardStats[]>([]);
+    const [teacherBreakdown, setTeacherBreakdown] = useState<TeacherWiseDashboardStats[]>([]);
+    const [subjectBreakdown, setSubjectBreakdown] = useState<SubjectDashboardStats[]>([]);
+    const [loadingBreakdown, setLoadingBreakdown] = useState(false);
+    const [breakdownError, setBreakdownError] = useState('');
 
     const adminName = useMemo(() => 'Principal', []);
 
-    const todayStats = {
-        totalStudents: '17',
-        present: '0',
-        absent: '0',
-        late: '0',
-        attendancePercent: '0.00%',
-    };
+    useEffect(() => {
+        const loadAdminDashboard = async () => {
+            setLoadingStats(true);
+            setStatsError('');
+
+            try {
+                const response = await fetch(
+                    `${API_BASE_URL}/attendance/dashboard/admin?date=${DASHBOARD_TEST_DATE}`
+                );
+
+                if (!response.ok) {
+                    throw new Error('Unable to load admin dashboard');
+                }
+
+                const data = await response.json();
+
+                setDashboardStats({
+                    attendanceDate: data.attendanceDate ?? DASHBOARD_TEST_DATE,
+                    totalStudents: Number(data.totalStudents ?? 0),
+                    presentStudents: Number(data.presentStudents ?? 0),
+                    absentStudents: Number(data.absentStudents ?? 0),
+                    lateStudents: Number(data.lateStudents ?? 0),
+                    attendancePercentage: Number(data.attendancePercentage ?? 0),
+                });
+            } catch (error) {
+                setDashboardStats(defaultAdminStats);
+                setStatsError('Live data unavailable');
+            } finally {
+                setLoadingStats(false);
+            }
+        };
+
+        loadAdminDashboard();
+    }, []);
+
+
+    useEffect(() => {
+        const loadAdminAnalyticsBreakdown = async () => {
+            setLoadingBreakdown(true);
+            setBreakdownError('');
+
+            try {
+                const [classesResponse, teachersResponse, subjectsResponse] = await Promise.all([
+                    fetch(`${API_BASE_URL}/attendance/dashboard/admin/classes?date=${DASHBOARD_TEST_DATE}`),
+                    fetch(`${API_BASE_URL}/attendance/dashboard/admin/teachers?date=${DASHBOARD_TEST_DATE}`),
+                    fetch(`${API_BASE_URL}/attendance/dashboard/admin/subjects?date=${DASHBOARD_TEST_DATE}`),
+                ]);
+
+                if (!classesResponse.ok || !teachersResponse.ok || !subjectsResponse.ok) {
+                    throw new Error('Unable to load analytics breakdown');
+                }
+
+                const classesData = await classesResponse.json();
+                const teachersData = await teachersResponse.json();
+                const subjectsData = await subjectsResponse.json();
+
+                setClassBreakdown(Array.isArray(classesData) ? classesData : []);
+                setTeacherBreakdown(Array.isArray(teachersData) ? teachersData : []);
+                setSubjectBreakdown(Array.isArray(subjectsData) ? subjectsData : []);
+            } catch (error) {
+                setClassBreakdown([]);
+                setTeacherBreakdown([]);
+                setSubjectBreakdown([]);
+                setBreakdownError('Analytics data unavailable');
+            } finally {
+                setLoadingBreakdown(false);
+            }
+        };
+
+        loadAdminAnalyticsBreakdown();
+    }, []);
+
+    const todayStats = useMemo(() => ({
+        totalStudents: String(dashboardStats.totalStudents || 0),
+        present: String(dashboardStats.presentStudents || 0),
+        absent: String(dashboardStats.absentStudents || 0),
+        late: String(dashboardStats.lateStudents || 0),
+        attendancePercent: `${Math.round(dashboardStats.attendancePercentage || 0)}%`,
+    }), [dashboardStats]);
 
     const openRoute = (path: string, params: Record<string, string> = {}) => {
         setMenuVisible(false);
@@ -104,21 +236,36 @@ export default function AdminDashboardScreen() {
                         </View>
 
                         <View style={styles.statusPill}>
-                            <Text style={styles.statusPillText}>Live</Text>
+                            <Text style={styles.statusPillText}>
+                                {loadingStats ? 'Loading' : statsError ? 'Offline' : 'Live'}
+                            </Text>
                         </View>
                     </View>
 
-                    <View style={styles.statsGrid}>
-                        <StatCard emoji="👥" value={todayStats.totalStudents} label="Total" />
-                        <StatCard emoji="✅" value={todayStats.present} label="Present" />
-                        <StatCard emoji="🚫" value={todayStats.absent} label="Absent" />
-                        <StatCard emoji="⏰" value={todayStats.late} label="Late" />
-                    </View>
+                    {loadingStats ? (
+                        <View style={styles.loadingBox}>
+                            <ActivityIndicator />
+                            <Text style={styles.loadingText}>Loading live school overview...</Text>
+                        </View>
+                    ) : (
+                        <>
+                            {statsError ? (
+                                <Text style={styles.errorText}>{statsError}</Text>
+                            ) : null}
 
-                    <View style={styles.percentageBox}>
-                        <Text style={styles.percentageLabel}>Attendance Percentage</Text>
-                        <Text style={styles.percentageValue}>{todayStats.attendancePercent}</Text>
-                    </View>
+                            <View style={styles.statsGrid}>
+                                <StatCard emoji="👥" value={todayStats.totalStudents} label="Total" />
+                                <StatCard emoji="✅" value={todayStats.present} label="Present" />
+                                <StatCard emoji="🚫" value={todayStats.absent} label="Absent" />
+                                <StatCard emoji="⏰" value={todayStats.late} label="Late" />
+                            </View>
+
+                            <View style={styles.percentageBox}>
+                                <Text style={styles.percentageLabel}>Attendance Percentage</Text>
+                                <Text style={styles.percentageValue}>{todayStats.attendancePercent}</Text>
+                            </View>
+                        </>
+                    )}
                 </View>
 
                 <TouchableOpacity
@@ -170,6 +317,92 @@ export default function AdminDashboardScreen() {
                             onPress={() => openRoute('/register-student')}
                         />
                     </View>
+                </View>
+
+                <View style={styles.analyticsCard}>
+                    <View style={styles.sectionHeaderRow}>
+                        <View style={styles.sectionHeaderTextBox}>
+                            <Text style={styles.sectionEyebrow}>Analytics</Text>
+                            <Text style={styles.sectionTitle}>Attendance Breakdown</Text>
+                        </View>
+
+                        <View style={styles.statusPill}>
+                            <Text style={styles.statusPillText}>
+                                {loadingBreakdown ? 'Loading' : breakdownError ? 'Offline' : 'Live'}
+                            </Text>
+                        </View>
+                    </View>
+
+                    {loadingBreakdown ? (
+                        <View style={styles.loadingBox}>
+                            <ActivityIndicator />
+                            <Text style={styles.loadingText}>Loading class-wise analytics...</Text>
+                        </View>
+                    ) : (
+                        <>
+                            {breakdownError ? (
+                                <Text style={styles.errorText}>{breakdownError}</Text>
+                            ) : null}
+
+                            <TouchableOpacity
+                                style={styles.breakdownNavigationCard}
+                                onPress={() => openRoute('/class-wise-attendance', { date: DASHBOARD_TEST_DATE })}
+                                activeOpacity={0.88}
+                            >
+                                <View style={styles.breakdownNavigationIconBox}>
+                                    <Text style={styles.breakdownNavigationIcon}>🏫</Text>
+                                </View>
+
+                                <View style={styles.breakdownNavigationTextBox}>
+                                    <Text style={styles.breakdownNavigationTitle}>Class-wise Attendance</Text>
+                                    <Text style={styles.breakdownNavigationSubtitle}>
+                                        View attendance by class and section
+                                    </Text>
+                                    <Text style={styles.breakdownNavigationMeta}>
+                                        {classBreakdown.length > 0
+                                            ? `${classBreakdown.length} class sections available`
+                                            : 'Tap to view class attendance'}
+                                    </Text>
+                                </View>
+
+                                <Text style={styles.breakdownNavigationArrow}>›</Text>
+                            </TouchableOpacity>
+
+                            {SHOW_ADVANCED_ANALYTICS ? (
+                                <>
+                                    <AnalyticsSection title="Teacher-wise Attendance">
+                                        {teacherBreakdown.length > 0 ? (
+                                            teacherBreakdown.map((item) => (
+                                                <AnalyticsRow
+                                                    key={`${item.teacherId}-${item.teacherName}`}
+                                                    title={item.teacherName || 'Teacher'}
+                                                    subtitle={`Total ${item.totalRecords}  •  P ${item.present}  •  A ${item.absent}  •  L ${item.late}`}
+                                                    percentage={item.attendancePercentage}
+                                                />
+                                            ))
+                                        ) : (
+                                            <Text style={styles.emptyAnalyticsText}>No teacher-wise data available.</Text>
+                                        )}
+                                    </AnalyticsSection>
+
+                                    <AnalyticsSection title="Subject-wise Attendance">
+                                        {subjectBreakdown.length > 0 ? (
+                                            subjectBreakdown.map((item) => (
+                                                <AnalyticsRow
+                                                    key={item.subjectName}
+                                                    title={item.subjectName || 'Subject'}
+                                                    subtitle={`Total ${item.totalRecords}  •  P ${item.present}  •  A ${item.absent}  •  L ${item.late}`}
+                                                    percentage={item.attendancePercentage}
+                                                />
+                                            ))
+                                        ) : (
+                                            <Text style={styles.emptyAnalyticsText}>No subject-wise data available.</Text>
+                                        )}
+                                    </AnalyticsSection>
+                                </>
+                            ) : null}
+                        </>
+                    )}
                 </View>
 
                 <TouchableOpacity
@@ -301,6 +534,44 @@ function QuickAction({
             <Text style={styles.quickTitle}>{title}</Text>
             <Text style={styles.quickText}>{subtitle}</Text>
         </TouchableOpacity>
+    );
+}
+
+function AnalyticsSection({
+                              title,
+                              children,
+                          }: {
+    title: string;
+    children: React.ReactNode;
+}) {
+    return (
+        <View style={styles.analyticsSection}>
+            <Text style={styles.analyticsSectionTitle}>{title}</Text>
+            {children}
+        </View>
+    );
+}
+
+function AnalyticsRow({
+                          title,
+                          subtitle,
+                          percentage,
+                      }: {
+    title: string;
+    subtitle: string;
+    percentage: number;
+}) {
+    return (
+        <View style={styles.analyticsRow}>
+            <View style={styles.analyticsRowTextBox}>
+                <Text style={styles.analyticsRowTitle}>{title}</Text>
+                <Text style={styles.analyticsRowSubtitle}>{subtitle}</Text>
+            </View>
+
+            <View style={styles.analyticsPercentPill}>
+                <Text style={styles.analyticsPercentText}>{Math.round(percentage || 0)}%</Text>
+            </View>
+        </View>
     );
 }
 
@@ -452,6 +723,26 @@ const styles = StyleSheet.create({
         color: '#16834A',
     },
 
+    loadingBox: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: spacing.xl,
+    },
+
+    loadingText: {
+        fontSize: 14,
+        fontWeight: '800',
+        color: colors.slateText,
+        marginTop: spacing.md,
+    },
+
+    errorText: {
+        fontSize: 14,
+        fontWeight: '800',
+        color: '#B42318',
+        marginBottom: spacing.md,
+    },
+
     statsGrid: {
         flexDirection: 'row',
         flexWrap: 'wrap',
@@ -592,6 +883,144 @@ const styles = StyleSheet.create({
         fontWeight: '700',
         color: colors.slateText,
         lineHeight: 17,
+    },
+
+    breakdownNavigationCard: {
+        backgroundColor: '#FFF8E1',
+        borderRadius: 26,
+        borderWidth: 1.4,
+        borderColor: colors.cardGoldBorder,
+        padding: spacing.lg,
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginTop: spacing.sm,
+    },
+
+    breakdownNavigationIconBox: {
+        width: 58,
+        height: 58,
+        borderRadius: 22,
+        backgroundColor: colors.white,
+        borderWidth: 1,
+        borderColor: 'rgba(212,175,55,0.45)',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginRight: spacing.md,
+    },
+
+    breakdownNavigationIcon: {
+        fontSize: 28,
+    },
+
+    breakdownNavigationTextBox: {
+        flex: 1,
+        paddingRight: spacing.md,
+    },
+
+    breakdownNavigationTitle: {
+        fontSize: 18,
+        fontWeight: '900',
+        color: colors.primaryNavy,
+    },
+
+    breakdownNavigationSubtitle: {
+        fontSize: 13,
+        fontWeight: '800',
+        color: colors.slateText,
+        marginTop: spacing.xs,
+    },
+
+    breakdownNavigationMeta: {
+        fontSize: 12,
+        fontWeight: '900',
+        color: colors.premiumGold,
+        marginTop: spacing.sm,
+    },
+
+    breakdownNavigationArrow: {
+        fontSize: 42,
+        fontWeight: '900',
+        color: colors.premiumGold,
+    },
+
+    analyticsCard: {
+        backgroundColor: 'rgba(255,255,255,0.96)',
+        borderRadius: 34,
+        borderWidth: 1.5,
+        borderColor: colors.cardGoldBorder,
+        padding: spacing.xl,
+        marginBottom: spacing.xl,
+        ...shadows.medium,
+    },
+
+    analyticsSection: {
+        backgroundColor: '#FFF8E1',
+        borderRadius: 24,
+        borderWidth: 1.2,
+        borderColor: colors.cardGoldBorder,
+        padding: spacing.md,
+        marginBottom: spacing.lg,
+    },
+
+    analyticsSectionTitle: {
+        fontSize: 18,
+        fontWeight: '900',
+        color: colors.primaryNavy,
+        marginBottom: spacing.md,
+    },
+
+    analyticsRow: {
+        backgroundColor: colors.white,
+        borderRadius: 18,
+        borderWidth: 1,
+        borderColor: 'rgba(212,175,55,0.42)',
+        padding: spacing.md,
+        marginBottom: spacing.sm,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+    },
+
+    analyticsRowTextBox: {
+        flex: 1,
+        paddingRight: spacing.md,
+    },
+
+    analyticsRowTitle: {
+        fontSize: 16,
+        fontWeight: '900',
+        color: colors.primaryNavy,
+    },
+
+    analyticsRowSubtitle: {
+        fontSize: 12,
+        fontWeight: '800',
+        color: colors.slateText,
+        marginTop: spacing.xs,
+    },
+
+    analyticsPercentPill: {
+        backgroundColor: colors.primaryNavy,
+        borderRadius: 18,
+        borderWidth: 1,
+        borderColor: colors.cardGoldBorder,
+        paddingHorizontal: spacing.md,
+        paddingVertical: spacing.sm,
+        minWidth: 64,
+        alignItems: 'center',
+    },
+
+    analyticsPercentText: {
+        fontSize: 16,
+        fontWeight: '900',
+        color: colors.premiumGold,
+    },
+
+    emptyAnalyticsText: {
+        fontSize: 13,
+        fontWeight: '800',
+        color: colors.slateText,
+        paddingVertical: spacing.sm,
     },
 
     logoutButton: {

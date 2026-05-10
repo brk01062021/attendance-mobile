@@ -1,5 +1,6 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
+    ActivityIndicator,
     ImageBackground,
     Modal,
     ScrollView,
@@ -10,6 +11,40 @@ import {
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { colors, shadows, spacing } from '../src/theme';
+
+const API_BASE_URL = 'http://192.168.1.75:8080';
+
+// Temporary test date because your current sample attendance data exists on 2026-04-27.
+// For production/current-day data, change this to an empty string: ''
+const DEV_TEST_ATTENDANCE_DATE = '2026-04-27';
+
+const formatDateForApi = (date: Date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+
+    return `${year}-${month}-${day}`;
+};
+
+type TeacherDashboardStats = {
+    teacherId: number | null;
+    teacherName: string;
+    totalStudents: number;
+    present: number;
+    absent: number;
+    late: number;
+    attendancePercentage: number;
+};
+
+const defaultStats: TeacherDashboardStats = {
+    teacherId: null,
+    teacherName: '',
+    totalStudents: 0,
+    present: 0,
+    absent: 0,
+    late: 0,
+    attendancePercentage: 0,
+};
 
 export default function TeacherDashboard() {
     const params = useLocalSearchParams();
@@ -24,13 +59,69 @@ export default function TeacherDashboard() {
     }, [teacherName]);
 
     const [menuVisible, setMenuVisible] = useState(false);
+    const [dashboardStats, setDashboardStats] = useState<TeacherDashboardStats>(defaultStats);
+    const [loadingStats, setLoadingStats] = useState(false);
+    const [statsError, setStatsError] = useState('');
 
-    const todayStats = {
-        totalClasses: '4',
-        completedAttendance: '2',
-        pendingAttendance: '2',
-        attendancePercent: '86%',
-    };
+    const todayDate = useMemo(() => DEV_TEST_ATTENDANCE_DATE || formatDateForApi(new Date()), []);
+
+    useEffect(() => {
+        const loadTeacherDashboard = async () => {
+            const safeTeacherId = String(teacherId || '').trim();
+
+            if (!safeTeacherId) {
+                setDashboardStats(defaultStats);
+                setStatsError('Teacher profile not found');
+                return;
+            }
+
+            setLoadingStats(true);
+            setStatsError('');
+
+            try {
+                const response = await fetch(
+                    `${API_BASE_URL}/attendance/dashboard/teacher?teacherId=${encodeURIComponent(
+                        safeTeacherId
+                    )}&date=${todayDate}`
+                );
+
+                if (!response.ok) {
+                    throw new Error('Unable to load teacher dashboard');
+                }
+
+                const data = await response.json();
+
+                setDashboardStats({
+                    teacherId: data.teacherId ?? null,
+                    teacherName: data.teacherName ?? '',
+                    totalStudents: Number(data.totalStudents ?? 0),
+                    present: Number(data.present ?? 0),
+                    absent: Number(data.absent ?? 0),
+                    late: Number(data.late ?? 0),
+                    attendancePercentage: Number(data.attendancePercentage ?? 0),
+                });
+            } catch (error) {
+                setDashboardStats(defaultStats);
+                setStatsError('Live data unavailable');
+            } finally {
+                setLoadingStats(false);
+            }
+        };
+
+        loadTeacherDashboard();
+    }, [teacherId, todayDate]);
+
+    const todayStats = useMemo(() => {
+        const totalMarked =
+            dashboardStats.present + dashboardStats.absent + dashboardStats.late;
+
+        return {
+            totalStudents: String(dashboardStats.totalStudents || totalMarked || 0),
+            present: String(dashboardStats.present || 0),
+            absent: String(dashboardStats.absent || 0),
+            attendancePercent: `${Math.round(dashboardStats.attendancePercentage || 0)}%`,
+        };
+    }, [dashboardStats]);
 
     const goToTakeAttendance = () => {
         setMenuVisible(false);
@@ -145,35 +236,50 @@ export default function TeacherDashboard() {
                         </View>
 
                         <View style={styles.statusPill}>
-                            <Text style={styles.statusPillText}>Live</Text>
+                            <Text style={styles.statusPillText}>
+                                {loadingStats ? 'Loading' : statsError ? 'Offline' : 'Live'}
+                            </Text>
                         </View>
                     </View>
 
-                    <View style={styles.statsGrid}>
-                        <StatCard
-                            emoji="📚"
-                            value={todayStats.totalClasses}
-                            label="Classes"
-                        />
+                    {loadingStats ? (
+                        <View style={styles.loadingBox}>
+                            <ActivityIndicator />
+                            <Text style={styles.loadingText}>Loading live attendance...</Text>
+                        </View>
+                    ) : (
+                        <>
+                            {statsError ? (
+                                <Text style={styles.errorText}>{statsError}</Text>
+                            ) : null}
 
-                        <StatCard
-                            emoji="✅"
-                            value={todayStats.completedAttendance}
-                            label="Completed"
-                        />
+                            <View style={styles.statsGrid}>
+                                <StatCard
+                                    emoji="👥"
+                                    value={todayStats.totalStudents}
+                                    label="Students"
+                                />
 
-                        <StatCard
-                            emoji="🕒"
-                            value={todayStats.pendingAttendance}
-                            label="Pending"
-                        />
+                                <StatCard
+                                    emoji="✅"
+                                    value={todayStats.present}
+                                    label="Present"
+                                />
 
-                        <StatCard
-                            emoji="📊"
-                            value={todayStats.attendancePercent}
-                            label="Average"
-                        />
-                    </View>
+                                <StatCard
+                                    emoji="❌"
+                                    value={todayStats.absent}
+                                    label="Absent"
+                                />
+
+                                <StatCard
+                                    emoji="📊"
+                                    value={todayStats.attendancePercent}
+                                    label="Average"
+                                />
+                            </View>
+                        </>
+                    )}
                 </View>
 
                 <TouchableOpacity
@@ -566,6 +672,26 @@ const styles = StyleSheet.create({
         fontSize: 14,
         fontWeight: '900',
         color: '#16834A',
+    },
+
+    loadingBox: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: spacing.xl,
+    },
+
+    loadingText: {
+        fontSize: 14,
+        fontWeight: '800',
+        color: colors.slateText,
+        marginTop: spacing.md,
+    },
+
+    errorText: {
+        fontSize: 14,
+        fontWeight: '800',
+        color: '#B42318',
+        marginBottom: spacing.md,
     },
 
     statsGrid: {
