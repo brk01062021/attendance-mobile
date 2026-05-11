@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
     ActivityIndicator,
     Alert,
@@ -7,6 +7,7 @@ import {
     ScrollView,
     StyleSheet,
     Text,
+    TextInput,
     TouchableOpacity,
     View,
 } from 'react-native';
@@ -23,6 +24,40 @@ type ReportItem = {
     absent: number;
     late: number;
     attendancePercentage: number;
+};
+
+type StudentSearchItem = {
+    studentId: number;
+    studentName: string;
+    admissionNumber?: string | null;
+    rollNumber?: string | null;
+    className: string;
+    section: string;
+};
+
+type StudentDailyAttendanceRecord = {
+    date: string;
+    status: 'PRESENT' | 'ABSENT' | 'LATE' | 'NOT_MARKED' | string;
+    subjectName?: string;
+    teacherName?: string;
+};
+
+type StudentAttendanceReport = {
+    studentId: number;
+    studentName: string;
+    admissionNumber?: string | null;
+    rollNumber?: string | null;
+    className: string;
+    section: string;
+    fromDate: string;
+    toDate: string;
+    rangeType: DateRangeMode;
+    totalWorkingDays: number;
+    presentDays: number;
+    absentDays: number;
+    lateDays: number;
+    attendancePercentage: number;
+    dailyRecords: StudentDailyAttendanceRecord[];
 };
 
 type ReplacementPeriod = {
@@ -275,6 +310,17 @@ export default function AttendanceReportScreen() {
     const [replacementPeriods, setReplacementPeriods] = useState<ReplacementPeriod[]>([]);
     const [replacementOptions, setReplacementOptions] = useState<ReplacementTeacherOption[]>(replacementOptionsData);
 
+    const [studentSearchQuery, setStudentSearchQuery] = useState('');
+    const [studentOptions, setStudentOptions] = useState<StudentSearchItem[]>([]);
+    const [selectedStudent, setSelectedStudent] = useState<StudentSearchItem | null>(null);
+    const [studentSearchLoading, setStudentSearchLoading] = useState(false);
+    const [studentReport, setStudentReport] = useState<StudentAttendanceReport | null>(null);
+    const [studentReportLoading, setStudentReportLoading] = useState(false);
+    const [hasLoadedStudentReport, setHasLoadedStudentReport] = useState(false);
+
+    const [availableClassOptions, setAvailableClassOptions] = useState<string[]>([]);
+    const [availableSectionOptions, setAvailableSectionOptions] = useState<string[]>([]);
+
     const goBack = () => {
         if (activeView !== 'overview') {
             setActiveView('overview');
@@ -304,6 +350,142 @@ export default function AttendanceReportScreen() {
         }
 
         return dates;
+    };
+
+    const getReportDateBounds = () => {
+        const dates = getDateRange();
+        return {
+            fromDate: dates[0] || reportDate,
+            toDate: dates[dates.length - 1] || reportDate,
+        };
+    };
+
+    const loadAvailableClasses = async () => {
+        try {
+            const response = await fetch(`${BASE_URL}/students/classes`);
+
+            if (!response.ok) {
+                throw new Error('Failed to load classes');
+            }
+
+            const data = await response.json();
+            const classes = Array.isArray(data)
+                ? data.map((item) => String(item || '')).filter(Boolean)
+                : [];
+
+            setAvailableClassOptions(classes);
+        } catch (error) {
+            console.log(error);
+            setAvailableClassOptions([]);
+        }
+    };
+
+    const loadAvailableSections = async (selectedClass: string) => {
+        if (!selectedClass.trim()) {
+            setAvailableSectionOptions([]);
+            return;
+        }
+
+        try {
+            const response = await fetch(
+                `${BASE_URL}/students/sections?className=${encodeURIComponent(selectedClass)}`
+            );
+
+            if (!response.ok) {
+                throw new Error('Failed to load sections');
+            }
+
+            const data = await response.json();
+            const sections = Array.isArray(data)
+                ? data.map((item) => String(item || '')).filter(Boolean)
+                : [];
+
+            setAvailableSectionOptions(sections);
+        } catch (error) {
+            console.log(error);
+            setAvailableSectionOptions([]);
+        }
+    };
+
+    useEffect(() => {
+        loadAvailableClasses();
+    }, []);
+
+    const searchStudentsForReport = async () => {
+        if (!classFilter.trim() || !sectionFilter.trim()) {
+            Alert.alert('Select Class and Section', 'Please select class and section before searching students.');
+            return;
+        }
+
+        try {
+            setStudentSearchLoading(true);
+            setSelectedStudent(null);
+            setStudentReport(null);
+            setHasLoadedStudentReport(false);
+
+            const url = `${BASE_URL}/students/search?className=${encodeURIComponent(classFilter)}&section=${encodeURIComponent(sectionFilter)}&query=${encodeURIComponent(studentSearchQuery.trim())}`;
+            const response = await fetch(url);
+
+            if (!response.ok) {
+                throw new Error('Failed to search students');
+            }
+
+            const data = await response.json();
+            setStudentOptions(Array.isArray(data) ? data.map(mapStudentSearchItem) : []);
+        } catch (error) {
+            console.log(error);
+            setStudentOptions([]);
+            Alert.alert('Error', 'Unable to search students. Please verify backend is running.');
+        } finally {
+            setStudentSearchLoading(false);
+        }
+    };
+
+    const loadSingleStudentReport = async () => {
+        if (!selectedStudent) {
+            Alert.alert('Select Student', 'Please select one student before loading the report.');
+            return;
+        }
+
+        const { fromDate, toDate } = getReportDateBounds();
+
+        try {
+            setStudentReportLoading(true);
+            setHasLoadedStudentReport(true);
+
+            const url = `${BASE_URL}/attendance/student-report?studentId=${selectedStudent.studentId}&fromDate=${fromDate}&toDate=${toDate}&rangeType=${encodeURIComponent(dateRangeMode)}`;
+            const response = await fetch(url);
+
+            if (!response.ok) {
+                throw new Error('Failed to load student report');
+            }
+
+            const data = await response.json();
+            setStudentReport({
+                studentId: Number(data.studentId || selectedStudent.studentId),
+                studentName: String(data.studentName || selectedStudent.studentName || ''),
+                admissionNumber: data.admissionNumber ?? selectedStudent.admissionNumber ?? null,
+                rollNumber: data.rollNumber ?? selectedStudent.rollNumber ?? null,
+                className: String(data.className || selectedStudent.className || ''),
+                section: String(data.section || selectedStudent.section || ''),
+                fromDate: String(data.fromDate || fromDate),
+                toDate: String(data.toDate || toDate),
+                rangeType: String(data.rangeType || dateRangeMode) as DateRangeMode,
+                totalWorkingDays: Number(data.totalWorkingDays || 0),
+                presentDays: Number(data.presentDays || 0),
+                absentDays: Number(data.absentDays || 0),
+                lateDays: Number(data.lateDays || 0),
+                attendancePercentage: Number(data.attendancePercentage || 0),
+                dailyRecords: Array.isArray(data.dailyRecords) ? data.dailyRecords : [],
+            });
+            setGeneratedAt(new Date().toLocaleString());
+        } catch (error) {
+            console.log(error);
+            setStudentReport(null);
+            Alert.alert('Error', 'Unable to load selected student attendance report.');
+        } finally {
+            setStudentReportLoading(false);
+        }
     };
 
     const fetchReportsForDates = async (dates: string[]) => {
@@ -503,13 +685,13 @@ export default function AttendanceReportScreen() {
     const overviewStats = useMemo(() => buildSummaryStats(overviewData), [overviewData]);
 
 
-    const classOptions = useMemo(() => {
+    const reportClassOptions = useMemo(() => {
         return Array.from(new Set(reportData.map((item) => item.className).filter(Boolean))).sort((a, b) =>
             a.localeCompare(b, undefined, { numeric: true })
         );
     }, [reportData]);
 
-    const sectionOptions = useMemo(() => {
+    const reportSectionOptions = useMemo(() => {
         const source = classFilter.trim()
             ? reportData.filter((item) => item.className.toLowerCase() === classFilter.trim().toLowerCase())
             : reportData;
@@ -518,6 +700,9 @@ export default function AttendanceReportScreen() {
             a.localeCompare(b, undefined, { numeric: true })
         );
     }, [reportData, classFilter]);
+
+    const classOptions = activeView === 'studentReport' ? availableClassOptions : reportClassOptions;
+    const sectionOptions = activeView === 'studentReport' ? availableSectionOptions : reportSectionOptions;
 
     const filteredReport = useMemo(() => {
         return reportData.filter((item) => {
@@ -603,6 +788,11 @@ export default function AttendanceReportScreen() {
         setDropdownTarget(null);
         setHasLoadedDrilldown(false);
         setReportData(overviewData);
+        setStudentSearchQuery('');
+        setStudentOptions([]);
+        setSelectedStudent(null);
+        setStudentReport(null);
+        setHasLoadedStudentReport(false);
     };
 
     const clearDrilldownFilters = () => {
@@ -612,17 +802,40 @@ export default function AttendanceReportScreen() {
         setSectionFilter('');
         setSortBy('Overall');
         setDropdownTarget(null);
+        setStudentSearchQuery('');
+        setStudentOptions([]);
+        setSelectedStudent(null);
+        setStudentReport(null);
+        setHasLoadedStudentReport(false);
+        if (activeView === 'studentReport') {
+            setAvailableSectionOptions([]);
+            loadAvailableClasses();
+        }
     };
 
     const selectClass = (selectedClass: string) => {
         setClassFilter(selectedClass);
         setSectionFilter('');
         setDropdownTarget(null);
+        setStudentSearchQuery('');
+        setStudentOptions([]);
+        setSelectedStudent(null);
+        setStudentReport(null);
+        setHasLoadedStudentReport(false);
+
+        if (activeView === 'studentReport') {
+            loadAvailableSections(selectedClass);
+        }
     };
 
     const selectSection = (selectedSection: string) => {
         setSectionFilter(selectedSection);
         setDropdownTarget(null);
+        setStudentSearchQuery('');
+        setStudentOptions([]);
+        setSelectedStudent(null);
+        setStudentReport(null);
+        setHasLoadedStudentReport(false);
     };
 
     const openDetailModal = (item: ReportItem) => {
@@ -783,6 +996,30 @@ export default function AttendanceReportScreen() {
                         teacherCoverageStats={teacherCoverageStats}
                         onExport={() => setShowExportModal(true)}
                     />
+                ) : activeView === 'studentReport' ? (
+                    <StudentReportContent
+                        reportDate={reportDate}
+                        setDatePickerTarget={setDatePickerTarget}
+                        dateRangeMode={dateRangeMode}
+                        setDateRangeMode={setDateRangeMode}
+                        classFilter={classFilter}
+                        sectionFilter={sectionFilter}
+                        studentSearchQuery={studentSearchQuery}
+                        setStudentSearchQuery={setStudentSearchQuery}
+                        studentOptions={studentOptions}
+                        selectedStudent={selectedStudent}
+                        setSelectedStudent={setSelectedStudent}
+                        studentSearchLoading={studentSearchLoading}
+                        studentReportLoading={studentReportLoading}
+                        hasLoadedStudentReport={hasLoadedStudentReport}
+                        studentReport={studentReport}
+                        clearDrilldownFilters={clearDrilldownFilters}
+                        openClassDropdown={() => setDropdownTarget('class')}
+                        openSectionDropdown={() => setDropdownTarget('section')}
+                        searchStudentsForReport={searchStudentsForReport}
+                        loadSingleStudentReport={loadSingleStudentReport}
+                        onExport={() => setShowExportModal(true)}
+                    />
                 ) : (
                     <ReportContent
                         activeView={activeView}
@@ -826,7 +1063,7 @@ export default function AttendanceReportScreen() {
                     title="Select Class"
                     options={classOptions}
                     allLabel="All Classes"
-                    emptyText="Load report once to see available classes."
+                    emptyText={activeView === 'studentReport' ? 'No classes found. Please verify students exist in backend.' : 'Load report once to see available classes.'}
                     onSelect={selectClass}
                     onSelectAll={() => selectClass('')}
                     onClose={() => setDropdownTarget(null)}
@@ -837,7 +1074,7 @@ export default function AttendanceReportScreen() {
                     title="Select Section"
                     options={sectionOptions}
                     allLabel="All Sections"
-                    emptyText={classFilter ? 'No sections found for selected class.' : 'Load report once to see available sections.'}
+                    emptyText={classFilter ? 'No sections found for selected class.' : activeView === 'studentReport' ? 'Select a class first.' : 'Load report once to see available sections.'}
                     onSelect={selectSection}
                     onSelectAll={() => selectSection('')}
                     onClose={() => setDropdownTarget(null)}
@@ -1036,6 +1273,233 @@ function OverviewContent({
                 </>
             )}
         </>
+    );
+}
+
+function StudentReportContent({
+                                  reportDate,
+                                  setDatePickerTarget,
+                                  dateRangeMode,
+                                  setDateRangeMode,
+                                  classFilter,
+                                  sectionFilter,
+                                  studentSearchQuery,
+                                  setStudentSearchQuery,
+                                  studentOptions,
+                                  selectedStudent,
+                                  setSelectedStudent,
+                                  studentSearchLoading,
+                                  studentReportLoading,
+                                  hasLoadedStudentReport,
+                                  studentReport,
+                                  clearDrilldownFilters,
+                                  openClassDropdown,
+                                  openSectionDropdown,
+                                  searchStudentsForReport,
+                                  loadSingleStudentReport,
+                                  onExport,
+                              }: {
+    reportDate: string;
+    setDatePickerTarget: (target: 'overview' | 'drilldown' | null) => void;
+    dateRangeMode: DateRangeMode;
+    setDateRangeMode: (mode: DateRangeMode) => void;
+    classFilter: string;
+    sectionFilter: string;
+    studentSearchQuery: string;
+    setStudentSearchQuery: (value: string) => void;
+    studentOptions: StudentSearchItem[];
+    selectedStudent: StudentSearchItem | null;
+    setSelectedStudent: (student: StudentSearchItem | null) => void;
+    studentSearchLoading: boolean;
+    studentReportLoading: boolean;
+    hasLoadedStudentReport: boolean;
+    studentReport: StudentAttendanceReport | null;
+    clearDrilldownFilters: () => void;
+    openClassDropdown: () => void;
+    openSectionDropdown: () => void;
+    searchStudentsForReport: () => void;
+    loadSingleStudentReport: () => void;
+    onExport: () => void;
+}) {
+    const canSearchStudents = !!classFilter.trim() && !!sectionFilter.trim();
+    const canLoadReport = !!selectedStudent && !studentReportLoading;
+
+    return (
+        <>
+            <View style={styles.filterCard}>
+                <View style={styles.sectionHeaderRow}>
+                    <View style={styles.sectionHeaderTextBox}>
+                        <Text style={styles.sectionEyebrow}>Report Filters</Text>
+                        <Text style={styles.sectionTitle}>Single Student Attendance</Text>
+                    </View>
+                    <TouchableOpacity style={styles.clearFilterButton} onPress={clearDrilldownFilters} activeOpacity={0.85}>
+                        <Text style={styles.clearFilterText}>Clear</Text>
+                    </TouchableOpacity>
+                </View>
+
+                <Text style={styles.label}>Date</Text>
+                <DatePickerField value={reportDate} onPress={() => setDatePickerTarget('drilldown')} />
+
+                <Text style={styles.label}>Date Range</Text>
+                <View style={styles.segmentRow}>
+                    {(['Daily', 'Weekly', 'Monthly'] as DateRangeMode[]).map((mode) => (
+                        <TouchableOpacity
+                            key={mode}
+                            style={[styles.segmentButton, dateRangeMode === mode && styles.segmentButtonActive]}
+                            onPress={() => setDateRangeMode(mode)}
+                            activeOpacity={0.85}
+                        >
+                            <Text style={[styles.segmentText, dateRangeMode === mode && styles.segmentTextActive]}>{mode}</Text>
+                        </TouchableOpacity>
+                    ))}
+                </View>
+
+                <View style={styles.twoColumnRow}>
+                    <View style={styles.halfInputBox}>
+                        <Text style={styles.label}>Class</Text>
+                        <DropdownField value={classFilter || 'Select Class'} onPress={openClassDropdown} />
+                    </View>
+
+                    <View style={styles.halfInputBox}>
+                        <Text style={styles.label}>Section</Text>
+                        <DropdownField value={sectionFilter || 'Select Section'} onPress={openSectionDropdown} />
+                    </View>
+                </View>
+
+                <Text style={styles.label}>Student Search</Text>
+                <View style={[styles.searchInputRow, !canSearchStudents && styles.disabledSearchBox]}>
+                    <TextInput
+                        style={styles.searchInput}
+                        value={studentSearchQuery}
+                        onChangeText={setStudentSearchQuery}
+                        placeholder={canSearchStudents ? 'Search by name / admission no / roll no' : 'Select class and section first'}
+                        placeholderTextColor="#6B7280"
+                        editable={canSearchStudents && !studentSearchLoading}
+                        autoCapitalize="none"
+                    />
+                    <TouchableOpacity
+                        style={[styles.searchButton, (!canSearchStudents || studentSearchLoading) && styles.disabledButton]}
+                        onPress={searchStudentsForReport}
+                        disabled={!canSearchStudents || studentSearchLoading}
+                        activeOpacity={0.85}
+                    >
+                        {studentSearchLoading ? (
+                            <ActivityIndicator color={colors.primaryNavy} />
+                        ) : (
+                            <Text style={styles.searchButtonText}>Search</Text>
+                        )}
+                    </TouchableOpacity>
+                </View>
+
+                {studentOptions.length > 0 && (
+                    <View style={styles.studentOptionsBox}>
+                        {studentOptions.map((student) => {
+                            const selected = selectedStudent?.studentId === student.studentId;
+                            return (
+                                <TouchableOpacity
+                                    key={student.studentId}
+                                    style={[styles.studentOptionCard, selected && styles.studentOptionCardSelected]}
+                                    onPress={() => setSelectedStudent(student)}
+                                    activeOpacity={0.88}
+                                >
+                                    <Text style={styles.studentOptionName}>{student.studentName}</Text>
+                                    <Text style={styles.studentOptionMeta}>
+                                        {formatStudentMeta(student)} • Class {student.className}-{student.section}
+                                    </Text>
+                                </TouchableOpacity>
+                            );
+                        })}
+                    </View>
+                )}
+
+                {selectedStudent && (
+                    <View style={styles.selectedStudentCard}>
+                        <Text style={styles.selectedStudentLabel}>Selected Student</Text>
+                        <Text style={styles.selectedStudentName}>{selectedStudent.studentName}</Text>
+                        <Text style={styles.selectedStudentMeta}>{formatStudentMeta(selectedStudent)}</Text>
+                    </View>
+                )}
+
+                <TouchableOpacity
+                    style={[styles.loadButton, !canLoadReport && styles.disabledButton]}
+                    onPress={loadSingleStudentReport}
+                    disabled={!canLoadReport}
+                    activeOpacity={0.9}
+                >
+                    {studentReportLoading ? (
+                        <ActivityIndicator color={colors.primaryNavy} />
+                    ) : (
+                        <Text style={styles.loadButtonText}>Load Student Report</Text>
+                    )}
+                </TouchableOpacity>
+            </View>
+
+            {!studentReportLoading && hasLoadedStudentReport && !studentReport && <NoDataCard />}
+
+            {!studentReportLoading && studentReport && (
+                <View style={styles.reportSectionCard}>
+                    <View style={styles.sectionHeaderRow}>
+                        <View style={styles.sectionHeaderTextBox}>
+                            <Text style={styles.sectionEyebrow}>Results</Text>
+                            <Text style={styles.sectionTitle}>Student Attendance Report</Text>
+                        </View>
+                        <TouchableOpacity style={styles.exportSmallButton} onPress={onExport} activeOpacity={0.85}>
+                            <Text style={styles.exportSmallButtonText}>Export / Share</Text>
+                        </TouchableOpacity>
+                    </View>
+
+                    <View style={styles.selectedStudentCard}>
+                        <Text style={styles.selectedStudentLabel}>Student</Text>
+                        <Text style={styles.selectedStudentName}>{studentReport.studentName}</Text>
+                        <Text style={styles.selectedStudentMeta}>
+                            {formatStudentMeta(studentReport)} • Class {studentReport.className}-{studentReport.section}
+                        </Text>
+                        <Text style={styles.selectedStudentMeta}>
+                            {studentReport.rangeType}: {studentReport.fromDate} to {studentReport.toDate}
+                        </Text>
+                    </View>
+
+                    <View style={styles.statsGrid}>
+                        <StatBox title="Working Days" value={studentReport.totalWorkingDays} />
+                        <StatBox title="Present" value={studentReport.presentDays} color={colors.successGreen} />
+                        <StatBox title="Absent" value={studentReport.absentDays} color="#DC2626" />
+                        <StatBox title="Late" value={studentReport.lateDays} color="#D97706" />
+                    </View>
+
+                    <View style={styles.percentageBox}>
+                        <Text style={styles.percentageLabel}>Attendance %</Text>
+                        <Text style={styles.percentageValue}>{Math.round(studentReport.attendancePercentage)}%</Text>
+                        <Text style={styles.percentageSubText}>Based on present + late records in selected date range.</Text>
+                    </View>
+
+                    <Text style={styles.resultsCountText}>
+                        Daily breakdown • {studentReport.dailyRecords.length} day{studentReport.dailyRecords.length === 1 ? '' : 's'}
+                    </Text>
+
+                    {studentReport.dailyRecords.map((record) => (
+                        <StudentDailyRecordCard key={`${record.date}-${record.status}`} record={record} />
+                    ))}
+                </View>
+            )}
+        </>
+    );
+}
+
+function StudentDailyRecordCard({ record }: { record: StudentDailyAttendanceRecord }) {
+    const color = getStudentStatusColor(record.status);
+
+    return (
+        <View style={styles.studentDailyCard}>
+            <View style={styles.cardHeader}>
+                <View style={styles.cardTitleBox}>
+                    <Text style={styles.cardTitle}>{record.date}</Text>
+                    <Text style={styles.cardSubtitle}>
+                        {record.subjectName ? `${record.subjectName}${record.teacherName ? ` • ${record.teacherName}` : ''}` : 'Attendance status'}
+                    </Text>
+                </View>
+                <Text style={[styles.studentStatusBadge, { color }]}>{formatStudentStatus(record.status)}</Text>
+            </View>
+        </View>
     );
 }
 
@@ -1825,6 +2289,35 @@ function getReplacementReportData(view: ReportView, periods: ReplacementPeriod[]
     }
 
     return periods;
+}
+
+function mapStudentSearchItem(item: any): StudentSearchItem {
+    return {
+        studentId: Number(item.studentId || item.id || 0),
+        studentName: String(item.studentName || item.name || ''),
+        admissionNumber: item.admissionNumber ? String(item.admissionNumber) : null,
+        rollNumber: item.rollNumber ? String(item.rollNumber) : null,
+        className: String(item.className || ''),
+        section: String(item.section || ''),
+    };
+}
+
+function formatStudentMeta(student: Pick<StudentSearchItem, 'admissionNumber' | 'rollNumber'>) {
+    const admission = student.admissionNumber ? `ADM ${student.admissionNumber}` : 'ADM -';
+    const roll = student.rollNumber ? `Roll ${student.rollNumber}` : 'Roll -';
+    return `${admission} • ${roll}`;
+}
+
+function formatStudentStatus(status: string) {
+    if (status === 'NOT_MARKED') return 'Not Marked';
+    return status.charAt(0).toUpperCase() + status.slice(1).toLowerCase();
+}
+
+function getStudentStatusColor(status: string) {
+    if (status === 'PRESENT') return colors.successGreen;
+    if (status === 'ABSENT') return '#DC2626';
+    if (status === 'LATE') return '#D97706';
+    return '#6B7280';
 }
 
 const styles = StyleSheet.create({
@@ -2733,6 +3226,119 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontWeight: '900',
         color: colors.primaryNavy,
+    },
+    searchInputRow: {
+        minHeight: 58,
+        borderRadius: 16,
+        borderWidth: 1.2,
+        borderColor: '#D1D5DB',
+        backgroundColor: '#F9FAFB',
+        marginBottom: spacing.md,
+        flexDirection: 'row',
+        alignItems: 'center',
+        overflow: 'hidden',
+    },
+    disabledSearchBox: {
+        opacity: 0.68,
+    },
+    searchInput: {
+        flex: 1,
+        minHeight: 58,
+        paddingHorizontal: spacing.md,
+        fontSize: 15,
+        fontWeight: '800',
+        color: colors.primaryNavy,
+    },
+    searchButton: {
+        minWidth: 94,
+        height: 58,
+        backgroundColor: colors.premiumGold,
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingHorizontal: spacing.md,
+    },
+    searchButtonText: {
+        fontSize: 14,
+        fontWeight: '900',
+        color: colors.primaryNavy,
+    },
+    studentOptionsBox: {
+        backgroundColor: '#FFFDF2',
+        borderRadius: 18,
+        borderWidth: 1,
+        borderColor: '#EADFAE',
+        padding: spacing.sm,
+        marginBottom: spacing.md,
+    },
+    studentOptionCard: {
+        backgroundColor: '#FFF9E8',
+        borderRadius: 16,
+        borderWidth: 1,
+        borderColor: '#EADFAE',
+        padding: spacing.md,
+        marginBottom: spacing.sm,
+    },
+    studentOptionCardSelected: {
+        borderColor: colors.premiumGold,
+        backgroundColor: '#FFF3C4',
+    },
+    studentOptionName: {
+        fontSize: 16,
+        fontWeight: '900',
+        color: colors.primaryNavy,
+        marginBottom: 3,
+    },
+    studentOptionMeta: {
+        fontSize: 13,
+        fontWeight: '800',
+        color: colors.slateText,
+    },
+    selectedStudentCard: {
+        backgroundColor: '#FFF9E8',
+        borderRadius: 18,
+        borderWidth: 1.2,
+        borderColor: colors.cardGoldBorder,
+        padding: spacing.md,
+        marginBottom: spacing.md,
+    },
+    selectedStudentLabel: {
+        fontSize: 12,
+        fontWeight: '900',
+        color: colors.premiumGold,
+        textTransform: 'uppercase',
+        letterSpacing: 0.8,
+        marginBottom: 4,
+    },
+    selectedStudentName: {
+        fontSize: 18,
+        fontWeight: '900',
+        color: colors.primaryNavy,
+        marginBottom: 4,
+    },
+    selectedStudentMeta: {
+        fontSize: 13,
+        fontWeight: '800',
+        color: colors.slateText,
+        lineHeight: 19,
+    },
+    studentDailyCard: {
+        backgroundColor: '#FFF9E8',
+        borderRadius: 18,
+        borderWidth: 1,
+        borderColor: '#EADFAE',
+        padding: spacing.md,
+        marginTop: spacing.md,
+    },
+    studentStatusBadge: {
+        overflow: 'hidden',
+        borderRadius: 14,
+        paddingHorizontal: spacing.md,
+        paddingVertical: spacing.xs,
+        fontSize: 13,
+        fontWeight: '900',
+        backgroundColor: '#FFFDF2',
+        borderWidth: 1,
+        borderColor: '#EADFAE',
     },
     closeButton: {
         marginTop: spacing.xl,
