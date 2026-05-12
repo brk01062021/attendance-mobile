@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import {
     ActivityIndicator,
     Alert,
+    Dimensions,
     ImageBackground,
     Modal,
     ScrollView,
@@ -11,10 +12,32 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
+import { LineChart, PieChart, BarChart } from 'react-native-chart-kit';
+import AnalyticsChartCard from '../components/admin/AnalyticsChartCard';
+import AnalyticsKpiCard from '../components/admin/AnalyticsKpiCard';
 import { router, useLocalSearchParams } from 'expo-router';
 import { colors, spacing, shadows } from '../src/theme';
 
 const BASE_URL = 'http://192.168.1.75:8080';
+
+const screenWidth = Dimensions.get('window').width - 90;
+
+const chartConfig = {
+    backgroundGradientFrom: '#FFFFFF',
+    backgroundGradientTo: '#FFFFFF',
+    decimalPlaces: 0,
+
+    color: (opacity = 1) => `rgba(20, 52, 90, ${opacity})`,
+
+    labelColor: (opacity = 1) =>
+        `rgba(20, 52, 90, ${opacity})`,
+
+    propsForDots: {
+        r: '4',
+        strokeWidth: '2',
+        stroke: '#C9A227',
+    },
+};
 
 type ReportItem = {
     className: string;
@@ -81,6 +104,7 @@ type ReportView =
     | 'classReports'
     | 'studentReport'
     | 'teacherReport'
+    | 'analyticsReport'
     | 'presentReport'
     | 'absentReport'
     | 'lateReport'
@@ -198,6 +222,7 @@ const emptyTeacherCoverageStats: TeacherCoverageStats = {
 
 const quickNavTabs: { label: string; value: ReportView; emoji: string }[] = [
     { label: 'Overview', value: 'overview', emoji: '📊' },
+    { label: 'Analytics', value: 'analyticsReport', emoji: '📈' },
     { label: 'Class Reports', value: 'classReports', emoji: '🏫' },
     { label: 'Student Report', value: 'studentReport', emoji: '🎓' },
     { label: 'Teacher Report', value: 'teacherReport', emoji: '👨‍🏫' },
@@ -632,11 +657,27 @@ export default function AttendanceReportScreen() {
             setLoading(true);
             setHasLoadedOverview(true);
 
-            const [attendanceData, coverageStats, replacementDetails] = await Promise.all([
-                fetchReportsForDates([overviewDate]),
-                fetchTeacherCoverageStats(overviewDate),
-                fetchReplacementDetails(overviewDate, overviewDate),
-            ]);
+            let attendanceData: ReportItem[] = [];
+            let coverageStats = emptyTeacherCoverageStats;
+            let replacementDetails: ReplacementPeriod[] = [];
+
+            try {
+                attendanceData = await fetchReportsForDates([overviewDate]);
+            } catch (error) {
+                console.log('Attendance report API failed', error);
+            }
+
+            try {
+                coverageStats = await fetchTeacherCoverageStats(overviewDate);
+            } catch (error) {
+                console.log('Teacher coverage API failed', error);
+            }
+
+            try {
+                replacementDetails = await fetchReplacementDetails(overviewDate, overviewDate);
+            } catch (error) {
+                console.log('Replacement details API failed', error);
+            }
 
             setOverviewData(attendanceData);
             setReportData(attendanceData);
@@ -647,11 +688,7 @@ export default function AttendanceReportScreen() {
             setGeneratedAt(new Date().toLocaleString());
         } catch (error) {
             console.log(error);
-            setOverviewData([]);
-            setReportData([]);
-            setTeacherCoverageStats(emptyTeacherCoverageStats);
-            setReplacementPeriods([]);
-            Alert.alert('Error', 'Unable to load attendance and replacement report');
+            Alert.alert('Error', 'Unable to load report. Please verify backend is running.');
         } finally {
             setLoading(false);
         }
@@ -745,6 +782,7 @@ export default function AttendanceReportScreen() {
         if (activeView === 'classReports') return 'Class Attendance Reports';
         if (activeView === 'studentReport') return 'Student Attendance Report';
         if (activeView === 'teacherReport') return 'Teacher Report';
+        if (activeView === 'analyticsReport') return 'Analytics';
         if (activeView === 'presentReport') return 'Present Students Report';
         if (activeView === 'absentReport') return 'Absentee Report';
         if (activeView === 'lateReport') return 'Late Students Report';
@@ -761,21 +799,25 @@ export default function AttendanceReportScreen() {
         ? getReplacementReportTitle(activeView)
         : activeView === 'overview'
             ? 'Simple school overview summary'
-            : activeView === 'teacherReport'
-                ? 'Teacher replacement and coverage report'
-                : activeView === 'studentReport'
-                    ? 'Student attendance report'
-                    : 'Detailed class and section attendance report';
+            : activeView === 'analyticsReport'
+                ? 'School analytics and visual insights'
+                : activeView === 'teacherReport'
+                    ? 'Teacher replacement and coverage report'
+                    : activeView === 'studentReport'
+                        ? 'Student attendance report'
+                        : 'Detailed class and section attendance report';
 
     const heroDescription = isReplacementDrilldownView(activeView)
         ? 'Review leave period details with class, section, subject, teacher on leave, replacement assignment and action for missing replacement.'
         : activeView === 'overview'
             ? 'Select report date, load report, and review only school attendance summary plus teacher replacement coverage summary.'
-            : activeView === 'teacherReport'
-                ? 'Review teacher leave periods, planned and unplanned absences, assigned replacements, missing coverage and coverage percentage.'
-                : activeView === 'studentReport'
-                    ? 'Review student attendance insights using date range, class and section filters.'
-                    : 'Class and section-wise attendance report. Leave class and section empty to show the whole school.';
+            : activeView === 'analyticsReport'
+                ? 'View school attendance trends, replacement coverage, leave split and visual performance insights.'
+                : activeView === 'teacherReport'
+                    ? 'Review teacher leave periods, planned and unplanned absences, assigned replacements, missing coverage and coverage percentage.'
+                    : activeView === 'studentReport'
+                        ? 'Review student attendance insights using date range, class and section filters.'
+                        : 'Class and section-wise attendance report. Leave class and section empty to show the whole school.';
 
     const openReportPage = (view: ReportView) => {
         if (view === 'overview') {
@@ -997,6 +1039,16 @@ export default function AttendanceReportScreen() {
                         teacherCoverageStats={teacherCoverageStats}
                         loadOverviewReport={loadOverviewReport}
                         openReportPage={openReportPage}
+                    />
+                ) : activeView === 'analyticsReport' ? (
+                    <AnalyticsReportContent
+                        overviewDate={overviewDate}
+                        setDatePickerTarget={setDatePickerTarget}
+                        loading={loading}
+                        hasLoadedOverview={hasLoadedOverview}
+                        overviewData={overviewData}
+                        teacherCoverageStats={teacherCoverageStats}
+                        loadOverviewReport={loadOverviewReport}
                     />
                 ) : isReplacementDrilldownView(activeView) ? (
                     <ReplacementDrilldownContent
@@ -1292,10 +1344,248 @@ function OverviewContent({
                             <Text style={styles.percentageLabel}>Coverage %</Text>
                             <Text style={styles.percentageValue}>{Math.round(teacherCoverageStats.coverage)}%</Text>
                             <Text style={styles.percentageSubText}>
-                                Backend replacement coverage API can replace this mock summary in the next phase.
+                                Based on assigned replacement periods for selected report date.
                             </Text>
                         </View>
                     </View>
+                </>
+            )}
+        </>
+    );
+}
+
+function AnalyticsReportContent({
+                                    overviewDate,
+                                    setDatePickerTarget,
+                                    loading,
+                                    hasLoadedOverview,
+                                    overviewData,
+                                    teacherCoverageStats,
+                                    loadOverviewReport,
+                                }: {
+    overviewDate: string;
+    setDatePickerTarget: (target: 'overview' | 'drilldown' | null) => void;
+    loading: boolean;
+    hasLoadedOverview: boolean;
+    overviewData: ReportItem[];
+    teacherCoverageStats: TeacherCoverageStats;
+    loadOverviewReport: () => void;
+}) {
+    const attendanceChartData = {
+        labels: overviewData.length > 0
+            ? overviewData.slice(0, 5).map((item) => `${item.className}${item.section}`)
+            : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'],
+        datasets: [
+            {
+                data: overviewData.length > 0
+                    ? overviewData.slice(0, 5).map((item) =>
+                        Math.max(0, Math.round(Number(item.attendancePercentage || 0)))
+                    )
+                    : [92, 94, 91, 96, 93],
+            },
+        ],
+    };
+
+    const replacementPieData = [
+        {
+            name: 'Assigned',
+            population: Math.max(teacherCoverageStats.assigned, 0),
+            color: '#14345A',
+            legendFontColor: '#14345A',
+            legendFontSize: 12,
+        },
+        {
+            name: 'Missing',
+            population: Math.max(teacherCoverageStats.missing, 0),
+            color: '#C9A227',
+            legendFontColor: '#14345A',
+            legendFontSize: 12,
+        },
+    ];
+
+    const classComparisonData = {
+        labels: overviewData.length > 0
+            ? overviewData.slice(0, 6).map((item) => `${item.className}${item.section}`)
+            : ['8A', '8B', '9A', '9B', '10A'],
+
+        datasets: [
+            {
+                data: overviewData.length > 0
+                    ? overviewData.slice(0, 6).map((item) =>
+                        Math.max(
+                            0,
+                            Math.round(Number(item.attendancePercentage || 0))
+                        )
+                    )
+                    : [92, 88, 95, 90, 97],
+            },
+        ],
+    };
+
+    const leavePieData = [
+        {
+            name: 'Planned',
+            population: Math.max(teacherCoverageStats.planned, 0),
+            color: '#2563EB',
+            legendFontColor: '#14345A',
+            legendFontSize: 12,
+        },
+        {
+            name: 'Unplanned',
+            population: Math.max(teacherCoverageStats.unplanned, 0),
+            color: '#D97706',
+            legendFontColor: '#14345A',
+            legendFontSize: 12,
+        },
+    ];
+
+    const averageAttendance =
+        overviewData.length > 0
+            ? Math.round(
+                overviewData.reduce(
+                    (sum, item) => sum + Number(item.attendancePercentage || 0),
+                    0
+                ) / overviewData.length
+            )
+            : 0;
+
+    const bestClass =
+        overviewData.length > 0
+            ? [...overviewData].sort(
+                (a, b) => b.attendancePercentage - a.attendancePercentage
+            )[0]
+            : null;
+
+    const lowestClass =
+        overviewData.length > 0
+            ? [...overviewData].sort(
+                (a, b) => a.attendancePercentage - b.attendancePercentage
+            )[0]
+            : null;
+
+    const hasReplacementData = teacherCoverageStats.assigned > 0 || teacherCoverageStats.missing > 0;
+    const hasLeaveData = teacherCoverageStats.planned > 0 || teacherCoverageStats.unplanned > 0;
+
+    return (
+        <>
+            <View style={styles.filterCard}>
+                <Text style={styles.sectionEyebrow}>Analytics Filter</Text>
+                <Text style={styles.sectionTitle}>Report Date</Text>
+
+                <DatePickerField value={overviewDate} onPress={() => setDatePickerTarget('overview')} />
+
+                <TouchableOpacity
+                    style={[styles.loadButton, loading && styles.disabledButton]}
+                    onPress={loadOverviewReport}
+                    disabled={loading}
+                    activeOpacity={0.9}
+                >
+                    {loading ? (
+                        <ActivityIndicator color={colors.primaryNavy} />
+                    ) : (
+                        <Text style={styles.loadButtonText}>Load Analytics</Text>
+                    )}
+                </TouchableOpacity>
+            </View>
+
+            {!loading && !hasLoadedOverview && (
+                <View style={styles.noDataCard}>
+                    <Text style={styles.noDataTitle}>Load Analytics</Text>
+                    <Text style={styles.noDataText}>Select a report date and tap Load Analytics to view visual insights.</Text>
+                </View>
+            )}
+
+            {!loading && hasLoadedOverview && (
+                <>
+                    <View style={styles.kpiGrid}>
+                        <AnalyticsKpiCard
+                            title="Attendance Avg"
+                            value={`${averageAttendance}%`}
+                        />
+
+                        <AnalyticsKpiCard
+                            title="Best Class"
+                            value={
+                                bestClass
+                                    ? `${bestClass.className}${bestClass.section}`
+                                    : '--'
+                            }
+                        />
+
+                        <AnalyticsKpiCard
+                            title="Lowest Class"
+                            value={
+                                lowestClass
+                                    ? `${lowestClass.className}${lowestClass.section}`
+                                    : '--'
+                            }
+                        />
+
+                        <AnalyticsKpiCard
+                            title="Coverage"
+                            value={`${Math.round(teacherCoverageStats.coverage)}%`}
+                        />
+                    </View>
+
+                    <AnalyticsChartCard title="School Attendance Trend">
+                        <LineChart
+                            data={attendanceChartData}
+                            width={screenWidth}
+                            height={210}
+                            yAxisSuffix="%"
+                            chartConfig={chartConfig}
+                            withInnerLines
+                            bezier
+                            style={{ borderRadius: 16 }}
+                        />
+                    </AnalyticsChartCard>
+                    <AnalyticsChartCard title="Class Attendance Comparison">
+                        <BarChart
+                            data={classComparisonData}
+                            width={screenWidth}
+                            height={210}
+                            yAxisSuffix="%"
+                            yAxisLabel=""
+                            chartConfig={chartConfig}
+                            withInnerLines
+                            fromZero
+                            showValuesOnTopOfBars
+                            style={{
+                                borderRadius: 16,
+                            }}
+                        />
+                    </AnalyticsChartCard>
+                    {hasReplacementData && (
+                        <AnalyticsChartCard title="Replacement Coverage">
+                            <PieChart
+                                data={replacementPieData}
+                                width={screenWidth}
+                                height={200}
+                                chartConfig={chartConfig}
+                                accessor="population"
+                                backgroundColor="transparent"
+                                paddingLeft="8"
+                                absolute
+                            />
+                        </AnalyticsChartCard>
+                    )}
+
+                    {hasLeaveData && (
+                        <AnalyticsChartCard title="Leave Analytics">
+                            <PieChart
+                                data={leavePieData}
+                                width={screenWidth}
+                                height={200}
+                                chartConfig={chartConfig}
+                                accessor="population"
+                                backgroundColor="transparent"
+                                paddingLeft="8"
+                                absolute
+                            />
+                        </AnalyticsChartCard>
+                    )}
+
+                    {!hasReplacementData && !hasLeaveData && overviewData.length === 0 && <NoDataCard />}
                 </>
             )}
         </>
@@ -2752,6 +3042,14 @@ function formatTeacherLeaveType(value: any) {
 }
 
 const styles = StyleSheet.create({
+    kpiGrid: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        justifyContent: 'space-between',
+        marginBottom: 8,
+    },
+
+
     background: {
         flex: 1,
         backgroundColor: '#F6E7B0',
@@ -2856,8 +3154,8 @@ const styles = StyleSheet.create({
         borderRadius: 24,
         borderWidth: 1.5,
         borderColor: colors.cardGoldBorder,
-        padding: spacing.xl,
-        marginBottom: spacing.xl,
+        padding: 18,
+        marginBottom: 18,
         ...shadows.medium,
     },
     quickNavEyebrow: {
@@ -2869,43 +3167,44 @@ const styles = StyleSheet.create({
         marginBottom: spacing.sm,
     },
     quickNavTitle: {
-        fontSize: 24,
+        fontSize: 21,
         fontWeight: '900',
         color: colors.primaryNavy,
-        marginBottom: spacing.lg,
+        marginBottom: 14,
     },
     quickNavRow: {
         flexDirection: 'row',
         flexWrap: 'wrap',
         justifyContent: 'space-between',
+        marginTop: 4,
     },
     quickNavButton: {
-        width: '48%',
-        minHeight: 104,
+        width: '31%',
+        minHeight: 82,
         backgroundColor: '#FFF9E8',
-        borderRadius: 22,
+        borderRadius: 18,
         borderWidth: 1.3,
         borderColor: colors.cardGoldBorder,
         alignItems: 'center',
         justifyContent: 'center',
-        paddingVertical: spacing.md,
-        paddingHorizontal: spacing.sm,
-        marginBottom: spacing.md,
+        paddingVertical: 12,
+        paddingHorizontal: 8,
+        marginBottom: 12,
     },
     quickNavButtonActive: {
         backgroundColor: colors.primaryNavy,
         borderColor: colors.premiumGold,
     },
     quickNavEmoji: {
-        fontSize: 25,
-        marginBottom: spacing.sm,
+        fontSize: 22,
+        marginBottom: 6,
     },
     quickNavText: {
-        fontSize: 15,
+        fontSize: 12,
         fontWeight: '900',
         color: colors.primaryNavy,
         textAlign: 'center',
-        lineHeight: 19,
+        lineHeight: 15,
     },
     quickNavTextActive: {
         color: colors.premiumGold,
