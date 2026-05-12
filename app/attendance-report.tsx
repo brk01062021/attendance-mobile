@@ -124,6 +124,68 @@ type ReplacementTeacherOption = {
     nextClass?: string;
 };
 
+
+type TeacherSearchItem = {
+    teacherId: number;
+    teacherName: string;
+    employeeId?: string | null;
+};
+
+type TeacherInsightSummary = {
+    teacherId: number;
+    teacherName: string;
+    classesHandled: string[];
+    sectionsHandled: string[];
+    subjectsHandled: string[];
+    totalLeaves: number;
+    plannedLeaves: number;
+    unplannedLeaves: number;
+    replacementAssignments: number;
+    attendanceSubmissions: number;
+    examResultSubmissions: number;
+};
+
+type TeacherHistoryType = 'attendance' | 'exam' | 'leave' | 'replacement';
+
+type TeacherHistoryRecord = {
+    id: string;
+    title: string;
+    subtitle: string;
+    meta: string;
+    status?: string;
+};
+
+
+type TeacherReportTab = 'overview' | 'replacementCoverage';
+
+type TeacherMonthlyOverview = {
+    month: string;
+    totalTeachers: number;
+    totalTeachersInLeave: number;
+    totalPlannedLeaves: number;
+    totalUnplannedLeaves: number;
+};
+
+type TeacherMonthlyLeaveRow = {
+    teacherId: number;
+    teacherName: string;
+    totalLeaves: number;
+    plannedLeaves: number;
+    unplannedLeaves: number;
+    subjectsHandled?: string[];
+    classesHandled?: string[];
+};
+
+type TeacherMonthlyReplacementRow = {
+    teacherId: number;
+    teacherName: string;
+    totalReplacementPeriods: number;
+    classesCovered: number;
+    subjectsCovered: number;
+    totalMinutes: number;
+    hours: number;
+};
+
 const emptyTeacherCoverageStats: TeacherCoverageStats = {
     totalPeriods: 0,
     leavePeriods: 0,
@@ -167,69 +229,6 @@ const teacherAbsenceData = [
         assigned: 1,
         missing: 0,
         coverage: 100,
-    },
-];
-
-const replacementPeriodsData: ReplacementPeriod[] = [
-    {
-        id: 7,
-        scheduleDate: '2026-04-27',
-        className: '10',
-        section: 'A',
-        subjectName: 'Mathematics',
-        startTime: '09:00',
-        endTime: '09:45',
-        teacherId: 4,
-        teacherName: 'Prof BABA',
-        leaveType: 'PLANNED',
-        replacementTeacherId: 9,
-        replacementTeacherName: 'Prof Krishna',
-        status: 'ASSIGNED',
-    },
-    {
-        id: 8,
-        scheduleDate: '2026-04-27',
-        className: '10',
-        section: 'B',
-        subjectName: 'Science',
-        startTime: '10:00',
-        endTime: '10:45',
-        teacherId: 4,
-        teacherName: 'Prof BABA',
-        leaveType: 'PLANNED',
-        replacementTeacherId: 10,
-        replacementTeacherName: 'Prof Rama',
-        status: 'ASSIGNED',
-    },
-    {
-        id: 9,
-        scheduleDate: '2026-04-27',
-        className: '9',
-        section: 'A',
-        subjectName: 'English',
-        startTime: '11:00',
-        endTime: '11:45',
-        teacherId: 5,
-        teacherName: 'Prof Krishna',
-        leaveType: 'PLANNED',
-        replacementTeacherId: 11,
-        replacementTeacherName: 'Prof Lakshmi',
-        status: 'ASSIGNED',
-    },
-    {
-        id: 10,
-        scheduleDate: '2026-04-27',
-        className: '8',
-        section: 'A',
-        subjectName: 'Social',
-        startTime: '12:00',
-        endTime: '12:45',
-        teacherId: 4,
-        teacherName: 'Prof BABA',
-        leaveType: 'UNPLANNED',
-        replacementTeacherId: null,
-        replacementTeacherName: null,
-        status: 'MISSING',
     },
 ];
 
@@ -280,8 +279,11 @@ export default function AttendanceReportScreen() {
     const userRole = String(role || 'ADMIN').toUpperCase();
     const isAdmin = userRole === 'ADMIN';
     const today = useMemo(() => formatDate(new Date()), []);
+    const currentAcademicMonth = useMemo(() => formatMonthValue(new Date()), []);
 
     const [activeView, setActiveView] = useState<ReportView>('overview');
+    const [selectedAcademicMonth, setSelectedAcademicMonth] = useState(currentAcademicMonth);
+    const [showAcademicMonthModal, setShowAcademicMonthModal] = useState(false);
     const [overviewDate, setOverviewDate] = useState(today);
     const [reportDate, setReportDate] = useState(today);
     const [dateRangeMode, setDateRangeMode] = useState<DateRangeMode>('Daily');
@@ -701,8 +703,10 @@ export default function AttendanceReportScreen() {
         );
     }, [reportData, classFilter]);
 
-    const classOptions = activeView === 'studentReport' ? availableClassOptions : reportClassOptions;
-    const sectionOptions = activeView === 'studentReport' ? availableSectionOptions : reportSectionOptions;
+    const shouldUseLiveClassSectionOptions = activeView === 'studentReport' || activeView === 'classReports';
+
+    const classOptions = shouldUseLiveClassSectionOptions ? availableClassOptions : reportClassOptions;
+    const sectionOptions = shouldUseLiveClassSectionOptions ? availableSectionOptions : reportSectionOptions;
 
     const filteredReport = useMemo(() => {
         return reportData.filter((item) => {
@@ -793,6 +797,11 @@ export default function AttendanceReportScreen() {
         setSelectedStudent(null);
         setStudentReport(null);
         setHasLoadedStudentReport(false);
+
+        if (view === 'studentReport' || view === 'classReports') {
+            setAvailableSectionOptions([]);
+            loadAvailableClasses();
+        }
     };
 
     const clearDrilldownFilters = () => {
@@ -807,7 +816,7 @@ export default function AttendanceReportScreen() {
         setSelectedStudent(null);
         setStudentReport(null);
         setHasLoadedStudentReport(false);
-        if (activeView === 'studentReport') {
+        if (activeView === 'studentReport' || activeView === 'classReports') {
             setAvailableSectionOptions([]);
             loadAvailableClasses();
         }
@@ -823,7 +832,7 @@ export default function AttendanceReportScreen() {
         setStudentReport(null);
         setHasLoadedStudentReport(false);
 
-        if (activeView === 'studentReport') {
+        if (activeView === 'studentReport' || activeView === 'classReports') {
             loadAvailableSections(selectedClass);
         }
     };
@@ -938,14 +947,20 @@ export default function AttendanceReportScreen() {
                     <Text style={styles.heroTitle}>{heroTitle}</Text>
                     <Text style={styles.heroText}>{heroDescription}</Text>
 
-                    <View style={styles.generatedPill}>
-                        <Text style={styles.generatedPillText}>
-                            {generatedAt ? `Generated: ${generatedAt}` : 'Default date is today'}
-                        </Text>
-                    </View>
+                    {activeView === 'teacherReport' ? (
+                        <TouchableOpacity style={styles.generatedPill} onPress={() => setShowAcademicMonthModal(true)} activeOpacity={0.85}>
+                            <Text style={styles.generatedPillText}>{formatMonthLabel(selectedAcademicMonth)} ▾</Text>
+                        </TouchableOpacity>
+                    ) : (
+                        <View style={styles.generatedPill}>
+                            <Text style={styles.generatedPillText}>
+                                {generatedAt ? `Generated: ${generatedAt}` : 'Default date is today'}
+                            </Text>
+                        </View>
+                    )}
                 </View>
 
-                {!isReplacementDrilldownView(activeView) && (
+                {!isReplacementDrilldownView(activeView) && activeView !== 'teacherReport' && (
                     <View style={styles.quickNavCard}>
                         <Text style={styles.quickNavEyebrow}>Quick Navigation</Text>
                         <Text style={styles.quickNavTitle}>Report Sections</Text>
@@ -993,7 +1008,8 @@ export default function AttendanceReportScreen() {
                     />
                 ) : activeView === 'teacherReport' ? (
                     <TeacherReportContent
-                        teacherCoverageStats={teacherCoverageStats}
+                        selectedMonth={selectedAcademicMonth}
+                        onSelectMonth={() => setShowAcademicMonthModal(true)}
                         onExport={() => setShowExportModal(true)}
                     />
                 ) : activeView === 'studentReport' ? (
@@ -1063,7 +1079,7 @@ export default function AttendanceReportScreen() {
                     title="Select Class"
                     options={classOptions}
                     allLabel="All Classes"
-                    emptyText={activeView === 'studentReport' ? 'No classes found. Please verify students exist in backend.' : 'Load report once to see available classes.'}
+                    emptyText={activeView === 'studentReport' || activeView === 'classReports' ? 'No classes found. Please verify backend class data exists.' : 'Load report once to see available classes.'}
                     onSelect={selectClass}
                     onSelectAll={() => selectClass('')}
                     onClose={() => setDropdownTarget(null)}
@@ -1074,7 +1090,7 @@ export default function AttendanceReportScreen() {
                     title="Select Section"
                     options={sectionOptions}
                     allLabel="All Sections"
-                    emptyText={classFilter ? 'No sections found for selected class.' : activeView === 'studentReport' ? 'Select a class first.' : 'Load report once to see available sections.'}
+                    emptyText={classFilter ? 'No sections found for selected class.' : activeView === 'studentReport' || activeView === 'classReports' ? 'Select a class first.' : 'Load report once to see available sections.'}
                     onSelect={selectSection}
                     onSelectAll={() => selectSection('')}
                     onClose={() => setDropdownTarget(null)}
@@ -1159,6 +1175,16 @@ export default function AttendanceReportScreen() {
                         </View>
                     </View>
                 </Modal>
+
+                <AcademicMonthModal
+                    visible={showAcademicMonthModal}
+                    selectedMonth={selectedAcademicMonth}
+                    onSelect={(month) => {
+                        setSelectedAcademicMonth(month);
+                        setShowAcademicMonthModal(false);
+                    }}
+                    onClose={() => setShowAcademicMonthModal(false)}
+                />
 
                 <AssignReplacementModal
                     visible={showAssignReplacementModal}
@@ -1871,57 +1897,253 @@ function DetailRow({ label, value }: { label: string; value: string }) {
 
 
 function TeacherReportContent({
-                                  teacherCoverageStats,
+                                  selectedMonth,
+                                  onSelectMonth,
                                   onExport,
                               }: {
-    teacherCoverageStats: TeacherCoverageStats;
+    selectedMonth: string;
+    onSelectMonth: () => void;
     onExport: () => void;
 }) {
+    const [activeTeacherReportTab, setActiveTeacherReportTab] = useState<TeacherReportTab>('overview');
+    const [monthlyOverview, setMonthlyOverview] = useState<TeacherMonthlyOverview>({
+        month: selectedMonth,
+        totalTeachers: 0,
+        totalTeachersInLeave: 0,
+        totalPlannedLeaves: 0,
+        totalUnplannedLeaves: 0,
+    });
+    const [leaveRows, setLeaveRows] = useState<TeacherMonthlyLeaveRow[]>([]);
+    const [replacementRows, setReplacementRows] = useState<TeacherMonthlyReplacementRow[]>([]);
+    const [monthlyLoading, setMonthlyLoading] = useState(false);
+    const [showLeaveList, setShowLeaveList] = useState(false);
+
+    const loadMonthlyTeacherReports = async () => {
+        try {
+            setMonthlyLoading(true);
+            const [overviewResponse, leavesResponse, replacementResponse] = await Promise.all([
+                fetch(`${BASE_URL}/admin/reports/teacher-monthly-overview?month=${encodeURIComponent(selectedMonth)}`),
+                fetch(`${BASE_URL}/admin/reports/teacher-monthly-leaves?month=${encodeURIComponent(selectedMonth)}`),
+                fetch(`${BASE_URL}/admin/reports/teacher-monthly-replacement-coverage?month=${encodeURIComponent(selectedMonth)}`),
+            ]);
+
+            if (!overviewResponse.ok || !leavesResponse.ok || !replacementResponse.ok) {
+                throw new Error('Monthly teacher report API failed');
+            }
+
+            const overviewData = await overviewResponse.json();
+            const leavesData = await leavesResponse.json();
+            const replacementData = await replacementResponse.json();
+
+            setMonthlyOverview({
+                month: String(overviewData.month || selectedMonth),
+                totalTeachers: Number(overviewData.totalTeachers || 0),
+                totalTeachersInLeave: Number(overviewData.totalTeachersInLeave || 0),
+                totalPlannedLeaves: Number(overviewData.totalPlannedLeaves || 0),
+                totalUnplannedLeaves: Number(overviewData.totalUnplannedLeaves || 0),
+            });
+
+            setLeaveRows(Array.isArray(leavesData) ? leavesData.map(mapMonthlyLeaveRow) : []);
+            setReplacementRows(Array.isArray(replacementData) ? replacementData.map(mapMonthlyReplacementRow) : []);
+        } catch (error) {
+            console.log(error);
+            setMonthlyOverview({
+                month: selectedMonth,
+                totalTeachers: 0,
+                totalTeachersInLeave: 0,
+                totalPlannedLeaves: 0,
+                totalUnplannedLeaves: 0,
+            });
+            setLeaveRows([]);
+            setReplacementRows([]);
+            Alert.alert('Teacher Report', 'Unable to load monthly teacher report. Please verify backend is running.');
+        } finally {
+            setMonthlyLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        setShowLeaveList(false);
+        loadMonthlyTeacherReports();
+    }, [selectedMonth]);
+
     return (
-        <View style={styles.reportSectionCard}>
-            <View style={styles.sectionHeaderRow}>
-                <View style={styles.sectionHeaderTextBox}>
-                    <Text style={styles.sectionEyebrow}>Teacher Report</Text>
-                    <Text style={styles.sectionTitle}>Replacement Coverage</Text>
+        <>
+            <View style={styles.quickNavCard}>
+                <Text style={styles.quickNavEyebrow}>Quick Navigation</Text>
+                <Text style={styles.quickNavTitle}>Teacher Report Sections</Text>
+
+                <View style={styles.quickNavRow}>
+                    <TouchableOpacity
+                        style={[styles.quickNavButton, activeTeacherReportTab === 'overview' && styles.quickNavButtonActive]}
+                        onPress={() => setActiveTeacherReportTab('overview')}
+                        activeOpacity={0.85}
+                    >
+                        <Text style={styles.quickNavEmoji}>📊</Text>
+                        <Text style={[styles.quickNavText, activeTeacherReportTab === 'overview' && styles.quickNavTextActive]}>Overview</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                        style={[styles.quickNavButton, activeTeacherReportTab === 'replacementCoverage' && styles.quickNavButtonActive]}
+                        onPress={() => setActiveTeacherReportTab('replacementCoverage')}
+                        activeOpacity={0.85}
+                    >
+                        <Text style={styles.quickNavEmoji}>🔁</Text>
+                        <Text style={[styles.quickNavText, activeTeacherReportTab === 'replacementCoverage' && styles.quickNavTextActive]} numberOfLines={2}>
+                            Replacement Coverage
+                        </Text>
+                    </TouchableOpacity>
                 </View>
-                <TouchableOpacity style={styles.exportSmallButton} onPress={onExport} activeOpacity={0.85}>
-                    <Text style={styles.exportSmallButtonText}>Export / Share</Text>
-                </TouchableOpacity>
             </View>
 
+            <View style={styles.reportSectionCard}>
+                <View style={styles.sectionHeaderRow}>
+                    <View style={styles.sectionHeaderTextBox}>
+                        <Text style={styles.sectionEyebrow}>Academic Month</Text>
+                        <Text style={styles.sectionTitle}>{formatMonthLabel(selectedMonth)}</Text>
+                    </View>
+                    <TouchableOpacity style={styles.exportSmallButton} onPress={onSelectMonth} activeOpacity={0.85}>
+                        <Text style={styles.exportSmallButtonText}>Change Month</Text>
+                    </TouchableOpacity>
+                </View>
+
+                {monthlyLoading ? (
+                    <ActivityIndicator color={colors.primaryNavy} />
+                ) : activeTeacherReportTab === 'overview' ? (
+                    <>
+                        <View style={styles.statsGrid}>
+                            <StatBox title="Total Teachers" value={monthlyOverview.totalTeachers} />
+                            <StatBox title="Teachers in Leave" value={monthlyOverview.totalTeachersInLeave} color="#92400E" onPress={() => setShowLeaveList(true)} />
+                            <StatBox title="Total Planned" value={monthlyOverview.totalPlannedLeaves} color="#2563EB" />
+                            <StatBox title="Total Unplanned" value={monthlyOverview.totalUnplannedLeaves} color="#D97706" />
+                        </View>
+
+                        {showLeaveList && (
+                            <View style={styles.teacherHistoryCard}>
+                                <View style={styles.sectionHeaderRow}>
+                                    <View style={styles.sectionHeaderTextBox}>
+                                        <Text style={styles.sectionEyebrow}>Teachers in Leave</Text>
+                                        <Text style={styles.sectionTitle}>{formatMonthLabel(selectedMonth)}</Text>
+                                    </View>
+                                </View>
+
+                                {leaveRows.length === 0 ? (
+                                    <View style={styles.noDataCard}>
+                                        <Text style={styles.noDataTitle}>No Teachers in Leave</Text>
+                                        <Text style={styles.noDataText}>No planned or unplanned leave records found for this month.</Text>
+                                    </View>
+                                ) : (
+                                    leaveRows.map((row) => <TeacherMonthlyLeaveCard key={row.teacherId} row={row} />)
+                                )}
+                            </View>
+                        )}
+                    </>
+                ) : (
+                    <>
+                        <View style={styles.sectionHeaderRow}>
+                            <View style={styles.sectionHeaderTextBox}>
+                                <Text style={styles.sectionEyebrow}>Replacement Coverage</Text>
+                                <Text style={styles.sectionTitle}>Monthly Replacement Workload</Text>
+                            </View>
+                            <TouchableOpacity style={styles.exportSmallButton} onPress={onExport} activeOpacity={0.85}>
+                                <Text style={styles.exportSmallButtonText}>Export / Share</Text>
+                            </TouchableOpacity>
+                        </View>
+
+                        {replacementRows.length === 0 ? (
+                            <View style={styles.noDataCard}>
+                                <Text style={styles.noDataTitle}>No Replacement Coverage</Text>
+                                <Text style={styles.noDataText}>No replacement assignment records found for this month.</Text>
+                            </View>
+                        ) : (
+                            replacementRows.map((row) => <TeacherMonthlyReplacementCard key={row.teacherId} row={row} />)
+                        )}
+                    </>
+                )}
+            </View>
+        </>
+    );
+}
+
+function TeacherMonthlyLeaveCard({ row }: { row: TeacherMonthlyLeaveRow }) {
+    return (
+        <View style={styles.teacherCard}>
+            <View style={styles.cardHeader}>
+                <View style={styles.cardTitleBox}>
+                    <Text style={styles.cardTitle}>{row.teacherName}</Text>
+                    <Text style={styles.cardSubtitle}>Teacher ID {row.teacherId}</Text>
+                </View>
+                <Text style={styles.attendancePercent}>{row.totalLeaves}</Text>
+            </View>
             <View style={styles.statsGrid}>
-                <StatBox title="Total Periods" value={teacherCoverageStats.totalPeriods} />
-                <StatBox title="Leave Periods" value={teacherCoverageStats.leavePeriods} color="#92400E" />
-                <StatBox title="Planned" value={teacherCoverageStats.planned} color="#2563EB" />
-                <StatBox title="Unplanned" value={teacherCoverageStats.unplanned} color="#D97706" />
-                <StatBox title="Assigned" value={teacherCoverageStats.assigned} color={colors.successGreen} />
-                <StatBox title="Missing" value={teacherCoverageStats.missing} color="#DC2626" />
+                <StatBox title="Total Leaves" value={row.totalLeaves} />
+                <StatBox title="Planned" value={row.plannedLeaves} color="#2563EB" />
+                <StatBox title="Unplanned" value={row.unplannedLeaves} color="#D97706" />
             </View>
+            <Text style={styles.teacherHistoryMeta}>Classes: {(row.classesHandled || []).join(', ') || 'Not available'}</Text>
+            <Text style={styles.teacherHistoryMeta}>Subjects: {(row.subjectsHandled || []).join(', ') || 'Not available'}</Text>
+        </View>
+    );
+}
 
-            <View style={styles.percentageBox}>
-                <Text style={styles.percentageLabel}>Coverage %</Text>
-                <Text style={styles.percentageValue}>{Math.round(teacherCoverageStats.coverage)}%</Text>
-                <Text style={styles.percentageSubText}>
-                    Teacher replacement backend report can be connected here.
-                </Text>
-            </View>
-
-            {teacherAbsenceData.map((item) => (
-                <View key={item.teacher} style={styles.teacherCard}>
-                    <View style={styles.cardHeader}>
-                        <Text style={styles.cardTitle}>{item.teacher}</Text>
-                        <Text style={styles.attendancePercent}>{item.coverage}%</Text>
-                    </View>
-                    <View style={styles.statsGrid}>
-                        <StatBox title="Leaves" value={item.leaves} />
-                        <StatBox title="Planned" value={item.planned} color="#2563EB" />
-                        <StatBox title="Unplanned" value={item.unplanned} color="#D97706" />
-                        <StatBox title="Assigned" value={item.assigned} color={colors.successGreen} />
-                        <StatBox title="Missing" value={item.missing} color="#DC2626" />
-                        <StatBox title="Coverage" value={item.coverage} color={colors.successGreen} />
-                    </View>
+function TeacherMonthlyReplacementCard({ row }: { row: TeacherMonthlyReplacementRow }) {
+    return (
+        <View style={styles.teacherCard}>
+            <View style={styles.cardHeader}>
+                <View style={styles.cardTitleBox}>
+                    <Text style={styles.cardTitle}>{row.teacherName}</Text>
+                    <Text style={styles.cardSubtitle}>Teacher ID {row.teacherId}</Text>
                 </View>
-            ))}
+                <Text style={styles.attendancePercent}>{row.totalReplacementPeriods}</Text>
+            </View>
+            <View style={styles.statsGrid}>
+                <StatBox title="Periods" value={row.totalReplacementPeriods} color={colors.successGreen} />
+                <StatBox title="Classes" value={row.classesCovered} color="#2563EB" />
+                <StatBox title="Subjects" value={row.subjectsCovered} color="#92400E" />
+                <StatBox title="Minutes" value={row.totalMinutes} color="#D97706" />
+            </View>
+            <Text style={styles.teacherHistoryMeta}>Total Hours: {row.hours}</Text>
+        </View>
+    );
+}
+
+function TeacherChipSection({ title, values }: { title: string; values: string[] }) {
+    const displayValues = values && values.length > 0 ? values : ['Not available'];
+
+    return (
+        <View style={styles.teacherChipSection}>
+            <Text style={styles.teacherChipTitle}>{title}</Text>
+            <View style={styles.teacherChipRow}>
+                {displayValues.map((value, index) => (
+                    <View key={`${title}-${value}-${index}`} style={styles.teacherChip}>
+                        <Text style={styles.teacherChipText}>{value}</Text>
+                    </View>
+                ))}
+            </View>
+        </View>
+    );
+}
+
+function TeacherActionButton({ title, emoji, onPress }: { title: string; emoji: string; onPress: () => void }) {
+    return (
+        <TouchableOpacity style={styles.teacherActionButton} onPress={onPress} activeOpacity={0.88}>
+            <Text style={styles.teacherActionEmoji}>{emoji}</Text>
+            <Text style={styles.teacherActionText}>{title}</Text>
+        </TouchableOpacity>
+    );
+}
+
+function TeacherHistoryRow({ row }: { row: TeacherHistoryRecord }) {
+    return (
+        <View style={styles.teacherHistoryRow}>
+            <View style={styles.cardHeader}>
+                <View style={styles.cardTitleBox}>
+                    <Text style={styles.cardTitle}>{row.title}</Text>
+                    <Text style={styles.cardSubtitle}>{row.subtitle}</Text>
+                </View>
+                {row.status && <Text style={styles.teacherHistoryStatus}>{row.status}</Text>}
+            </View>
+            <Text style={styles.teacherHistoryMeta}>{row.meta}</Text>
         </View>
     );
 }
@@ -2076,6 +2298,48 @@ function DropdownModal({
                             </TouchableOpacity>
                         ))
                     )}
+
+                    <TouchableOpacity style={styles.closeButton} onPress={onClose}>
+                        <Text style={styles.closeButtonText}>Close</Text>
+                    </TouchableOpacity>
+                </View>
+            </View>
+        </Modal>
+    );
+}
+
+function AcademicMonthModal({
+                                visible,
+                                selectedMonth,
+                                onSelect,
+                                onClose,
+                            }: {
+    visible: boolean;
+    selectedMonth: string;
+    onSelect: (month: string) => void;
+    onClose: () => void;
+}) {
+    const months = getAcademicMonthOptions();
+
+    return (
+        <Modal visible={visible} transparent animationType="fade">
+            <View style={styles.modalOverlay}>
+                <View style={styles.modalBox}>
+                    <Text style={styles.modalTitle}>Select Academic Month</Text>
+
+                    {months.map((month) => {
+                        const selected = month.value === selectedMonth;
+                        return (
+                            <TouchableOpacity
+                                key={month.value}
+                                style={[styles.optionButton, selected && styles.studentOptionCardSelected]}
+                                onPress={() => onSelect(month.value)}
+                                activeOpacity={0.85}
+                            >
+                                <Text style={styles.optionText}>{month.label}</Text>
+                            </TouchableOpacity>
+                        );
+                    })}
 
                     <TouchableOpacity style={styles.closeButton} onPress={onClose}>
                         <Text style={styles.closeButtonText}>Close</Text>
@@ -2318,6 +2582,173 @@ function getStudentStatusColor(status: string) {
     if (status === 'ABSENT') return '#DC2626';
     if (status === 'LATE') return '#D97706';
     return '#6B7280';
+}
+
+
+function mapMonthlyLeaveRow(item: any): TeacherMonthlyLeaveRow {
+    return {
+        teacherId: Number(item.teacherId || 0),
+        teacherName: String(item.teacherName || 'Teacher'),
+        totalLeaves: Number(item.totalLeaves || item.leaves || 0),
+        plannedLeaves: Number(item.plannedLeaves || item.planned || 0),
+        unplannedLeaves: Number(item.unplannedLeaves || item.unplanned || 0),
+        subjectsHandled: Array.isArray(item.subjectsHandled) ? item.subjectsHandled.map(String) : [],
+        classesHandled: Array.isArray(item.classesHandled) ? item.classesHandled.map(String) : [],
+    };
+}
+
+function mapMonthlyReplacementRow(item: any): TeacherMonthlyReplacementRow {
+    return {
+        teacherId: Number(item.teacherId || 0),
+        teacherName: String(item.teacherName || 'Teacher'),
+        totalReplacementPeriods: Number(item.totalReplacementPeriods || item.periods || 0),
+        classesCovered: Number(item.classesCovered || item.classes || 0),
+        subjectsCovered: Number(item.subjectsCovered || item.subjects || 0),
+        totalMinutes: Number(item.totalMinutes || 0),
+        hours: Number(item.hours || 0),
+    };
+}
+
+function formatMonthValue(date: Date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    return `${year}-${month}`;
+}
+
+function formatMonthLabel(value: string) {
+    const [yearText, monthText] = value.split('-');
+    const year = Number(yearText);
+    const month = Number(monthText);
+
+    if (!year || !month) {
+        return value;
+    }
+
+    return new Date(year, month - 1, 1).toLocaleString('default', { month: 'long', year: 'numeric' });
+}
+
+function getAcademicMonthOptions() {
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const academicStartYear = now.getMonth() + 1 >= 6 ? currentYear : currentYear - 1;
+    const months = [];
+
+    for (let index = 0; index < 12; index++) {
+        const date = new Date(academicStartYear, 5 + index, 1);
+        months.push({
+            value: formatMonthValue(date),
+            label: formatMonthLabel(formatMonthValue(date)),
+        });
+    }
+
+    return months;
+}
+
+function mapTeacherSearchItem(item: any): TeacherSearchItem {
+    return {
+        teacherId: Number(item.teacherId || item.id || 0),
+        teacherName: String(item.teacherName || item.name || ''),
+        employeeId: item.employeeId ? String(item.employeeId) : null,
+    };
+}
+
+function mapTeacherInsightSummary(item: any, fallbackTeacher: TeacherSearchItem): TeacherInsightSummary {
+    return {
+        teacherId: Number(item.teacherId || fallbackTeacher.teacherId || 0),
+        teacherName: String(item.teacherName || fallbackTeacher.teacherName || ''),
+        classesHandled: normalizeStringArray(item.classesHandled || item.classNames || item.classes),
+        sectionsHandled: normalizeStringArray(item.sectionsHandled || item.sections),
+        subjectsHandled: normalizeStringArray(item.subjectsHandled || item.subjectNames || item.subjects),
+        totalLeaves: Number(item.totalLeaves || 0),
+        plannedLeaves: Number(item.plannedLeaves || 0),
+        unplannedLeaves: Number(item.unplannedLeaves || 0),
+        replacementAssignments: Number(item.replacementAssignments || 0),
+        attendanceSubmissions: Number(item.attendanceSubmissions || 0),
+        examResultSubmissions: Number(item.examResultSubmissions || 0),
+    };
+}
+
+function buildFallbackTeacherInsight(teacher: TeacherSearchItem): TeacherInsightSummary {
+    return {
+        teacherId: teacher.teacherId,
+        teacherName: teacher.teacherName,
+        classesHandled: [],
+        sectionsHandled: [],
+        subjectsHandled: [],
+        totalLeaves: 0,
+        plannedLeaves: 0,
+        unplannedLeaves: 0,
+        replacementAssignments: 0,
+        attendanceSubmissions: 0,
+        examResultSubmissions: 0,
+    };
+}
+
+function normalizeStringArray(value: any): string[] {
+    if (Array.isArray(value)) {
+        return value.map((item) => String(item || '').trim()).filter(Boolean);
+    }
+
+    if (typeof value === 'string') {
+        return value.split(',').map((item) => item.trim()).filter(Boolean);
+    }
+
+    return [];
+}
+
+function getTeacherHistoryTitle(type: TeacherHistoryType) {
+    if (type === 'attendance') return 'Attendance Submission History';
+    if (type === 'exam') return 'Exam Result Submission History';
+    if (type === 'leave') return 'Leave History';
+    return 'Replacement History';
+}
+
+function mapTeacherHistoryRecord(item: any, index: number, type: TeacherHistoryType): TeacherHistoryRecord {
+    if (type === 'attendance') {
+        return {
+            id: `attendance-${index}-${item.attendanceDate || item.date || ''}`,
+            title: String(item.attendanceDate || item.date || 'Attendance Submission'),
+            subtitle: `Class ${item.className || '-'}-${item.section || '-'} • ${item.subjectName || 'Subject -'}`,
+            meta: `Submitted: ${item.submittedTime || item.time || '-'} • Present ${Number(item.presentStudents || item.present || 0)} • Absent ${Number(item.absentStudents || item.absent || 0)}`,
+            status: `${Number(item.totalStudents || item.totalRecords || 0)} students`,
+        };
+    }
+
+    if (type === 'exam') {
+        return {
+            id: `exam-${index}-${item.examDate || item.date || ''}`,
+            title: String(item.examName || item.examType || 'Exam Result'),
+            subtitle: `Class ${item.className || '-'}-${item.section || '-'} • ${item.subjectName || 'Subject -'}`,
+            meta: `Exam Date: ${item.examDate || item.date || '-'} • Results submitted: ${Number(item.totalResultsSubmitted || item.totalSubmitted || 0)}`,
+            status: 'Exam',
+        };
+    }
+
+    if (type === 'leave') {
+        return {
+            id: `leave-${index}-${item.leaveDate || item.scheduleDate || item.date || ''}`,
+            title: String(item.leaveDate || item.scheduleDate || item.date || 'Leave Date'),
+            subtitle: String(item.reason || item.subjectName || 'Teacher leave period'),
+            meta: `Type: ${formatTeacherLeaveType(item.leaveType || item.status)} • Status: ${item.status || '-'}`,
+            status: formatTeacherLeaveType(item.leaveType || item.status),
+        };
+    }
+
+    return {
+        id: `replacement-${index}-${item.id || item.scheduleId || ''}`,
+        title: String(item.replacementDate || item.scheduleDate || item.date || 'Replacement Assignment'),
+        subtitle: `Class ${item.className || '-'}-${item.section || '-'} • ${item.subjectName || 'Subject -'}`,
+        meta: `Time: ${item.startTime || '-'} - ${item.endTime || '-'} • Replaced: ${item.replacedTeacherName || item.teacherName || '-'}`,
+        status: 'Replacement',
+    };
+}
+
+function formatTeacherLeaveType(value: any) {
+    const text = String(value || '').replace('_', ' ').toLowerCase();
+
+    if (!text) return '-';
+
+    return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
 const styles = StyleSheet.create({
@@ -3353,4 +3784,114 @@ const styles = StyleSheet.create({
         fontWeight: '900',
         color: colors.white,
     },
+
+    teacherInsightDivider: {
+        height: 1,
+        backgroundColor: 'rgba(11, 31, 58, 0.16)',
+        marginVertical: spacing.xl,
+    },
+    teacherInsightCard: {
+        marginTop: spacing.lg,
+        backgroundColor: 'rgba(255, 253, 242, 0.92)',
+        borderRadius: 24,
+        padding: spacing.lg,
+        borderWidth: 1,
+        borderColor: '#EADFAE',
+        ...shadows.medium,
+    },
+    teacherChipSection: {
+        marginTop: spacing.md,
+    },
+    teacherChipTitle: {
+        fontSize: 13,
+        fontWeight: '900',
+        color: colors.primaryNavy,
+        marginBottom: spacing.xs,
+    },
+    teacherChipRow: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: spacing.xs,
+    },
+    teacherChip: {
+        paddingHorizontal: spacing.md,
+        paddingVertical: spacing.xs,
+        borderRadius: 999,
+        backgroundColor: '#FFF7D6',
+        borderWidth: 1,
+        borderColor: '#E6C85C',
+    },
+    teacherChipText: {
+        fontSize: 12,
+        fontWeight: '900',
+        color: colors.primaryNavy,
+    },
+    teacherActionTitle: {
+        marginTop: spacing.xl,
+        marginBottom: spacing.md,
+        fontSize: 16,
+        fontWeight: '900',
+        color: colors.primaryNavy,
+    },
+    teacherActionGrid: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: spacing.md,
+    },
+    teacherActionButton: {
+        width: '47%',
+        minHeight: 92,
+        borderRadius: 20,
+        padding: spacing.md,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: '#0B1F3A',
+        borderWidth: 1,
+        borderColor: '#D6B84A',
+        ...shadows.medium,
+    },
+    teacherActionEmoji: {
+        fontSize: 24,
+        marginBottom: spacing.xs,
+    },
+    teacherActionText: {
+        fontSize: 13,
+        fontWeight: '900',
+        color: colors.white,
+        textAlign: 'center',
+    },
+    teacherHistoryCard: {
+        marginTop: spacing.xl,
+        backgroundColor: 'rgba(255, 253, 242, 0.92)',
+        borderRadius: 24,
+        padding: spacing.lg,
+        borderWidth: 1,
+        borderColor: '#EADFAE',
+        ...shadows.medium,
+    },
+    teacherHistoryRow: {
+        marginTop: spacing.md,
+        padding: spacing.md,
+        borderRadius: 18,
+        backgroundColor: '#FFFDF2',
+        borderWidth: 1,
+        borderColor: '#EADFAE',
+    },
+    teacherHistoryStatus: {
+        fontSize: 12,
+        fontWeight: '900',
+        color: colors.primaryNavy,
+        backgroundColor: '#FFF7D6',
+        paddingHorizontal: spacing.sm,
+        paddingVertical: spacing.xs,
+        borderRadius: 999,
+        overflow: 'hidden',
+    },
+    teacherHistoryMeta: {
+        marginTop: spacing.sm,
+        fontSize: 13,
+        fontWeight: '700',
+        color: '#4B5563',
+    },
+
 });
