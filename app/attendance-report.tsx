@@ -218,6 +218,15 @@ type TeacherMonthlyReplacementRow = {
     hours: number;
 };
 
+type SectionAnalyticsItem = {
+    className: string;
+    section: string;
+    totalStudents: number;
+    attendancePercentage: number;
+    passPercentage: number;
+    absentees: number;
+};
+
 const emptyTeacherCoverageStats: TeacherCoverageStats = {
     totalPeriods: 0,
     leavePeriods: 0,
@@ -1403,6 +1412,36 @@ function OverviewContent({
     );
 }
 
+
+function buildWeeklyTrendData(trend: AttendanceTrendItem[]) {
+    const buckets = [[], [], [], [], []] as number[][];
+
+    trend.forEach((item) => {
+        const day = Number(item.date.split('-')[2]);
+
+        const weekIndex =
+            day <= 7
+                ? 0
+                : day <= 14
+                    ? 1
+                    : day <= 21
+                        ? 2
+                        : day <= 28
+                            ? 3
+                            : 4;
+
+        buckets[weekIndex].push(Number(item.attendancePercentage || 0));
+    });
+
+    return buckets.map((week) => {
+        if (week.length === 0) return 0;
+
+        const total = week.reduce((a, b) => a + b, 0);
+
+        return Math.max(0, Math.round(total / week.length));
+    });
+}
+
 function AnalyticsReportContent({
                                     overviewDate,
                                     setDatePickerTarget,
@@ -1428,35 +1467,175 @@ function AnalyticsReportContent({
     classAttendanceTrend: ClassAttendanceTrendItem[];
     analyticsLoading: boolean;
 }) {
-    const attendanceChartData = {
-        labels: attendanceTrend.length > 0
-            ? attendanceTrend.slice(-7).map((item) => item.date.split('-')[2])
-            : ['No Data'],
-        datasets: [
-            {
-                data: attendanceTrend.length > 0
-                    ? attendanceTrend.slice(-7).map((item) =>
-                        Math.max(0, Math.round(Number(item.attendancePercentage || 0)))
-                    )
-                    : [0],
-            },
-        ],
+    const currentMonth = useMemo(() => formatMonthValue(new Date()), []);
+    const [analyticsMode, setAnalyticsMode] = useState<DateRangeMode>('Monthly');
+    const [selectedMonth, setSelectedMonth] = useState(currentMonth);
+    const [showAnalyticsMonthModal, setShowAnalyticsMonthModal] = useState(false);
+    const [showAnalyticsClassModal, setShowAnalyticsClassModal] = useState(false);
+    const [sectionClassFilter, setSectionClassFilter] = useState('10');
+    const [analyticsClassOptions, setAnalyticsClassOptions] = useState<string[]>(['10', '9', '8']);
+    const [sectionComparison, setSectionComparison] = useState<SectionAnalyticsItem[]>([]);
+    const [localSummary, setLocalSummary] = useState<AnalyticsSummary | null>(analyticsSummary);
+    const [localAttendanceTrend, setLocalAttendanceTrend] = useState<AttendanceTrendItem[]>(attendanceTrend);
+    const [localClassTrend, setLocalClassTrend] = useState<ClassAttendanceTrendItem[]>(classAttendanceTrend);
+    const [localLoading, setLocalLoading] = useState(false);
+    const [localLoaded, setLocalLoaded] = useState(false);
+
+    const analyticsMonthOptions = useMemo(() => getAcademicMonthOptions(), []);
+
+    useEffect(() => {
+        setLocalSummary(analyticsSummary);
+        setLocalAttendanceTrend(attendanceTrend);
+        setLocalClassTrend(classAttendanceTrend);
+    }, [analyticsSummary, attendanceTrend, classAttendanceTrend]);
+
+    useEffect(() => {
+        const loadAnalyticsClasses = async () => {
+            try {
+                const response = await fetch(`${BASE_URL}/students/classes`);
+
+                if (!response.ok) {
+                    throw new Error('Failed to load analytics classes');
+                }
+
+                const data = await response.json();
+                const classes = Array.isArray(data)
+                    ? data.map((item) => String(item || '')).filter(Boolean)
+                    : [];
+
+                if (classes.length > 0) {
+                    setAnalyticsClassOptions(classes);
+                    if (!classes.includes(sectionClassFilter)) {
+                        setSectionClassFilter(classes[0]);
+                    }
+                }
+            } catch (error) {
+                console.log(error);
+                setAnalyticsClassOptions((previous) => (previous.length > 0 ? previous : ['10', '9', '8']));
+            }
+        };
+
+        loadAnalyticsClasses();
+    }, []);
+
+    const getAnalyticsRange = () => {
+        if (analyticsMode === 'Monthly') {
+            const [year, month] = selectedMonth.split('-').map(Number);
+            const start = new Date(year, month - 1, 1);
+            const end = new Date(year, month, 0);
+            return { startDate: formatDate(start), endDate: formatDate(end) };
+        }
+
+        const selected = parseLocalDate(overviewDate);
+        const start = new Date(selected);
+        start.setDate(selected.getDate() - (analyticsMode === 'Weekly' ? 6 : 0));
+        return { startDate: formatDate(start), endDate: overviewDate };
     };
+
+    const loadSelectedAnalytics = async () => {
+        try {
+            setLocalLoading(true);
+            setLocalLoaded(true);
+
+            const { startDate, endDate } = getAnalyticsRange();
+
+            const summaryUrl = `${BASE_URL}/analytics/summary?startDate=${startDate}&endDate=${endDate}`;
+            const trendUrl = analyticsMode === 'Monthly'
+                ? `${BASE_URL}/analytics/attendance/monthly?month=${selectedMonth}`
+                : `${BASE_URL}/analytics/attendance-trend?startDate=${startDate}&endDate=${endDate}`;
+            const classUrl = analyticsMode === 'Monthly'
+                ? `${BASE_URL}/analytics/class-comparison/monthly?month=${selectedMonth}`
+                : `${BASE_URL}/analytics/class-attendance-trend?date=${endDate}`;
+            const sectionUrl = `${BASE_URL}/analytics/section-comparison?month=${selectedMonth}${sectionClassFilter.trim() ? `&className=${encodeURIComponent(sectionClassFilter.trim())}` : ''}`;
+
+            const requests = [
+                fetch(summaryUrl),
+                fetch(trendUrl),
+                fetch(classUrl),
+            ];
+
+            if (analyticsMode === 'Monthly') {
+                requests.push(fetch(sectionUrl));
+            }
+
+            const responses = await Promise.all(requests);
+            const [summaryResponse, trendResponse, classResponse, sectionResponse] = responses;
+
+            if (!summaryResponse.ok || !trendResponse.ok || !classResponse.ok || (analyticsMode === 'Monthly' && sectionResponse && !sectionResponse.ok)) {
+                throw new Error('Analytics API failed');
+            }
+
+            const [summaryData, trendData, classData, sectionData] = await Promise.all(responses.map((response) => response.json()));
+
+            setLocalSummary(summaryData);
+            setLocalAttendanceTrend(Array.isArray(trendData) ? trendData : []);
+            setLocalClassTrend(Array.isArray(classData) ? classData : []);
+            setSectionComparison(analyticsMode === 'Monthly' && Array.isArray(sectionData) ? sectionData : []);
+        } catch (error) {
+            console.log(error);
+            Alert.alert('Analytics Error', 'Unable to load analytics. Please verify backend is running.');
+            setLocalSummary(null);
+            setLocalAttendanceTrend([]);
+            setLocalClassTrend([]);
+            setSectionComparison([]);
+        } finally {
+            setLocalLoading(false);
+        }
+    };
+
+    const visibleAttendanceTrend = localAttendanceTrend;
+    const visibleClassTrend = localClassTrend;
+    const visibleSummary = localSummary;
+    const loadingState = loading || analyticsLoading || localLoading;
+    const loadedState = hasLoadedOverview || localLoaded;
+    const trendSlice = analyticsMode === 'Monthly' ? visibleAttendanceTrend : visibleAttendanceTrend.slice(-7);
+
+    const attendanceChartData =
+        analyticsMode === 'Monthly'
+            ? {
+                labels: ['W1', 'W2', 'W3', 'W4', 'W5'],
+                datasets: [
+                    {
+                        data: buildWeeklyTrendData(trendSlice),
+                    },
+                ],
+            }
+            : {
+                labels:
+                    trendSlice.length > 0
+                        ? trendSlice.map((item) => item.date.split('-')[2])
+                        : ['No Data'],
+                datasets: [
+                    {
+                        data:
+                            trendSlice.length > 0
+                                ? trendSlice.map((item) =>
+                                    Math.max(
+                                        0,
+                                        Math.round(Number(item.attendancePercentage || 0))
+                                    )
+                                )
+                                : [0],
+                    },
+                ],
+            };
 
     const attendanceTrendLabel =
-        attendanceTrend.length > 0
-            ? `Daily Attendance Trend (${attendanceTrend[0].date.slice(0, 7)})`
-            : 'School Attendance Trend';
+        analyticsMode === 'Monthly'
+            ? `Monthly Attendance Trend (${selectedMonth})`
+            : visibleAttendanceTrend.length > 0
+                ? `${analyticsMode} Attendance Trend (${visibleAttendanceTrend[0].date} to ${visibleAttendanceTrend[visibleAttendanceTrend.length - 1].date})`
+                : 'School Attendance Trend';
 
     const classComparisonData = {
-        labels: classAttendanceTrend.length > 0
-            ? classAttendanceTrend.slice(0, 6).map((item) => `${item.className}${item.section}`)
+        labels: visibleClassTrend.length > 0
+            ? visibleClassTrend.slice(0, 8).map((item) => `${item.className}${item.section}`)
             : ['No Data'],
 
         datasets: [
             {
-                data: classAttendanceTrend.length > 0
-                    ? classAttendanceTrend.slice(0, 6).map((item) =>
+                data: visibleClassTrend.length > 0
+                    ? visibleClassTrend.slice(0, 8).map((item) =>
                         Math.max(0, Math.round(Number(item.attendancePercentage || 0)))
                     )
                     : [0],
@@ -1464,44 +1643,78 @@ function AnalyticsReportContent({
         ],
     };
 
-    const averageAttendance = Math.round(Number(analyticsSummary?.attendancePercentage || 0));
+    const averageAttendance = Math.round(Number(visibleSummary?.attendancePercentage || 0));
 
     const hasAnalyticsData =
-        Number(analyticsSummary?.totalPresent || 0) > 0 ||
-        Number(analyticsSummary?.totalAbsent || 0) > 0 ||
-        attendanceTrend.some((item) => Number(item.totalCount || 0) > 0) ||
-        classAttendanceTrend.some((item) => Number(item.totalCount || 0) > 0);
+        Number(visibleSummary?.totalPresent || 0) > 0 ||
+        Number(visibleSummary?.totalAbsent || 0) > 0 ||
+        visibleAttendanceTrend.some((item) => Number(item.totalCount || 0) > 0) ||
+        visibleClassTrend.some((item) => Number(item.totalCount || 0) > 0);
 
     return (
         <>
             <View style={styles.filterCard}>
                 <Text style={styles.sectionEyebrow}>Analytics Filter</Text>
-                <Text style={styles.sectionTitle}>Report Date</Text>
+                <Text style={styles.sectionTitle}>Analytics Mode</Text>
 
-                <DatePickerField value={overviewDate} onPress={() => setDatePickerTarget('overview')} />
+                <View style={styles.segmentRow}>
+                    {(['Daily', 'Weekly', 'Monthly'] as DateRangeMode[]).map((mode) => (
+                        <TouchableOpacity
+                            key={mode}
+                            style={[styles.segmentButton, analyticsMode === mode && styles.segmentButtonActive]}
+                            onPress={() => setAnalyticsMode(mode)}
+                            activeOpacity={0.85}
+                        >
+                            <Text style={[styles.segmentText, analyticsMode === mode && styles.segmentTextActive]}>
+                                {mode}
+                            </Text>
+                        </TouchableOpacity>
+                    ))}
+                </View>
+
+                {analyticsMode === 'Monthly' ? (
+                    <>
+                        <Text style={styles.label}>Month</Text>
+                        <DropdownField
+                            value={formatMonthLabel(selectedMonth)}
+                            onPress={() => setShowAnalyticsMonthModal(true)}
+                        />
+
+                        <Text style={styles.label}>Class for Section Comparison</Text>
+                        <DropdownField
+                            value={sectionClassFilter ? `Class ${sectionClassFilter}` : 'All Classes'}
+                            onPress={() => setShowAnalyticsClassModal(true)}
+                        />
+                    </>
+                ) : (
+                    <>
+                        <Text style={styles.label}>Report Date</Text>
+                        <DatePickerField value={overviewDate} onPress={() => setDatePickerTarget('overview')} />
+                    </>
+                )}
 
                 <TouchableOpacity
-                    style={[styles.loadButton, (loading || analyticsLoading) && styles.disabledButton]}
-                    onPress={loadOverviewReport}
-                    disabled={loading || analyticsLoading}
+                    style={[styles.loadButton, loadingState && styles.disabledButton]}
+                    onPress={loadSelectedAnalytics}
+                    disabled={loadingState}
                     activeOpacity={0.9}
                 >
-                    {loading || analyticsLoading ? (
+                    {loadingState ? (
                         <ActivityIndicator color={colors.primaryNavy} />
                     ) : (
-                        <Text style={styles.loadButtonText}>Load Analytics</Text>
+                        <Text style={styles.loadButtonText}>Load {analyticsMode} Analytics</Text>
                     )}
                 </TouchableOpacity>
             </View>
 
-            {!loading && !analyticsLoading && !hasLoadedOverview && (
+            {!loadingState && !loadedState && (
                 <View style={styles.noDataCard}>
                     <Text style={styles.noDataTitle}>Load Analytics</Text>
-                    <Text style={styles.noDataText}>Select a report date and tap Load Analytics to view visual insights.</Text>
+                    <Text style={styles.noDataText}>Choose daily, weekly or monthly mode and tap Load Analytics to view visual insights.</Text>
                 </View>
             )}
 
-            {!loading && !analyticsLoading && hasLoadedOverview && (
+            {!loadingState && loadedState && (
                 <>
                     <View style={styles.kpiGrid}>
                         <AnalyticsKpiCard
@@ -1511,17 +1724,17 @@ function AnalyticsReportContent({
 
                         <AnalyticsKpiCard
                             title="Present"
-                            value={`${analyticsSummary?.totalPresent || 0}`}
+                            value={`${visibleSummary?.totalPresent || 0}`}
                         />
 
                         <AnalyticsKpiCard
                             title="Absent"
-                            value={`${analyticsSummary?.totalAbsent || 0}`}
+                            value={`${visibleSummary?.totalAbsent || 0}`}
                         />
 
                         <AnalyticsKpiCard
                             title="Students"
-                            value={`${analyticsSummary?.totalStudents || 0}`}
+                            value={`${visibleSummary?.totalStudents || 0}`}
                         />
                     </View>
 
@@ -1540,7 +1753,7 @@ function AnalyticsReportContent({
                                 />
                             </AnalyticsChartCard>
 
-                            <AnalyticsChartCard title="Class Attendance Comparison">
+                            <AnalyticsChartCard title={analyticsMode === 'Monthly' ? 'Monthly Class / Section Comparison' : 'Class Attendance Comparison'}>
                                 <BarChart
                                     data={classComparisonData}
                                     width={screenWidth}
@@ -1551,22 +1764,85 @@ function AnalyticsReportContent({
                                     withInnerLines
                                     fromZero
                                     showValuesOnTopOfBars
-                                    style={{
-                                        borderRadius: 16,
-                                    }}
+                                    style={{ borderRadius: 16 }}
                                 />
                             </AnalyticsChartCard>
+
+                            {analyticsMode === 'Monthly' && (
+                                <View style={styles.summaryCard}>
+                                    <Text style={styles.sectionEyebrow}>Section Analytics</Text>
+                                    <Text style={styles.sectionTitle}>Class {sectionClassFilter || 'All'} Section Monthly Comparison</Text>
+
+                                    {sectionComparison.length > 0 ? (
+                                        sectionComparison.map((item) => (
+                                            <View key={`${item.className}-${item.section}`} style={styles.sectionAnalyticsRow}>
+                                                <View style={styles.sectionAnalyticsTitleBox}>
+                                                    <Text style={styles.sectionAnalyticsTitle}>Class {item.className}{item.section}</Text>
+                                                    <Text style={styles.sectionAnalyticsMeta}>
+                                                        Students: {item.totalStudents} • Absentees: {item.absentees}
+                                                    </Text>
+                                                </View>
+                                                <View style={styles.sectionAnalyticsValueBox}>
+                                                    <Text style={styles.sectionAnalyticsValue}>{Math.round(Number(item.attendancePercentage || 0))}%</Text>
+                                                    <Text style={styles.sectionAnalyticsLabel}>Attendance</Text>
+                                                </View>
+                                            </View>
+                                        ))
+                                    ) : (
+                                        <Text style={styles.noDataText}>No section comparison data found for the selected month/class.</Text>
+                                    )}
+
+                                    <Text style={styles.percentageSubText}>
+                                        Pass percentage is reserved for the upcoming subject-wise marks analytics module.
+                                    </Text>
+                                </View>
+                            )}
                         </>
                     ) : (
                         <View style={styles.noDataCard}>
                             <Text style={styles.noDataTitle}>No Analytics Available</Text>
                             <Text style={styles.noDataText}>
-                                No attendance data found for the selected date.
+                                No attendance data found for the selected analytics range.
                             </Text>
                         </View>
                     )}
                 </>
             )}
+
+
+            <DropdownModal
+                visible={showAnalyticsMonthModal}
+                title="Select Analytics Month"
+                options={analyticsMonthOptions.map((month) => month.value)}
+                allLabel="Current Month"
+                emptyText="No months found."
+                onSelect={(month) => {
+                    setSelectedMonth(month);
+                    setShowAnalyticsMonthModal(false);
+                }}
+                onSelectAll={() => {
+                    setSelectedMonth(currentMonth);
+                    setShowAnalyticsMonthModal(false);
+                }}
+                onClose={() => setShowAnalyticsMonthModal(false)}
+            />
+
+            <DropdownModal
+                visible={showAnalyticsClassModal}
+                title="Select Class"
+                options={analyticsClassOptions}
+                allLabel="All Classes"
+                emptyText="No classes found. Please verify backend class data exists."
+                onSelect={(className) => {
+                    setSectionClassFilter(className);
+                    setShowAnalyticsClassModal(false);
+                }}
+                onSelectAll={() => {
+                    setSectionClassFilter('');
+                    setShowAnalyticsClassModal(false);
+                }}
+                onClose={() => setShowAnalyticsClassModal(false)}
+            />
         </>
     );
 }
@@ -3303,6 +3579,66 @@ const styles = StyleSheet.create({
     },
     segmentTextActive: {
         color: colors.premiumGold,
+    },
+
+    sectionAnalyticsRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        backgroundColor: '#FFF8E1',
+        borderRadius: 18,
+        padding: 14,
+        marginTop: 10,
+        borderWidth: 1,
+        borderColor: '#E8D89A',
+    },
+
+    sectionAnalyticsTitleBox: {
+        flex: 1,
+        paddingRight: 10,
+    },
+
+    sectionAnalyticsTitle: {
+        fontSize: 15,
+        fontWeight: '800',
+        color: colors.primaryNavy,
+    },
+
+    sectionAnalyticsMeta: {
+        marginTop: 4,
+        fontSize: 12,
+        color: '#6B7280',
+        fontWeight: '600',
+    },
+
+    sectionAnalyticsValueBox: {
+        minWidth: 78,
+        alignItems: 'flex-end',
+    },
+
+    sectionAnalyticsValue: {
+        fontSize: 22,
+        fontWeight: '900',
+        color: '#C99700',
+    },
+
+    sectionAnalyticsLabel: {
+        fontSize: 11,
+        fontWeight: '700',
+        color: '#8A6A00',
+    },
+
+    monthInput: {
+        backgroundColor: '#FFFFFF',
+        borderRadius: 16,
+        borderWidth: 1,
+        borderColor: colors.cardGoldBorder,
+        paddingHorizontal: spacing.md,
+        paddingVertical: spacing.md,
+        marginBottom: spacing.lg,
+        fontSize: 14,
+        fontWeight: '800',
+        color: colors.primaryNavy,
     },
     clearFilterButton: {
         backgroundColor: '#FFF8E1',
