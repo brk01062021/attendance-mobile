@@ -54,9 +54,15 @@ const styles = StyleSheet.create({
     },
 
     value: {
-        fontSize: 28,
-        fontWeight: '900',
+        fontSize: 30,
+        fontWeight: '800',
         color: '#14345A',
+
+        marginTop: 6,
+        lineHeight: 34,
+
+        includeFontPadding: false,
+        textAlignVertical: 'center',
     },
 
     subtitle: {

@@ -12,11 +12,19 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
-import { LineChart, PieChart, BarChart } from 'react-native-chart-kit';
+import { LineChart, BarChart } from 'react-native-chart-kit';
 import AnalyticsChartCard from '../components/admin/AnalyticsChartCard';
 import AnalyticsKpiCard from '../components/admin/AnalyticsKpiCard';
 import { router, useLocalSearchParams } from 'expo-router';
 import { colors, spacing, shadows } from '../src/theme';
+import {
+    fetchAnalyticsSummary,
+    fetchAttendanceTrend,
+    fetchClassAttendanceTrend,
+    AnalyticsSummary,
+    AttendanceTrendItem,
+    ClassAttendanceTrendItem,
+} from '../src/services/analyticsApi';
 
 const BASE_URL = 'http://192.168.1.75:8080';
 
@@ -347,6 +355,11 @@ export default function AttendanceReportScreen() {
 
     const [availableClassOptions, setAvailableClassOptions] = useState<string[]>([]);
     const [availableSectionOptions, setAvailableSectionOptions] = useState<string[]>([]);
+
+    const [analyticsSummary, setAnalyticsSummary] = useState<AnalyticsSummary | null>(null);
+    const [attendanceTrend, setAttendanceTrend] = useState<AttendanceTrendItem[]>([]);
+    const [classAttendanceTrend, setClassAttendanceTrend] = useState<ClassAttendanceTrendItem[]>([]);
+    const [analyticsLoading, setAnalyticsLoading] = useState(false);
 
     const goBack = () => {
         if (activeView !== 'overview') {
@@ -721,6 +734,38 @@ export default function AttendanceReportScreen() {
         }
     };
 
+
+    const loadLiveAnalytics = async () => {
+        try {
+            setAnalyticsLoading(true);
+            setHasLoadedOverview(true);
+
+            const selected = parseLocalDate(overviewDate);
+            const start = new Date(selected);
+            start.setDate(selected.getDate() - 6);
+            const startDate = formatDate(start);
+            const endDate = overviewDate;
+
+            const [summary, trend, classTrend] = await Promise.all([
+                fetchAnalyticsSummary(startDate, endDate),
+                fetchAttendanceTrend(startDate, endDate),
+                fetchClassAttendanceTrend(overviewDate),
+            ]);
+
+            setAnalyticsSummary(summary);
+            setAttendanceTrend(trend);
+            setClassAttendanceTrend(classTrend);
+            setGeneratedAt(new Date().toLocaleString());
+
+            await loadOverviewReport();
+        } catch (error) {
+            console.log(error);
+            Alert.alert('Analytics Error', 'Unable to load live analytics. Please verify backend is running.');
+        } finally {
+            setAnalyticsLoading(false);
+        }
+    };
+
     const overviewStats = useMemo(() => buildSummaryStats(overviewData), [overviewData]);
 
 
@@ -1044,11 +1089,15 @@ export default function AttendanceReportScreen() {
                     <AnalyticsReportContent
                         overviewDate={overviewDate}
                         setDatePickerTarget={setDatePickerTarget}
-                        loading={loading}
+                        loading={loading || analyticsLoading}
                         hasLoadedOverview={hasLoadedOverview}
                         overviewData={overviewData}
                         teacherCoverageStats={teacherCoverageStats}
-                        loadOverviewReport={loadOverviewReport}
+                        loadOverviewReport={loadLiveAnalytics}
+                        analyticsSummary={analyticsSummary}
+                        attendanceTrend={attendanceTrend}
+                        classAttendanceTrend={classAttendanceTrend}
+                        analyticsLoading={analyticsLoading}
                     />
                 ) : isReplacementDrilldownView(activeView) ? (
                     <ReplacementDrilldownContent
@@ -1362,6 +1411,10 @@ function AnalyticsReportContent({
                                     overviewData,
                                     teacherCoverageStats,
                                     loadOverviewReport,
+                                    analyticsSummary,
+                                    attendanceTrend,
+                                    classAttendanceTrend,
+                                    analyticsLoading,
                                 }: {
     overviewDate: string;
     setDatePickerTarget: (target: 'overview' | 'drilldown' | null) => void;
@@ -1370,101 +1423,54 @@ function AnalyticsReportContent({
     overviewData: ReportItem[];
     teacherCoverageStats: TeacherCoverageStats;
     loadOverviewReport: () => void;
+    analyticsSummary: AnalyticsSummary | null;
+    attendanceTrend: AttendanceTrendItem[];
+    classAttendanceTrend: ClassAttendanceTrendItem[];
+    analyticsLoading: boolean;
 }) {
     const attendanceChartData = {
-        labels: overviewData.length > 0
-            ? overviewData.slice(0, 5).map((item) => `${item.className}${item.section}`)
-            : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'],
+        labels: attendanceTrend.length > 0
+            ? attendanceTrend.slice(-7).map((item) => item.date.split('-')[2])
+            : ['No Data'],
         datasets: [
             {
-                data: overviewData.length > 0
-                    ? overviewData.slice(0, 5).map((item) =>
+                data: attendanceTrend.length > 0
+                    ? attendanceTrend.slice(-7).map((item) =>
                         Math.max(0, Math.round(Number(item.attendancePercentage || 0)))
                     )
-                    : [92, 94, 91, 96, 93],
+                    : [0],
             },
         ],
     };
 
-    const replacementPieData = [
-        {
-            name: 'Assigned',
-            population: Math.max(teacherCoverageStats.assigned, 0),
-            color: '#14345A',
-            legendFontColor: '#14345A',
-            legendFontSize: 12,
-        },
-        {
-            name: 'Missing',
-            population: Math.max(teacherCoverageStats.missing, 0),
-            color: '#C9A227',
-            legendFontColor: '#14345A',
-            legendFontSize: 12,
-        },
-    ];
+    const attendanceTrendLabel =
+        attendanceTrend.length > 0
+            ? `Daily Attendance Trend (${attendanceTrend[0].date.slice(0, 7)})`
+            : 'School Attendance Trend';
 
     const classComparisonData = {
-        labels: overviewData.length > 0
-            ? overviewData.slice(0, 6).map((item) => `${item.className}${item.section}`)
-            : ['8A', '8B', '9A', '9B', '10A'],
+        labels: classAttendanceTrend.length > 0
+            ? classAttendanceTrend.slice(0, 6).map((item) => `${item.className}${item.section}`)
+            : ['No Data'],
 
         datasets: [
             {
-                data: overviewData.length > 0
-                    ? overviewData.slice(0, 6).map((item) =>
-                        Math.max(
-                            0,
-                            Math.round(Number(item.attendancePercentage || 0))
-                        )
+                data: classAttendanceTrend.length > 0
+                    ? classAttendanceTrend.slice(0, 6).map((item) =>
+                        Math.max(0, Math.round(Number(item.attendancePercentage || 0)))
                     )
-                    : [92, 88, 95, 90, 97],
+                    : [0],
             },
         ],
     };
 
-    const leavePieData = [
-        {
-            name: 'Planned',
-            population: Math.max(teacherCoverageStats.planned, 0),
-            color: '#2563EB',
-            legendFontColor: '#14345A',
-            legendFontSize: 12,
-        },
-        {
-            name: 'Unplanned',
-            population: Math.max(teacherCoverageStats.unplanned, 0),
-            color: '#D97706',
-            legendFontColor: '#14345A',
-            legendFontSize: 12,
-        },
-    ];
+    const averageAttendance = Math.round(Number(analyticsSummary?.attendancePercentage || 0));
 
-    const averageAttendance =
-        overviewData.length > 0
-            ? Math.round(
-                overviewData.reduce(
-                    (sum, item) => sum + Number(item.attendancePercentage || 0),
-                    0
-                ) / overviewData.length
-            )
-            : 0;
-
-    const bestClass =
-        overviewData.length > 0
-            ? [...overviewData].sort(
-                (a, b) => b.attendancePercentage - a.attendancePercentage
-            )[0]
-            : null;
-
-    const lowestClass =
-        overviewData.length > 0
-            ? [...overviewData].sort(
-                (a, b) => a.attendancePercentage - b.attendancePercentage
-            )[0]
-            : null;
-
-    const hasReplacementData = teacherCoverageStats.assigned > 0 || teacherCoverageStats.missing > 0;
-    const hasLeaveData = teacherCoverageStats.planned > 0 || teacherCoverageStats.unplanned > 0;
+    const hasAnalyticsData =
+        Number(analyticsSummary?.totalPresent || 0) > 0 ||
+        Number(analyticsSummary?.totalAbsent || 0) > 0 ||
+        attendanceTrend.some((item) => Number(item.totalCount || 0) > 0) ||
+        classAttendanceTrend.some((item) => Number(item.totalCount || 0) > 0);
 
     return (
         <>
@@ -1475,12 +1481,12 @@ function AnalyticsReportContent({
                 <DatePickerField value={overviewDate} onPress={() => setDatePickerTarget('overview')} />
 
                 <TouchableOpacity
-                    style={[styles.loadButton, loading && styles.disabledButton]}
+                    style={[styles.loadButton, (loading || analyticsLoading) && styles.disabledButton]}
                     onPress={loadOverviewReport}
-                    disabled={loading}
+                    disabled={loading || analyticsLoading}
                     activeOpacity={0.9}
                 >
-                    {loading ? (
+                    {loading || analyticsLoading ? (
                         <ActivityIndicator color={colors.primaryNavy} />
                     ) : (
                         <Text style={styles.loadButtonText}>Load Analytics</Text>
@@ -1488,14 +1494,14 @@ function AnalyticsReportContent({
                 </TouchableOpacity>
             </View>
 
-            {!loading && !hasLoadedOverview && (
+            {!loading && !analyticsLoading && !hasLoadedOverview && (
                 <View style={styles.noDataCard}>
                     <Text style={styles.noDataTitle}>Load Analytics</Text>
                     <Text style={styles.noDataText}>Select a report date and tap Load Analytics to view visual insights.</Text>
                 </View>
             )}
 
-            {!loading && hasLoadedOverview && (
+            {!loading && !analyticsLoading && hasLoadedOverview && (
                 <>
                     <View style={styles.kpiGrid}>
                         <AnalyticsKpiCard
@@ -1504,88 +1510,61 @@ function AnalyticsReportContent({
                         />
 
                         <AnalyticsKpiCard
-                            title="Best Class"
-                            value={
-                                bestClass
-                                    ? `${bestClass.className}${bestClass.section}`
-                                    : '--'
-                            }
+                            title="Present"
+                            value={`${analyticsSummary?.totalPresent || 0}`}
                         />
 
                         <AnalyticsKpiCard
-                            title="Lowest Class"
-                            value={
-                                lowestClass
-                                    ? `${lowestClass.className}${lowestClass.section}`
-                                    : '--'
-                            }
+                            title="Absent"
+                            value={`${analyticsSummary?.totalAbsent || 0}`}
                         />
 
                         <AnalyticsKpiCard
-                            title="Coverage"
-                            value={`${Math.round(teacherCoverageStats.coverage)}%`}
+                            title="Students"
+                            value={`${analyticsSummary?.totalStudents || 0}`}
                         />
                     </View>
 
-                    <AnalyticsChartCard title="School Attendance Trend">
-                        <LineChart
-                            data={attendanceChartData}
-                            width={screenWidth}
-                            height={210}
-                            yAxisSuffix="%"
-                            chartConfig={chartConfig}
-                            withInnerLines
-                            bezier
-                            style={{ borderRadius: 16 }}
-                        />
-                    </AnalyticsChartCard>
-                    <AnalyticsChartCard title="Class Attendance Comparison">
-                        <BarChart
-                            data={classComparisonData}
-                            width={screenWidth}
-                            height={210}
-                            yAxisSuffix="%"
-                            yAxisLabel=""
-                            chartConfig={chartConfig}
-                            withInnerLines
-                            fromZero
-                            showValuesOnTopOfBars
-                            style={{
-                                borderRadius: 16,
-                            }}
-                        />
-                    </AnalyticsChartCard>
-                    {hasReplacementData && (
-                        <AnalyticsChartCard title="Replacement Coverage">
-                            <PieChart
-                                data={replacementPieData}
-                                width={screenWidth}
-                                height={200}
-                                chartConfig={chartConfig}
-                                accessor="population"
-                                backgroundColor="transparent"
-                                paddingLeft="8"
-                                absolute
-                            />
-                        </AnalyticsChartCard>
-                    )}
+                    {hasAnalyticsData ? (
+                        <>
+                            <AnalyticsChartCard title={attendanceTrendLabel}>
+                                <LineChart
+                                    data={attendanceChartData}
+                                    width={screenWidth - 10}
+                                    height={210}
+                                    yAxisSuffix="%"
+                                    chartConfig={chartConfig}
+                                    withInnerLines
+                                    bezier
+                                    style={{ borderRadius: 16 }}
+                                />
+                            </AnalyticsChartCard>
 
-                    {hasLeaveData && (
-                        <AnalyticsChartCard title="Leave Analytics">
-                            <PieChart
-                                data={leavePieData}
-                                width={screenWidth}
-                                height={200}
-                                chartConfig={chartConfig}
-                                accessor="population"
-                                backgroundColor="transparent"
-                                paddingLeft="8"
-                                absolute
-                            />
-                        </AnalyticsChartCard>
+                            <AnalyticsChartCard title="Class Attendance Comparison">
+                                <BarChart
+                                    data={classComparisonData}
+                                    width={screenWidth}
+                                    height={210}
+                                    yAxisSuffix="%"
+                                    yAxisLabel=""
+                                    chartConfig={chartConfig}
+                                    withInnerLines
+                                    fromZero
+                                    showValuesOnTopOfBars
+                                    style={{
+                                        borderRadius: 16,
+                                    }}
+                                />
+                            </AnalyticsChartCard>
+                        </>
+                    ) : (
+                        <View style={styles.noDataCard}>
+                            <Text style={styles.noDataTitle}>No Analytics Available</Text>
+                            <Text style={styles.noDataText}>
+                                No attendance data found for the selected date.
+                            </Text>
+                        </View>
                     )}
-
-                    {!hasReplacementData && !hasLeaveData && overviewData.length === 0 && <NoDataCard />}
                 </>
             )}
         </>
