@@ -423,7 +423,9 @@ export default function AttendanceReportScreen() {
                 ? data.map((item) => String(item || '')).filter(Boolean)
                 : [];
 
-            setAvailableClassOptions(classes);
+            setAvailableClassOptions(
+                [...classes].sort((a, b) => a.localeCompare(b, undefined, { numeric: true }))
+            );
         } catch (error) {
             console.log(error);
             setAvailableClassOptions([]);
@@ -1505,7 +1507,9 @@ function AnalyticsReportContent({
                     : [];
 
                 if (classes.length > 0) {
-                    setAnalyticsClassOptions(classes);
+                    setAnalyticsClassOptions(
+                        [...classes].sort((a, b) => a.localeCompare(b, undefined, { numeric: true }))
+                    );
                     if (!classes.includes(sectionClassFilter)) {
                         setSectionClassFilter(classes[0]);
                     }
@@ -2464,6 +2468,13 @@ function TeacherReportContent({
     const [monthlyLoading, setMonthlyLoading] = useState(false);
     const [showLeaveList, setShowLeaveList] = useState(false);
 
+    const [teacherSearchKeyword, setTeacherSearchKeyword] = useState('');
+    const [teacherSearchResults, setTeacherSearchResults] = useState<TeacherSearchItem[]>([]);
+    const [selectedTeacher, setSelectedTeacher] = useState<TeacherSearchItem | null>(null);
+    const [teacherInsight, setTeacherInsight] = useState<TeacherInsightSummary | null>(null);
+    const [teacherInsightLoading, setTeacherInsightLoading] = useState(false);
+    const [teacherSearchLoading, setTeacherSearchLoading] = useState(false);
+
     const loadMonthlyTeacherReports = async () => {
         try {
             setMonthlyLoading(true);
@@ -2506,6 +2517,94 @@ function TeacherReportContent({
         } finally {
             setMonthlyLoading(false);
         }
+    };
+
+    const searchTeachers = async () => {
+        if (!teacherSearchKeyword.trim()) {
+            Alert.alert('Search Teacher', 'Please enter teacher name to search.');
+            return;
+        }
+
+        try {
+            setTeacherSearchLoading(true);
+            setTeacherSearchResults([]);
+            setSelectedTeacher(null);
+            setTeacherInsight(null);
+
+            const response = await fetch(
+                `${BASE_URL}/admin/reports/teachers/search?keyword=${encodeURIComponent(teacherSearchKeyword.trim())}`
+            );
+
+            if (!response.ok) {
+                throw new Error('Teacher search failed');
+            }
+
+            const data = await response.json();
+            const teachers: TeacherSearchItem[] = Array.isArray(data)
+                ? data.map((item) => ({
+                    teacherId: Number(item.teacherId || item.id || 0),
+                    teacherName: String(item.teacherName || item.name || ''),
+                    employeeId: item.employeeId ? String(item.employeeId) : null,
+                })).filter((teacher) => teacher.teacherId > 0 && teacher.teacherName.trim())
+                : [];
+
+            setTeacherSearchResults(teachers);
+
+            if (teachers.length === 0) {
+                Alert.alert('Search Teacher', 'No teacher found for this search.');
+            }
+        } catch (error) {
+            console.log(error);
+            setTeacherSearchResults([]);
+            Alert.alert('Teacher Search', 'Unable to search teachers. Please verify backend is running.');
+        } finally {
+            setTeacherSearchLoading(false);
+        }
+    };
+
+    const loadTeacherInsight = async () => {
+        if (!selectedTeacher) {
+            Alert.alert('Select Teacher', 'Please select a teacher first.');
+            return;
+        }
+
+        try {
+            setTeacherInsightLoading(true);
+
+            const response = await fetch(
+                `${BASE_URL}/admin/reports/teacher-insight/${selectedTeacher.teacherId}`
+            );
+
+            if (!response.ok) {
+                throw new Error('Teacher insight failed');
+            }
+
+            const data = await response.json();
+
+            setTeacherInsight({
+                teacherId: Number(data.teacherId || selectedTeacher.teacherId),
+                teacherName: String(data.teacherName || selectedTeacher.teacherName || ''),
+                classesHandled: Array.isArray(data.classesHandled) ? data.classesHandled.map(String) : [],
+                sectionsHandled: Array.isArray(data.sectionsHandled) ? data.sectionsHandled.map(String) : [],
+                subjectsHandled: Array.isArray(data.subjectsHandled) ? data.subjectsHandled.map(String) : [],
+                totalLeaves: Number(data.totalLeaves || 0),
+                plannedLeaves: Number(data.plannedLeaves || 0),
+                unplannedLeaves: Number(data.unplannedLeaves || 0),
+                replacementAssignments: Number(data.replacementAssignments || 0),
+                attendanceSubmissions: Number(data.attendanceSubmissions || 0),
+                examResultSubmissions: Number(data.examResultSubmissions || 0),
+            });
+        } catch (error) {
+            console.log(error);
+            setTeacherInsight(null);
+            Alert.alert('Teacher Insight', 'Unable to load teacher insight. Please verify backend is running.');
+        } finally {
+            setTeacherInsightLoading(false);
+        }
+    };
+
+    const showTeacherHistoryComingSoon = (title: string) => {
+        Alert.alert(title, `${title} detail page will be connected in the next Day 2 teacher history step.`);
     };
 
     useEffect(() => {
@@ -2551,6 +2650,109 @@ function TeacherReportContent({
                     <TouchableOpacity style={styles.exportSmallButton} onPress={onSelectMonth} activeOpacity={0.85}>
                         <Text style={styles.exportSmallButtonText}>Change Month</Text>
                     </TouchableOpacity>
+                </View>
+
+                <View style={styles.teacherHistoryCard}>
+                    <Text style={styles.sectionEyebrow}>Single Teacher Insight</Text>
+                    <Text style={styles.sectionTitle}>Search Teacher</Text>
+
+                    <View style={styles.searchInputRow}>
+                        <TextInput
+                            style={styles.searchInput}
+                            value={teacherSearchKeyword}
+                            onChangeText={setTeacherSearchKeyword}
+                            placeholder="Search teacher name"
+                            placeholderTextColor="#6B7280"
+                            autoCapitalize="none"
+                        />
+
+                        <TouchableOpacity
+                            style={[styles.searchButton, teacherSearchLoading && styles.disabledButton]}
+                            onPress={searchTeachers}
+                            disabled={teacherSearchLoading}
+                            activeOpacity={0.85}
+                        >
+                            {teacherSearchLoading ? (
+                                <ActivityIndicator color={colors.primaryNavy} />
+                            ) : (
+                                <Text style={styles.searchButtonText}>Search</Text>
+                            )}
+                        </TouchableOpacity>
+                    </View>
+
+                    {teacherSearchResults.length > 0 && (
+                        <View style={styles.studentOptionsBox}>
+                            {teacherSearchResults.map((teacher) => {
+                                const selected = selectedTeacher?.teacherId === teacher.teacherId;
+                                return (
+                                    <TouchableOpacity
+                                        key={teacher.teacherId}
+                                        style={[styles.studentOptionCard, selected && styles.studentOptionCardSelected]}
+                                        onPress={() => {
+                                            setSelectedTeacher(teacher);
+                                            setTeacherInsight(null);
+                                        }}
+                                        activeOpacity={0.85}
+                                    >
+                                        <Text style={styles.studentOptionName}>{teacher.teacherName}</Text>
+                                        <Text style={styles.studentOptionMeta}>
+                                            {teacher.employeeId ? `Employee ID: ${teacher.employeeId}` : `Teacher ID: ${teacher.teacherId}`}
+                                        </Text>
+                                    </TouchableOpacity>
+                                );
+                            })}
+                        </View>
+                    )}
+
+                    {selectedTeacher && (
+                        <View style={styles.selectedStudentCard}>
+                            <Text style={styles.selectedStudentLabel}>Selected Teacher</Text>
+                            <Text style={styles.selectedStudentName}>{selectedTeacher.teacherName}</Text>
+                            <Text style={styles.selectedStudentMeta}>Teacher ID: {selectedTeacher.teacherId}</Text>
+                        </View>
+                    )}
+
+                    <TouchableOpacity
+                        style={[styles.loadButton, teacherInsightLoading && styles.disabledButton]}
+                        onPress={loadTeacherInsight}
+                        disabled={teacherInsightLoading}
+                        activeOpacity={0.85}
+                    >
+                        {teacherInsightLoading ? (
+                            <ActivityIndicator color={colors.primaryNavy} />
+                        ) : (
+                            <Text style={styles.loadButtonText}>Load Teacher Insights</Text>
+                        )}
+                    </TouchableOpacity>
+
+                    {teacherInsight && (
+                        <View style={styles.percentageBox}>
+                            <Text style={styles.percentageLabel}>{teacherInsight.teacherName}</Text>
+
+                            <TeacherChipSection title="Classes" values={teacherInsight.classesHandled} />
+                            <TeacherChipSection title="Sections" values={teacherInsight.sectionsHandled} />
+                            <TeacherChipSection title="Subjects" values={teacherInsight.subjectsHandled} />
+
+                            <View style={styles.statsGrid}>
+                                <StatBox title="Total Leaves" value={teacherInsight.totalLeaves} color="#92400E" />
+                                <StatBox title="Planned" value={teacherInsight.plannedLeaves} color="#2563EB" />
+                                <StatBox title="Unplanned" value={teacherInsight.unplannedLeaves} color="#D97706" />
+                                <StatBox title="Replacements" value={teacherInsight.replacementAssignments} color={colors.successGreen} />
+                            </View>
+
+                            <View style={styles.statsGrid}>
+                                <StatBox title="Attendance" value={teacherInsight.attendanceSubmissions} color="#14345A" />
+                                <StatBox title="Exam Results" value={teacherInsight.examResultSubmissions} color="#7C3AED" />
+                            </View>
+
+                            <View style={styles.historyButtonGrid}>
+                                <TeacherActionButton title="Attendance History" emoji="📝" onPress={() => showTeacherHistoryComingSoon('Attendance History')} />
+                                <TeacherActionButton title="Exam Results" emoji="📚" onPress={() => showTeacherHistoryComingSoon('Exam Results')} />
+                                <TeacherActionButton title="Leave History" emoji="📅" onPress={() => showTeacherHistoryComingSoon('Leave History')} />
+                                <TeacherActionButton title="Replacement History" emoji="🔁" onPress={() => showTeacherHistoryComingSoon('Replacement History')} />
+                            </View>
+                        </View>
+                    )}
                 </View>
 
                 {monthlyLoading ? (
@@ -3304,7 +3506,12 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         marginBottom: 8,
     },
-
+    historyButtonGrid: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 10,
+        marginTop: 14,
+    },
 
     background: {
         flex: 1,

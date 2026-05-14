@@ -1,3 +1,5 @@
+import axios from 'axios';
+
 export const API_BASE_URL = 'http://192.168.1.75:8080';
 
 export const DEV_DEFAULTS = {
@@ -18,6 +20,7 @@ export const API_ENDPOINTS = {
     submitAttendance: `${API_BASE_URL}/attendance`,
     dateSummary: `${API_BASE_URL}/attendance/date-summary`,
     attendanceReport: `${API_BASE_URL}/attendance/report`,
+    studentAttendanceReport: `${API_BASE_URL}/attendance/student-report`,
 
     adminDashboard: `${API_BASE_URL}/attendance/dashboard/admin`,
     adminStudentDashboard: `${API_BASE_URL}/attendance/dashboard/admin/students`,
@@ -40,7 +43,6 @@ export const API_ENDPOINTS = {
     sectionAnalytics: `${API_BASE_URL}/analytics/section-analytics`,
     teacherReplacementTrend: `${API_BASE_URL}/analytics/teacher-replacement-trend`,
 
-    // Backward-compatible names used by existing analytics service files.
     analyticsAttendanceTrend: `${API_BASE_URL}/analytics/attendance-trends`,
     analyticsClassAttendanceTrend: `${API_BASE_URL}/analytics/class-attendance-comparison`,
 
@@ -56,10 +58,32 @@ export const API_ENDPOINTS = {
     teacherExamHistory: `${API_BASE_URL}/admin/reports/teacher`,
 
     studentSearch: `${API_BASE_URL}/students/search`,
-    studentAttendanceReport: `${API_BASE_URL}/attendance/student-report`,
 
     schoolNotices: `${API_BASE_URL}/school-notices`,
     notifications: `${API_BASE_URL}/notifications`,
 };
+
+export const api = axios.create({
+    baseURL: API_BASE_URL,
+    timeout: 15000,
+    headers: {
+        'Content-Type': 'application/json',
+    },
+});
+
+api.interceptors.request.use(
+    async (config: any) => {
+        return config;
+    },
+    (error: any) => Promise.reject(error)
+);
+
+api.interceptors.response.use(
+    (response: any) => response,
+    async (error: any) => {
+        console.log('API Error:', error?.response?.data || error.message);
+        return Promise.reject(error);
+    }
+);
 
 export default API_ENDPOINTS;
