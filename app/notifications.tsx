@@ -11,7 +11,7 @@ import {
     View,
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
-import { API_ENDPOINTS } from '../src/services/api';
+import { API_ENDPOINTS } from '@/src/services/api';
 import { images } from '../src/constants/images';
 
 type NotificationItem = {
@@ -40,7 +40,7 @@ const getNotificationsEndpoint = () => {
         return String(endpoints.teacherSchedules).replace('/teacher-schedules', '/notifications');
     }
 
-    return 'http://192.168.1.75:8080/notifications';
+    return API_ENDPOINTS.notifications;
 };
 
 const getRoleLabel = (role: string) => {

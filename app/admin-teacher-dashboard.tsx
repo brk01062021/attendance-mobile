@@ -11,7 +11,7 @@ import {
     ImageBackground,
 } from 'react-native';
 import { Calendar } from 'react-native-calendars';
-import { API_ENDPOINTS } from '../src/services/api';
+import { API_ENDPOINTS } from '@/src/services/api';
 import { images } from '../src/constants/images';
 import { router } from 'expo-router';
 

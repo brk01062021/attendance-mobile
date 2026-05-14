@@ -11,7 +11,7 @@ import {
     ImageBackground,
 } from 'react-native';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
-import { API_ENDPOINTS } from '../src/services/api';
+import { API_ENDPOINTS } from '@/src/services/api';
 import { colors, spacing, shadows } from '../src/theme';
 import { images } from '../src/constants/images';
 

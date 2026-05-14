@@ -1,4 +1,4 @@
-const BASE_URL = "http://192.168.1.75:8080";
+import { API_ENDPOINTS } from './api';
 
 export type CreateSchoolNoticeRequest = {
     schoolId: number;
@@ -10,7 +10,7 @@ export type CreateSchoolNoticeRequest = {
 };
 
 export async function createSchoolNotice(payload: CreateSchoolNoticeRequest) {
-    const response = await fetch(`${BASE_URL}/school-notices`, {
+    const response = await fetch(`${API_ENDPOINTS.schoolNotices}`, {
         method: "POST",
         headers: {
             "Content-Type": "application/json",

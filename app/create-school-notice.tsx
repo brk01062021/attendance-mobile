@@ -14,7 +14,7 @@ import {
     Platform,
 } from "react-native";
 import { router } from "expo-router";
-import { createSchoolNotice } from "../src/services/schoolNoticeApi";
+import { createSchoolNotice } from "@/src/services/schoolNoticeApi";
 
 const NOTICE_TYPES = ["GENERAL", "HOLIDAY", "EXAM", "EVENT", "EMERGENCY"];
 

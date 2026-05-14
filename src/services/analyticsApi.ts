@@ -1,4 +1,4 @@
-const BASE_URL = "http://192.168.1.75:8080";
+import { API_ENDPOINTS } from './api';
 
 export type AnalyticsSummary = {
   totalStudents: number;
@@ -38,35 +38,35 @@ const getJson = async <T>(url: string): Promise<T> => {
 };
 
 export const fetchAnalyticsSummary = async (
-  startDate: string,
-  endDate: string
+    startDate: string,
+    endDate: string
 ): Promise<AnalyticsSummary> => {
   const url =
-    `${BASE_URL}/analytics/summary` +
-    `?startDate=${encodeURIComponent(startDate)}` +
-    `&endDate=${encodeURIComponent(endDate)}`;
+      API_ENDPOINTS.analyticsSummary +
+      `?startDate=${encodeURIComponent(startDate)}` +
+      `&endDate=${encodeURIComponent(endDate)}`;
 
   return getJson<AnalyticsSummary>(url);
 };
 
 export const fetchAttendanceTrend = async (
-  startDate: string,
-  endDate: string
+    startDate: string,
+    endDate: string
 ): Promise<AttendanceTrendItem[]> => {
   const url =
-    `${BASE_URL}/analytics/attendance-trend` +
-    `?startDate=${encodeURIComponent(startDate)}` +
-    `&endDate=${encodeURIComponent(endDate)}`;
+      API_ENDPOINTS.analyticsAttendanceTrend +
+      `?startDate=${encodeURIComponent(startDate)}` +
+      `&endDate=${encodeURIComponent(endDate)}`;
 
   return getJson<AttendanceTrendItem[]>(url);
 };
 
 export const fetchClassAttendanceTrend = async (
-  date: string
+    date: string
 ): Promise<ClassAttendanceTrendItem[]> => {
   const url =
-    `${BASE_URL}/analytics/class-attendance-trend` +
-    `?date=${encodeURIComponent(date)}`;
+      API_ENDPOINTS.analyticsClassAttendanceTrend +
+      `?date=${encodeURIComponent(date)}`;
 
   return getJson<ClassAttendanceTrendItem[]>(url);
 };

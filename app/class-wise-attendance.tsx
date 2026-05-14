@@ -10,9 +10,9 @@ import {
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { colors, shadows, spacing } from '../src/theme';
+import { API_BASE_URL, DEV_DEFAULTS } from '../src/services/api';
 
-const API_BASE_URL = 'http://192.168.1.75:8080';
-const DEFAULT_TEST_DATE = '2026-04-27';
+const DEFAULT_TEST_DATE = DEV_DEFAULTS.dashboardDate;
 
 type ClassDashboardStats = {
     className: string;

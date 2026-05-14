@@ -12,7 +12,7 @@ import {
     View,
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
-import { API_ENDPOINTS } from '../src/services/api';
+import { API_ENDPOINTS } from '@/src/services/api';
 import { images } from '../src/constants/images';
 
 type TeacherSchedule = {

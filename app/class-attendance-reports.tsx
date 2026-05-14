@@ -13,8 +13,9 @@ import {
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { colors, spacing, shadows } from '../src/theme';
+import { API_BASE_URL } from '../src/services/api';
 
-const BASE_URL = 'http://192.168.1.75:8080';
+const BASE_URL = API_BASE_URL;
 
 type ReportItem = {
     className: string;

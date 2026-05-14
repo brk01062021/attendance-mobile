@@ -11,9 +11,9 @@ import {
 } from 'react-native';
 import { router } from 'expo-router';
 import { colors, shadows, spacing } from '../src/theme';
+import { API_BASE_URL, DEV_DEFAULTS } from '../src/services/api';
 
-const API_BASE_URL = 'http://192.168.1.75:8080';
-const DASHBOARD_TEST_DATE = '2026-04-27';
+const DASHBOARD_TEST_DATE = DEV_DEFAULTS.dashboardDate;
 const SHOW_ADVANCED_ANALYTICS = false;
 
 type AdminDashboardStats = {

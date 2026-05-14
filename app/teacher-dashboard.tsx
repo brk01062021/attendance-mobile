@@ -11,12 +11,13 @@ import {
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { colors, shadows, spacing } from '../src/theme';
+import { API_BASE_URL, DEV_DEFAULTS } from '../src/services/api';
 
-const API_BASE_URL = 'http://192.168.1.75:8080';
+
 
 // Temporary test date because your current sample attendance data exists on 2026-04-27.
 // For production/current-day data, change this to an empty string: ''
-const DEV_TEST_ATTENDANCE_DATE = '2026-04-27';
+const DEV_TEST_ATTENDANCE_DATE = DEV_DEFAULTS.dashboardDate;
 
 const formatDateForApi = (date: Date) => {
     const year = date.getFullYear();

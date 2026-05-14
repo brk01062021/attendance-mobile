@@ -17,6 +17,7 @@ import AnalyticsChartCard from '../components/admin/AnalyticsChartCard';
 import AnalyticsKpiCard from '../components/admin/AnalyticsKpiCard';
 import { router, useLocalSearchParams } from 'expo-router';
 import { colors, spacing, shadows } from '../src/theme';
+import { API_BASE_URL } from '../src/services/api';
 import {
     fetchAnalyticsSummary,
     fetchAttendanceTrend,
@@ -26,7 +27,7 @@ import {
     ClassAttendanceTrendItem,
 } from '../src/services/analyticsApi';
 
-const BASE_URL = 'http://192.168.1.75:8080';
+const BASE_URL = API_BASE_URL;
 
 const screenWidth = Dimensions.get('window').width - 90;
 
