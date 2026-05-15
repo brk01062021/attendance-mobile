@@ -317,14 +317,19 @@ const replacementOptionsData: ReplacementTeacherOption[] = [
 
 
 export default function AttendanceReportScreen() {
-    const { teacherId, teacherName, role } = useLocalSearchParams();
+    const { teacherId, teacherName, role, initialView, fromAdminMenu } = useLocalSearchParams();
 
     const userRole = String(role || 'ADMIN').toUpperCase();
     const isAdmin = userRole === 'ADMIN';
     const today = useMemo(() => formatDate(new Date()), []);
     const currentAcademicMonth = useMemo(() => formatMonthValue(new Date()), []);
 
-    const [activeView, setActiveView] = useState<ReportView>('overview');
+    const requestedInitialView = String(initialView || 'overview') as ReportView;
+    const openedFromAdminMenu = String(fromAdminMenu || '').toLowerCase() === 'true';
+    const allowedInitialViews: ReportView[] = ['overview', 'analyticsReport', 'classReports', 'studentReport', 'teacherReport'];
+    const [activeView, setActiveView] = useState<ReportView>(
+        allowedInitialViews.includes(requestedInitialView) ? requestedInitialView : 'overview'
+    );
     const [selectedAcademicMonth, setSelectedAcademicMonth] = useState(currentAcademicMonth);
     const [showAcademicMonthModal, setShowAcademicMonthModal] = useState(false);
     const [overviewDate, setOverviewDate] = useState(today);
@@ -372,6 +377,11 @@ export default function AttendanceReportScreen() {
     const [analyticsLoading, setAnalyticsLoading] = useState(false);
 
     const goBack = () => {
+        if (isAdmin && openedFromAdminMenu && requestedInitialView === 'teacherReport' && activeView === 'teacherReport') {
+            router.replace({ pathname: '/admin-dashboard', params: { role: 'ADMIN' } } as any);
+            return;
+        }
+
         if (activeView !== 'overview') {
             setActiveView('overview');
             return;

@@ -65,6 +65,7 @@ type SubjectDashboardStats = {
 
 export default function AdminDashboardScreen() {
     const [menuVisible, setMenuVisible] = useState(false);
+    const [registerModalVisible, setRegisterModalVisible] = useState(false);
     const [dashboardStats, setDashboardStats] = useState<AdminDashboardStats>(defaultAdminStats);
     const [loadingStats, setLoadingStats] = useState(false);
     const [statsError, setStatsError] = useState('');
@@ -158,6 +159,7 @@ export default function AdminDashboardScreen() {
 
     const openRoute = (path: string, params: Record<string, string> = {}) => {
         setMenuVisible(false);
+        setRegisterModalVisible(false);
 
         router.push({
             pathname: path as any,
@@ -172,6 +174,7 @@ export default function AdminDashboardScreen() {
 
     const goToTakeAttendance = () => {
         setMenuVisible(false);
+        setRegisterModalVisible(false);
 
         router.push({
             pathname: '/home',
@@ -183,8 +186,14 @@ export default function AdminDashboardScreen() {
         } as any);
     };
 
+    const openRegisterChooser = () => {
+        setMenuVisible(false);
+        setRegisterModalVisible(true);
+    };
+
     const logout = () => {
         setMenuVisible(false);
+        setRegisterModalVisible(false);
         router.replace('/login' as any);
     };
 
@@ -304,24 +313,17 @@ export default function AdminDashboardScreen() {
                         />
 
                         <QuickAction
-                            emoji="👨‍🏫"
-                            title="Register Teacher"
-                            subtitle="Add teacher account"
-                            onPress={() => openRoute('/register-teacher')}
+                            emoji="📝"
+                            title="Register Here"
+                            subtitle="Teacher, student or parent"
+                            onPress={openRegisterChooser}
                         />
 
                         <QuickAction
-                            emoji="👨‍👩‍👧"
-                            title="Register Parent"
-                            subtitle="Add parent account"
-                            onPress={() => openRoute('/register-parent')}
-                        />
-
-                        <QuickAction
-                            emoji="🎒"
-                            title="Register Student"
-                            subtitle="Add student account"
-                            onPress={() => openRoute('/register-student')}
+                            emoji="🧩"
+                            title="Teacher Assignments"
+                            subtitle="Subject and class mapping"
+                            onPress={() => openRoute('/teacher-assignments')}
                         />
                     </View>
                 </View>
@@ -434,8 +436,10 @@ export default function AdminDashboardScreen() {
                         >
                             <Text style={styles.menuTitle}>Admin Menu</Text>
 
+                            <MenuSectionTitle title="Home" />
+
                             <MenuItem
-                                title="Dashboard"
+                                title="Home"
                                 onPress={() => setMenuVisible(false)}
                             />
 
@@ -444,19 +448,21 @@ export default function AdminDashboardScreen() {
                                 onPress={() => openRoute('/principal-dashboard')}
                             />
 
+                            <MenuSectionTitle title="Operations" />
+
                             <MenuItem
                                 title="Take Attendance"
                                 onPress={goToTakeAttendance}
                             />
 
                             <MenuItem
-                                title="Attendance Report"
+                                title="Admin Reports"
                                 onPress={() => openRoute('/attendance-report')}
                             />
 
                             <MenuItem
                                 title="Teacher Reports"
-                                onPress={() => openRoute('/admin-teacher-dashboard')}
+                                onPress={() => openRoute('/attendance-report', { initialView: 'teacherReport', fromAdminMenu: 'true' })}
                             />
 
                             <MenuItem
@@ -465,8 +471,15 @@ export default function AdminDashboardScreen() {
                             />
 
                             <MenuItem
-                                title="Create School Notice"
-                                onPress={() => openRoute('/create-school-notice')}
+                                title="Teacher Assignments"
+                                onPress={() => openRoute('/teacher-assignments')}
+                            />
+
+                            <MenuSectionTitle title="Management" />
+
+                            <MenuItem
+                                title="Register Here"
+                                onPress={openRegisterChooser}
                             />
 
                             <MenuItem
@@ -474,24 +487,11 @@ export default function AdminDashboardScreen() {
                                 onPress={() => openRoute('/import-school-data')}
                             />
 
-                            <MenuItem
-                                title="Register Teacher"
-                                onPress={() => openRoute('/register-teacher')}
-                            />
+                            <MenuSectionTitle title="Communication" />
 
                             <MenuItem
-                                title="Register Parent"
-                                onPress={() => openRoute('/register-parent')}
-                            />
-
-                            <MenuItem
-                                title="Register Student"
-                                onPress={() => openRoute('/register-student')}
-                            />
-
-                            <MenuItem
-                                title="Teacher Assignments"
-                                onPress={() => openRoute('/teacher-assignments')}
+                                title="Create School Notice"
+                                onPress={() => openRoute('/create-school-notice')}
                             />
 
                             <MenuItem
@@ -500,6 +500,49 @@ export default function AdminDashboardScreen() {
                                 onPress={logout}
                             />
                         </ScrollView>
+                    </View>
+                </TouchableOpacity>
+            </Modal>
+
+            <Modal visible={registerModalVisible} transparent animationType="fade">
+                <TouchableOpacity
+                    style={styles.registerOverlay}
+                    activeOpacity={1}
+                    onPress={() => setRegisterModalVisible(false)}
+                >
+                    <View style={styles.registerChooserCard}>
+                        <Text style={styles.registerChooserEyebrow}>Registration</Text>
+                        <Text style={styles.registerChooserTitle}>Register Here</Text>
+                        <Text style={styles.registerChooserSubtitle}>Select what type of account you want to create.</Text>
+
+                        <RegisterChoice
+                            emoji="👨‍🏫"
+                            title="Register Teacher"
+                            subtitle="Add teacher account and staff details"
+                            onPress={() => openRoute('/register-teacher')}
+                        />
+
+                        <RegisterChoice
+                            emoji="🎒"
+                            title="Register Student"
+                            subtitle="Add student profile and academic details"
+                            onPress={() => openRoute('/register-student')}
+                        />
+
+                        <RegisterChoice
+                            emoji="👨‍👩‍👧"
+                            title="Register Parent"
+                            subtitle="Create parent account and link student"
+                            onPress={() => openRoute('/register-parent')}
+                        />
+
+                        <TouchableOpacity
+                            style={styles.registerCancelButton}
+                            onPress={() => setRegisterModalVisible(false)}
+                            activeOpacity={0.85}
+                        >
+                            <Text style={styles.registerCancelText}>Cancel</Text>
+                        </TouchableOpacity>
                     </View>
                 </TouchableOpacity>
             </Modal>
@@ -585,6 +628,41 @@ function AnalyticsRow({
             </View>
         </View>
     );
+}
+
+function RegisterChoice({
+                            emoji,
+                            title,
+                            subtitle,
+                            onPress,
+                        }: {
+    emoji: string;
+    title: string;
+    subtitle: string;
+    onPress: () => void;
+}) {
+    return (
+        <TouchableOpacity
+            style={styles.registerChoice}
+            onPress={onPress}
+            activeOpacity={0.88}
+        >
+            <View style={styles.registerChoiceIconBox}>
+                <Text style={styles.registerChoiceIcon}>{emoji}</Text>
+            </View>
+
+            <View style={styles.registerChoiceTextBox}>
+                <Text style={styles.registerChoiceTitle}>{title}</Text>
+                <Text style={styles.registerChoiceSubtitle}>{subtitle}</Text>
+            </View>
+
+            <Text style={styles.registerChoiceArrow}>›</Text>
+        </TouchableOpacity>
+    );
+}
+
+function MenuSectionTitle({ title }: { title: string }) {
+    return <Text style={styles.menuSectionTitle}>{title}</Text>;
 }
 
 function MenuItem({
@@ -1080,6 +1158,16 @@ const styles = StyleSheet.create({
         marginBottom: spacing.lg,
     },
 
+    menuSectionTitle: {
+        fontSize: 12,
+        fontWeight: '900',
+        color: colors.premiumGold,
+        textTransform: 'uppercase',
+        letterSpacing: 1.2,
+        marginTop: spacing.sm,
+        marginBottom: spacing.sm,
+    },
+
     menuItem: {
         backgroundColor: '#FFF8E1',
         borderRadius: 18,
@@ -1101,4 +1189,111 @@ const styles = StyleSheet.create({
     menuItemTextDanger: {
         color: '#B42318',
     },
+
+    registerOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.52)',
+        justifyContent: 'center',
+        paddingHorizontal: spacing.xl,
+    },
+
+    registerChooserCard: {
+        backgroundColor: colors.white,
+        borderRadius: 30,
+        borderWidth: 1.4,
+        borderColor: colors.cardGoldBorder,
+        padding: spacing.xl,
+        ...shadows.medium,
+    },
+
+    registerChooserEyebrow: {
+        fontSize: 13,
+        fontWeight: '900',
+        color: colors.premiumGold,
+        textTransform: 'uppercase',
+        letterSpacing: 1.1,
+    },
+
+    registerChooserTitle: {
+        fontSize: 28,
+        fontWeight: '900',
+        color: colors.primaryNavy,
+        marginTop: spacing.xs,
+    },
+
+    registerChooserSubtitle: {
+        fontSize: 14,
+        fontWeight: '800',
+        color: colors.slateText,
+        lineHeight: 21,
+        marginTop: spacing.sm,
+        marginBottom: spacing.lg,
+    },
+
+    registerChoice: {
+        backgroundColor: '#FFF8E1',
+        borderRadius: 22,
+        borderWidth: 1.2,
+        borderColor: colors.cardGoldBorder,
+        padding: spacing.md,
+        marginBottom: spacing.md,
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+
+    registerChoiceIconBox: {
+        width: 48,
+        height: 48,
+        borderRadius: 18,
+        backgroundColor: colors.white,
+        borderWidth: 1,
+        borderColor: 'rgba(212,175,55,0.45)',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginRight: spacing.md,
+    },
+
+    registerChoiceIcon: {
+        fontSize: 24,
+    },
+
+    registerChoiceTextBox: {
+        flex: 1,
+        paddingRight: spacing.sm,
+    },
+
+    registerChoiceTitle: {
+        fontSize: 17,
+        fontWeight: '900',
+        color: colors.primaryNavy,
+    },
+
+    registerChoiceSubtitle: {
+        fontSize: 12,
+        fontWeight: '800',
+        color: colors.slateText,
+        lineHeight: 17,
+        marginTop: spacing.xs,
+    },
+
+    registerChoiceArrow: {
+        fontSize: 34,
+        fontWeight: '900',
+        color: colors.premiumGold,
+    },
+
+    registerCancelButton: {
+        backgroundColor: colors.primaryNavy,
+        borderRadius: 22,
+        paddingVertical: spacing.md,
+        alignItems: 'center',
+        marginTop: spacing.sm,
+    },
+
+    registerCancelText: {
+        fontSize: 16,
+        fontWeight: '900',
+        color: colors.premiumGold,
+    },
+
 });
