@@ -43,6 +43,10 @@ export const API_ENDPOINTS = {
     sectionAnalytics: `${API_BASE_URL}/analytics/section-analytics`,
     teacherReplacementTrend: `${API_BASE_URL}/analytics/teacher-replacement-trend`,
 
+    principalDashboardSummary: `${API_BASE_URL}/principal/dashboard/summary`,
+    principalRiskAlerts: `${API_BASE_URL}/principal/dashboard/risk-alerts`,
+    principalClassComparison: `${API_BASE_URL}/principal/dashboard/class-comparison`,
+
     analyticsAttendanceTrend: `${API_BASE_URL}/analytics/attendance-trends`,
     analyticsClassAttendanceTrend: `${API_BASE_URL}/analytics/class-attendance-comparison`,
 

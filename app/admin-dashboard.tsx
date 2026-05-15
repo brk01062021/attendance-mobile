@@ -290,6 +290,13 @@ export default function AdminDashboardScreen() {
 
                     <View style={styles.quickGrid}>
                         <QuickAction
+                            emoji="📊"
+                            title="School Intelligence"
+                            subtitle="Principal-level analytics"
+                            onPress={() => openRoute('/principal-dashboard')}
+                        />
+
+                        <QuickAction
                             emoji="✅"
                             title="Teacher Replacements"
                             subtitle="Leave replacement flow"
@@ -433,6 +440,11 @@ export default function AdminDashboardScreen() {
                             />
 
                             <MenuItem
+                                title="School Intelligence"
+                                onPress={() => openRoute('/principal-dashboard')}
+                            />
+
+                            <MenuItem
                                 title="Take Attendance"
                                 onPress={goToTakeAttendance}
                             />
@@ -443,7 +455,7 @@ export default function AdminDashboardScreen() {
                             />
 
                             <MenuItem
-                                title="Admin Teacher Dashboard"
+                                title="Teacher Reports"
                                 onPress={() => openRoute('/admin-teacher-dashboard')}
                             />
 

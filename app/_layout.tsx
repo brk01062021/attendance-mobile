@@ -20,6 +20,7 @@ export default function RootLayout() {
             <Stack.Screen name="teacher-leave-planning" />
             <Stack.Screen name="teacher-replacements" />
             <Stack.Screen name="admin-dashboard" />
+            <Stack.Screen name="principal-dashboard" />
             <Stack.Screen name="admin-teacher-dashboard" />
             <Stack.Screen name="date-summary" />
             <Stack.Screen name="attendance-report" />
