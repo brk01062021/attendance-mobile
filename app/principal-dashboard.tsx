@@ -11,50 +11,34 @@ import {
 } from 'react-native';
 import { router } from 'expo-router';
 import { BarChart, LineChart } from 'react-native-chart-kit';
+
 import AnalyticsChartCard from '../components/admin/AnalyticsChartCard';
 import AnalyticsKpiCard from '../components/admin/AnalyticsKpiCard';
-import { API_BASE_URL, DEV_DEFAULTS } from '../src/services/api';
+
+import { DEV_DEFAULTS } from '../src/services/api';
+
+import {
+    fetchAttendanceTrend,
+    fetchClassComparison,
+    fetchExecutiveAlerts,
+    fetchExecutiveOverview,
+    fetchPrincipalSummary,
+    fetchTeacherWorkload,
+} from '../src/services/principalApi';
+
+import type {
+    ClassComparison,
+    ExecutiveOverview,
+    PrincipalSummary,
+    RiskAlert,
+    TeacherWorkload,
+    TrendPoint,
+} from '../src/types/principal';
 
 const screenWidth = Dimensions.get('window').width;
 const chartWidth = Math.max(300, screenWidth - 56);
 const DEFAULT_MONTH = DEV_DEFAULTS.analyticsEndDate.slice(0, 7);
 const DEFAULT_DATE = DEV_DEFAULTS.dashboardDate;
-
-type PrincipalSummary = {
-    totalStudents: number;
-    totalTeachers: number;
-    todayAttendancePercentage: number;
-    studentsAbsentToday: number;
-    teachersOnLeave: number;
-    replacementPeriodsToday: number;
-    lowAttendanceStudents: number;
-    pendingTeacherAttendance: number;
-};
-
-type RiskAlert = {
-    type: string;
-    title: string;
-    description: string;
-    severity: string;
-    score?: number;
-};
-
-type TrendPoint = {
-    label: string;
-    presentCount: number;
-    absentCount: number;
-    totalCount: number;
-    attendancePercentage: number;
-};
-
-type ClassComparison = {
-    className: string;
-    section: string;
-    presentCount: number;
-    absentCount: number;
-    totalMarked: number;
-    attendancePercentage: number;
-};
 
 const fallbackSummary: PrincipalSummary = {
     totalStudents: 0,
@@ -67,14 +51,27 @@ const fallbackSummary: PrincipalSummary = {
     pendingTeacherAttendance: 0,
 };
 
+const fallbackExecutive: ExecutiveOverview = {
+    overallAttendancePercentage: 0,
+    lowAttendanceRiskStudents: 0,
+    classesBelowThreshold: 0,
+    teachersWithLeaveLoad: 0,
+    replacementStressTeachers: 0,
+    academicRiskAlerts: 0,
+    topPerformingClass: 'No data',
+    weakestPerformingSection: 'No data',
+    replacementStressIndex: 0,
+};
+
 export default function PrincipalDashboardScreen() {
     const [selectedMonth, setSelectedMonth] = useState(DEFAULT_MONTH);
     const [summary, setSummary] = useState<PrincipalSummary>(fallbackSummary);
+    const [executive, setExecutive] = useState<ExecutiveOverview>(fallbackExecutive);
     const [riskAlerts, setRiskAlerts] = useState<RiskAlert[]>([]);
     const [attendanceTrend, setAttendanceTrend] = useState<TrendPoint[]>([]);
     const [classComparison, setClassComparison] = useState<ClassComparison[]>([]);
+    const [teacherWorkload, setTeacherWorkload] = useState<TeacherWorkload[]>([]);
     const [loading, setLoading] = useState(false);
-    const [errorText, setErrorText] = useState('');
 
     const monthOptions = useMemo(() => buildMonthOptions(DEFAULT_MONTH), []);
 
@@ -84,47 +81,23 @@ export default function PrincipalDashboardScreen() {
 
     const loadDashboard = async () => {
         setLoading(true);
-        setErrorText('');
 
         try {
-            const startDate = `${selectedMonth}-01`;
-            const endDate = getMonthEndDate(selectedMonth);
-
-            const [summaryResponse, alertsResponse, trendResponse, comparisonResponse] = await Promise.all([
-                fetch(`${API_BASE_URL}/principal/dashboard/summary?date=${DEFAULT_DATE}`),
-                fetch(`${API_BASE_URL}/principal/dashboard/risk-alerts?month=${selectedMonth}`),
-                fetch(`${API_BASE_URL}/analytics/attendance/monthly?month=${selectedMonth}`),
-                fetch(`${API_BASE_URL}/principal/dashboard/class-comparison?month=${selectedMonth}`),
+            const [summaryData, executiveData, alertsData, trendData, comparisonData, workloadData] = await Promise.all([
+                fetchPrincipalSummary(DEFAULT_DATE),
+                fetchExecutiveOverview(selectedMonth),
+                fetchExecutiveAlerts(selectedMonth),
+                fetchAttendanceTrend(selectedMonth),
+                fetchClassComparison(selectedMonth),
+                fetchTeacherWorkload(selectedMonth),
             ]);
 
-            if (!summaryResponse.ok || !alertsResponse.ok || !trendResponse.ok || !comparisonResponse.ok) {
-                throw new Error('Unable to load principal intelligence dashboard');
-            }
-
-            const summaryData = await summaryResponse.json();
-            const alertsData = await alertsResponse.json();
-            const trendData = await trendResponse.json();
-            const comparisonData = await comparisonResponse.json();
-
-            setSummary({
-                totalStudents: Number(summaryData.totalStudents ?? 0),
-                totalTeachers: Number(summaryData.totalTeachers ?? 0),
-                todayAttendancePercentage: Number(summaryData.todayAttendancePercentage ?? 0),
-                studentsAbsentToday: Number(summaryData.studentsAbsentToday ?? 0),
-                teachersOnLeave: Number(summaryData.teachersOnLeave ?? 0),
-                replacementPeriodsToday: Number(summaryData.replacementPeriodsToday ?? 0),
-                lowAttendanceStudents: Number(summaryData.lowAttendanceStudents ?? 0),
-                pendingTeacherAttendance: Number(summaryData.pendingTeacherAttendance ?? 0),
-            });
+            setSummary(summaryData ?? fallbackSummary);
+            setExecutive(executiveData ?? fallbackExecutive);
             setRiskAlerts(Array.isArray(alertsData) ? alertsData : []);
             setAttendanceTrend(Array.isArray(trendData) ? trendData : []);
             setClassComparison(Array.isArray(comparisonData) ? comparisonData : []);
-        } catch (error) {
-            setSummary(fallbackSummary);
-            setRiskAlerts([]);
-            setAttendanceTrend([]);
-            setClassComparison([]);
-            setErrorText('Live principal dashboard data unavailable. Please confirm backend is running.');
+            setTeacherWorkload(Array.isArray(workloadData) ? workloadData : []);
         } finally {
             setLoading(false);
         }
@@ -142,12 +115,21 @@ export default function PrincipalDashboardScreen() {
         const topClasses = [...classComparison]
             .sort((a, b) => Number(b.attendancePercentage ?? 0) - Number(a.attendancePercentage ?? 0))
             .slice(0, 6);
-
         return {
             labels: topClasses.map((item) => `${item.className}${item.section}`),
             datasets: [{ data: topClasses.map((item) => Number(item.attendancePercentage ?? 0)) }],
         };
     }, [classComparison]);
+
+    const workloadChartData = useMemo(() => {
+        const topTeachers = [...teacherWorkload].slice(0, 6);
+        return {
+            labels: topTeachers.map((item) => compactName(item.teacherName)),
+            datasets: [{ data: topTeachers.map((item) => Number(item.workloadScore ?? 0)) }],
+        };
+    }, [teacherWorkload]);
+
+    const criticalAlerts = riskAlerts.filter((alert) => alert.severity === 'HIGH').length;
 
     return (
         <ImageBackground
@@ -163,7 +145,7 @@ export default function PrincipalDashboardScreen() {
 
                     <View style={styles.headerTextBox}>
                         <Text style={styles.headerTitle}>School Intelligence</Text>
-                        <Text style={styles.headerSubtitle}>Principal-level analytics and risk alerts</Text>
+                        <Text style={styles.headerSubtitle}>Executive risk, workload and comparison center</Text>
                     </View>
 
                     <TouchableOpacity style={styles.circleButton} onPress={loadDashboard} activeOpacity={0.85}>
@@ -172,9 +154,11 @@ export default function PrincipalDashboardScreen() {
                 </View>
 
                 <View style={styles.heroCard}>
-                    <Text style={styles.heroEyebrow}>VidyaSetu Premium Intelligence</Text>
-                    <Text style={styles.heroTitle}>One place for school health, teacher workload and student risk.</Text>
-                    <Text style={styles.heroSubtitle}>Principal-level KPIs, attendance trends, class comparisons and risk detection.</Text>
+                    <Text style={styles.heroEyebrow}>Day 3 Executive Intelligence</Text>
+                    <Text style={styles.heroTitle}>School health, risks and teacher load in one decision screen.</Text>
+                    <Text style={styles.heroSubtitle}>
+                        Built for principal review: monthly risks, class comparisons, replacement pressure and action-ready alerts.
+                    </Text>
                 </View>
 
                 <View style={styles.monthCard}>
@@ -198,21 +182,46 @@ export default function PrincipalDashboardScreen() {
                 {loading ? (
                     <View style={styles.loadingCard}>
                         <ActivityIndicator />
-                        <Text style={styles.loadingText}>Loading principal intelligence...</Text>
+                        <Text style={styles.loadingText}>Loading executive intelligence...</Text>
                     </View>
                 ) : null}
 
-                {!!errorText && <Text style={styles.errorText}>{errorText}</Text>}
-
                 <View style={styles.kpiGrid}>
-                    <AnalyticsKpiCard title="Total Students" value={summary.totalStudents} subtitle="School strength" />
-                    <AnalyticsKpiCard title="Total Teachers" value={summary.totalTeachers} subtitle="Active faculty" />
-                    <AnalyticsKpiCard title="Today Attendance" value={`${Math.round(summary.todayAttendancePercentage)}%`} subtitle="Live school health" />
-                    <AnalyticsKpiCard title="Absent Today" value={summary.studentsAbsentToday} subtitle="Students absent" />
-                    <AnalyticsKpiCard title="Teachers Leave" value={summary.teachersOnLeave} subtitle="Today" />
-                    <AnalyticsKpiCard title="Replacements" value={summary.replacementPeriodsToday} subtitle="Today periods" />
-                    <AnalyticsKpiCard title="Low Attendance" value={summary.lowAttendanceStudents} subtitle="Below 60% month" />
-                    <AnalyticsKpiCard title="Pending Marking" value={summary.pendingTeacherAttendance} subtitle="Teacher attendance" />
+                    <AnalyticsKpiCard
+                        title="Overall Attendance"
+                        value={`${Math.round(executive.overallAttendancePercentage || summary.todayAttendancePercentage)}%`}
+                        subtitle="Selected month"
+                    />
+                    <AnalyticsKpiCard
+                        title="Risk Students"
+                        value={executive.lowAttendanceRiskStudents || summary.lowAttendanceStudents}
+                        subtitle="Below safe threshold"
+                    />
+                    <AnalyticsKpiCard title="Class Risk" value={executive.classesBelowThreshold} subtitle="Below 75%" />
+                    <AnalyticsKpiCard title="Critical Alerts" value={criticalAlerts} subtitle="High priority" />
+                    <AnalyticsKpiCard
+                        title="Teacher Leave Load"
+                        value={executive.teachersWithLeaveLoad || summary.teachersOnLeave}
+                        subtitle="Needs attention"
+                    />
+                    <AnalyticsKpiCard
+                        title="Replacement Stress"
+                        value={executive.replacementStressTeachers || summary.replacementPeriodsToday}
+                        subtitle={`Index ${Math.round(executive.replacementStressIndex || 0)}`}
+                    />
+                    <AnalyticsKpiCard title="Top Class" value={executive.topPerformingClass || 'No data'} subtitle="Attendance rank" />
+                    <AnalyticsKpiCard title="Weak Section" value={executive.weakestPerformingSection || 'No data'} subtitle="Needs support" />
+                </View>
+
+                <View style={styles.actionCard}>
+                    <Text style={styles.sectionEyebrow}>Principal Quick Actions</Text>
+                    <View style={styles.actionGrid}>
+                        {['Monthly Report', 'Risk Students', 'Compare Classes', 'Teacher Workload', 'Replacement Analytics', 'Academic Insights'].map((item) => (
+                            <TouchableOpacity key={item} style={styles.actionPill} activeOpacity={0.86}>
+                                <Text style={styles.actionText}>{item}</Text>
+                            </TouchableOpacity>
+                        ))}
+                    </View>
                 </View>
 
                 <AnalyticsChartCard title="Monthly Attendance Trend">
@@ -250,11 +259,29 @@ export default function PrincipalDashboardScreen() {
                     )}
                 </AnalyticsChartCard>
 
+                <AnalyticsChartCard title="Teacher Workload Stress">
+                    {workloadChartData.labels.length > 0 ? (
+                        <BarChart
+                            data={workloadChartData}
+                            width={chartWidth}
+                            height={230}
+                            yAxisLabel=""
+                            yAxisSuffix=""
+                            fromZero
+                            chartConfig={chartConfig}
+                            style={styles.chart}
+                            showValuesOnTopOfBars
+                        />
+                    ) : (
+                        <Text style={styles.emptyText}>No teacher workload data available.</Text>
+                    )}
+                </AnalyticsChartCard>
+
                 <View style={styles.alertsCard}>
                     <View style={styles.sectionHeaderRow}>
                         <View>
-                            <Text style={styles.sectionEyebrow}>Risk Detection</Text>
-                            <Text style={styles.sectionTitle}>Priority Alerts</Text>
+                            <Text style={styles.sectionEyebrow}>Executive Alerts</Text>
+                            <Text style={styles.sectionTitle}>Priority Decisions</Text>
                         </View>
                         <Text style={styles.alertCount}>{riskAlerts.length}</Text>
                     </View>
@@ -262,19 +289,42 @@ export default function PrincipalDashboardScreen() {
                     {riskAlerts.length > 0 ? (
                         riskAlerts.map((alert, index) => (
                             <View key={`${alert.type}-${alert.title}-${index}`} style={styles.alertRow}>
-                                <View style={styles.alertIconBox}>
+                                <View style={[styles.alertIconBox, alert.severity === 'HIGH' && styles.alertIconHigh]}>
                                     <Text style={styles.alertIcon}>{alert.severity === 'HIGH' ? '!' : '•'}</Text>
                                 </View>
                                 <View style={styles.alertTextBox}>
                                     <Text style={styles.alertTitle}>{alert.title || alert.type}</Text>
                                     <Text style={styles.alertDescription}>{alert.description}</Text>
-                                    <Text style={styles.alertMeta}>{alert.type} • {alert.severity}</Text>
+                                    <Text style={styles.alertMeta}>
+                                        {alert.type} • {alert.severity}
+                                    </Text>
                                 </View>
                             </View>
                         ))
                     ) : (
-                        <Text style={styles.emptyText}>No major risk alerts for the selected month.</Text>
+                        <Text style={styles.emptyText}>No major executive alerts for the selected month.</Text>
                     )}
+                </View>
+
+                <View style={styles.workloadCard}>
+                    <Text style={styles.sectionEyebrow}>Teacher Intelligence</Text>
+                    <Text style={styles.sectionTitle}>Top Workload Attention</Text>
+                    {teacherWorkload.slice(0, 5).map((teacher) => (
+                        <View key={`${teacher.teacherId}-${teacher.teacherName}`} style={styles.teacherRow}>
+                            <View style={styles.teacherMainText}>
+                                <Text style={styles.teacherName}>{teacher.teacherName || 'Teacher'}</Text>
+                                <Text style={styles.teacherMeta}>
+                                    Scheduled {teacher.scheduledPeriods} • Replacement {teacher.replacementPeriods} • Leave{' '}
+                                    {teacher.plannedLeaves + teacher.unplannedLeaves}
+                                </Text>
+                            </View>
+                            <View style={styles.scoreBox}>
+                                <Text style={styles.scoreText}>{Math.round(teacher.workloadScore)}</Text>
+                                <Text style={styles.scoreMeta}>{teacher.riskLevel}</Text>
+                            </View>
+                        </View>
+                    ))}
+                    {teacherWorkload.length === 0 ? <Text style={styles.emptyText}>No workload records found.</Text> : null}
                 </View>
             </ScrollView>
         </ImageBackground>
@@ -284,17 +334,17 @@ export default function PrincipalDashboardScreen() {
 function buildMonthOptions(defaultMonth: string) {
     const [year, month] = defaultMonth.split('-').map(Number);
     const base = new Date(year, month - 1, 1);
-    return [0, -1, -2, -3].map((offset) => {
+
+    return [0, -1, -2, -3, -4, -5].map((offset) => {
         const date = new Date(base);
         date.setMonth(base.getMonth() + offset);
         return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
     });
 }
 
-function getMonthEndDate(month: string) {
-    const [year, monthNumber] = month.split('-').map(Number);
-    const end = new Date(year, monthNumber, 0);
-    return `${end.getFullYear()}-${String(end.getMonth() + 1).padStart(2, '0')}-${String(end.getDate()).padStart(2, '0')}`;
+function compactName(name: string) {
+    const parts = String(name || 'Teacher').trim().split(/\s+/);
+    return parts.length > 1 ? `${parts[0]} ${parts[1][0]}` : parts[0].slice(0, 6);
 }
 
 const chartConfig = {
@@ -358,6 +408,7 @@ const styles = StyleSheet.create({
         fontSize: 12,
         fontWeight: '700',
         marginTop: 3,
+        textAlign: 'center',
     },
     heroCard: {
         backgroundColor: 'rgba(255,255,255,0.14)',
@@ -431,19 +482,37 @@ const styles = StyleSheet.create({
         color: '#14345A',
         fontWeight: '700',
     },
-    errorText: {
-        backgroundColor: '#FEF2F2',
-        color: '#B91C1C',
-        padding: 12,
-        borderRadius: 16,
-        fontWeight: '700',
-        marginBottom: 14,
-    },
     kpiGrid: {
         flexDirection: 'row',
         flexWrap: 'wrap',
         justifyContent: 'space-between',
         marginBottom: 4,
+    },
+    actionCard: {
+        backgroundColor: 'rgba(255,255,255,0.96)',
+        borderRadius: 24,
+        padding: 16,
+        marginBottom: 18,
+    },
+    actionGrid: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        marginTop: 12,
+    },
+    actionPill: {
+        backgroundColor: '#FFF7E6',
+        borderColor: '#F1D48A',
+        borderWidth: 1,
+        borderRadius: 999,
+        paddingHorizontal: 12,
+        paddingVertical: 9,
+        marginRight: 8,
+        marginBottom: 8,
+    },
+    actionText: {
+        color: '#92400E',
+        fontSize: 12,
+        fontWeight: '900',
     },
     chart: {
         borderRadius: 18,
@@ -453,6 +522,7 @@ const styles = StyleSheet.create({
         borderRadius: 26,
         padding: 18,
         marginTop: 2,
+        marginBottom: 18,
     },
     sectionHeaderRow: {
         flexDirection: 'row',
@@ -505,6 +575,9 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         marginRight: 12,
     },
+    alertIconHigh: {
+        backgroundColor: '#B91C1C',
+    },
     alertIcon: {
         color: '#FFFFFF',
         fontSize: 18,
@@ -530,6 +603,57 @@ const styles = StyleSheet.create({
         fontSize: 11,
         fontWeight: '900',
         marginTop: 6,
+    },
+    workloadCard: {
+        backgroundColor: 'rgba(255,255,255,0.96)',
+        borderRadius: 26,
+        padding: 18,
+    },
+    teacherRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        backgroundColor: '#F8FAFC',
+        borderRadius: 18,
+        padding: 14,
+        marginTop: 10,
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
+    },
+    teacherMainText: {
+        flex: 1,
+        marginRight: 12,
+    },
+    teacherName: {
+        color: '#14345A',
+        fontSize: 15,
+        fontWeight: '900',
+    },
+    teacherMeta: {
+        color: '#64748B',
+        fontSize: 12,
+        fontWeight: '700',
+        marginTop: 4,
+        lineHeight: 17,
+    },
+    scoreBox: {
+        minWidth: 58,
+        borderRadius: 16,
+        backgroundColor: '#14345A',
+        alignItems: 'center',
+        paddingVertical: 8,
+        paddingHorizontal: 10,
+    },
+    scoreText: {
+        color: '#FFFFFF',
+        fontSize: 18,
+        fontWeight: '900',
+    },
+    scoreMeta: {
+        color: '#F7D782',
+        fontSize: 10,
+        fontWeight: '900',
+        marginTop: 2,
     },
     emptyText: {
         color: '#64748B',

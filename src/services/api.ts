@@ -46,6 +46,9 @@ export const API_ENDPOINTS = {
     principalDashboardSummary: `${API_BASE_URL}/principal/dashboard/summary`,
     principalRiskAlerts: `${API_BASE_URL}/principal/dashboard/risk-alerts`,
     principalClassComparison: `${API_BASE_URL}/principal/dashboard/class-comparison`,
+    principalExecutiveOverview: `${API_BASE_URL}/principal/dashboard/executive-overview`,
+    principalTeacherWorkload: `${API_BASE_URL}/principal/dashboard/teacher-workload`,
+    principalExecutiveAlerts: `${API_BASE_URL}/principal/dashboard/executive-alerts`,
 
     analyticsAttendanceTrend: `${API_BASE_URL}/analytics/attendance-trends`,
     analyticsClassAttendanceTrend: `${API_BASE_URL}/analytics/class-attendance-comparison`,
