@@ -10,6 +10,7 @@ import {
     View,
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
+import DashboardIntelligencePanel from '../components/dashboard/DashboardIntelligencePanel';
 import { colors, shadows, spacing } from '../src/theme';
 import { API_BASE_URL, DEV_DEFAULTS } from '../src/services/api';
 
@@ -163,6 +164,8 @@ export default function PrincipalHomeScreen() {
                         workload, replacements and notices.
                     </Text>
                 </View>
+
+                <DashboardIntelligencePanel role="PRINCIPAL" />
 
                 <View style={styles.overviewCard}>
                     <View style={styles.sectionHeaderRow}>

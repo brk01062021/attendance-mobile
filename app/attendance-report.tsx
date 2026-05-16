@@ -317,10 +317,13 @@ const replacementOptionsData: ReplacementTeacherOption[] = [
 
 
 export default function AttendanceReportScreen() {
-    const { teacherId, teacherName, role, initialView, fromAdminMenu } = useLocalSearchParams();
+    const { teacherId, teacherName, role, initialView, fromAdminMenu, sourceRole } = useLocalSearchParams();
 
-    const userRole = String(role || 'ADMIN').toUpperCase();
+    const normalizedSourceRole = String(sourceRole || role || 'ADMIN').toUpperCase();
+    const userRole = String(role || normalizedSourceRole || 'ADMIN').toUpperCase();
     const isAdmin = userRole === 'ADMIN';
+    const isPrincipal = userRole === 'PRINCIPAL' || normalizedSourceRole === 'PRINCIPAL';
+    const canAccessSchoolReports = isAdmin || isPrincipal;
     const today = useMemo(() => formatDate(new Date()), []);
     const currentAcademicMonth = useMemo(() => formatMonthValue(new Date()), []);
 
@@ -377,18 +380,28 @@ export default function AttendanceReportScreen() {
     const [analyticsLoading, setAnalyticsLoading] = useState(false);
 
     const goBack = () => {
-        if (isAdmin && openedFromAdminMenu && requestedInitialView === 'teacherReport' && activeView === 'teacherReport') {
-            router.replace({ pathname: '/admin-dashboard', params: { role: 'ADMIN' } } as any);
-            return;
-        }
-
         if (activeView !== 'overview') {
             setActiveView('overview');
             return;
         }
 
-        if (isAdmin) {
+        if (isPrincipal || normalizedSourceRole === 'PRINCIPAL') {
+            router.replace({ pathname: '/principal-home', params: { role: 'PRINCIPAL' } } as any);
+            return;
+        }
+
+        if (isAdmin || normalizedSourceRole === 'ADMIN') {
             router.replace({ pathname: '/admin-dashboard', params: { role: 'ADMIN' } } as any);
+            return;
+        }
+
+        if (normalizedSourceRole === 'STUDENT') {
+            router.replace({ pathname: '/student-dashboard', params: { role: 'STUDENT' } } as any);
+            return;
+        }
+
+        if (normalizedSourceRole === 'PARENT') {
+            router.replace({ pathname: '/parent-dashboard', params: { role: 'PARENT' } } as any);
             return;
         }
 
@@ -683,7 +696,7 @@ export default function AttendanceReportScreen() {
     };
 
     const loadOverviewReport = async () => {
-        if (!isAdmin) {
+        if (!canAccessSchoolReports) {
             Alert.alert('Teacher Report', 'Teacher attendance reports will be connected next.');
             return;
         }
@@ -1044,7 +1057,12 @@ export default function AttendanceReportScreen() {
 
                     <TouchableOpacity
                         style={styles.homeButton}
-                        onPress={() => router.replace({ pathname: '/admin-dashboard', params: { role: 'ADMIN' } } as any)}
+                        onPress={() =>
+                            router.replace({
+                                pathname: isPrincipal || normalizedSourceRole === 'PRINCIPAL' ? '/principal-home' : '/admin-dashboard',
+                                params: { role: isPrincipal || normalizedSourceRole === 'PRINCIPAL' ? 'PRINCIPAL' : 'ADMIN' },
+                            } as any)
+                        }
                         activeOpacity={0.85}
                     >
                         <Text style={styles.homeButtonText}>⌂</Text>

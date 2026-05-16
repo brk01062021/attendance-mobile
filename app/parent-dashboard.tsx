@@ -10,6 +10,7 @@ import {
     View,
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
+import DashboardIntelligencePanel from '../components/dashboard/DashboardIntelligencePanel';
 import { colors, spacing, shadows } from '../src/theme';
 
 type AttendanceView = 'TODAY' | 'WEEKLY' | 'MONTHLY';
@@ -398,6 +399,7 @@ const AttendanceDetail = memo(function AttendanceDetail({
                         <Text style={styles.legendText}>Absent</Text>
                     </View>
                 </View>
+                <DashboardIntelligencePanel role="PARENT" />
 
                 <View style={styles.barChartArea}>
                     {data.map((item) => {

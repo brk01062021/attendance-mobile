@@ -10,6 +10,7 @@ import {
     View,
 } from 'react-native';
 import { router } from 'expo-router';
+import DashboardIntelligencePanel from '../components/dashboard/DashboardIntelligencePanel';
 import { colors, shadows, spacing } from '../src/theme';
 import { API_BASE_URL, DEV_DEFAULTS } from '../src/services/api';
 
@@ -236,6 +237,8 @@ export default function AdminDashboardScreen() {
                         Manage attendance, reports, teacher replacements, notices and school operations.
                     </Text>
                 </View>
+
+                <DashboardIntelligencePanel role="ADMIN" />
 
                 <View style={styles.overviewCard}>
                     <View style={styles.sectionHeaderRow}>
