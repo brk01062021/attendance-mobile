@@ -219,11 +219,11 @@ export default function AdminDashboardScreen() {
                     <Text style={styles.headerTitle}>Admin Dashboard</Text>
 
                     <TouchableOpacity
-                        style={styles.circleButton}
-                        onPress={() => openRoute('/create-school-notice')}
+                        style={styles.headerLogoutButton}
+                        onPress={logout}
                         activeOpacity={0.85}
                     >
-                        <Text style={styles.circleButtonText}>📣</Text>
+                        <Text style={styles.headerLogoutText}>⏻</Text>
                     </TouchableOpacity>
                 </View>
 
@@ -422,13 +422,6 @@ export default function AdminDashboardScreen() {
                     )}
                 </View>
 
-                <TouchableOpacity
-                    style={styles.logoutButton}
-                    onPress={logout}
-                    activeOpacity={0.9}
-                >
-                    <Text style={styles.logoutButtonText}>Logout</Text>
-                </TouchableOpacity>
             </ScrollView>
 
             <Modal visible={menuVisible} transparent animationType="slide">
@@ -691,6 +684,10 @@ function MenuItem({
             <Text style={[styles.menuItemText, danger && styles.menuItemTextDanger]}>
                 {title}
             </Text>
+
+            <Text style={[styles.menuItemArrow, danger && styles.menuItemTextDanger]}>
+                ›
+            </Text>
         </TouchableOpacity>
     );
 }
@@ -729,6 +726,23 @@ const styles = StyleSheet.create({
         fontSize: 24,
         fontWeight: '900',
         color: colors.white,
+    },
+
+    headerLogoutButton: {
+        width: 38,
+        height: 38,
+        borderRadius: 19,
+        backgroundColor: 'rgba(255,255,255,0.14)',
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.25)',
+    },
+
+    headerLogoutText: {
+        color: '#FFFFFF',
+        fontSize: 18,
+        fontWeight: '900',
     },
 
     headerTitle: {
@@ -1142,60 +1156,75 @@ const styles = StyleSheet.create({
 
     modalOverlay: {
         flex: 1,
-        backgroundColor: 'rgba(0,0,0,0.45)',
-        justifyContent: 'flex-end',
+        backgroundColor: 'rgba(0,0,0,0.42)',
+        alignItems: 'flex-start',
     },
 
     menuContainer: {
-        backgroundColor: colors.white,
-        borderTopLeftRadius: 32,
-        borderTopRightRadius: 32,
-        paddingHorizontal: spacing.xl,
-        paddingTop: spacing.xl,
-        maxHeight: '82%',
+        width: '82%',
+        maxWidth: 360,
+        height: '100%',
+        backgroundColor: '#FFFDF7',
+        borderTopRightRadius: 28,
+        borderBottomRightRadius: 28,
+        paddingTop: 54,
+        paddingHorizontal: 18,
+        ...shadows.medium,
     },
 
     menuScrollContent: {
-        paddingBottom: spacing.xl,
+        paddingBottom: 28,
     },
 
     menuTitle: {
-        fontSize: 24,
-        fontWeight: '900',
         color: colors.primaryNavy,
-        marginBottom: spacing.lg,
+        fontSize: 26,
+        fontWeight: '900',
+        marginBottom: 18,
     },
 
     menuSectionTitle: {
+        color: colors.deepGold,
         fontSize: 12,
         fontWeight: '900',
-        color: colors.premiumGold,
         textTransform: 'uppercase',
-        letterSpacing: 1.2,
-        marginTop: spacing.sm,
-        marginBottom: spacing.sm,
+        letterSpacing: 1,
+        marginTop: 16,
+        marginBottom: 8,
     },
 
     menuItem: {
-        backgroundColor: '#FFF8E1',
-        borderRadius: 18,
-        paddingVertical: spacing.lg,
-        paddingHorizontal: spacing.lg,
-        marginBottom: spacing.md,
+        backgroundColor: '#FFFFFF',
+        borderRadius: 16,
+        paddingVertical: 15,
+        paddingHorizontal: 14,
+        marginBottom: 8,
+        borderWidth: 1,
+        borderColor: '#F0E4C8',
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
     },
 
     menuItemDanger: {
-        backgroundColor: '#FFE8E8',
+        backgroundColor: '#FFF1F0',
+        borderColor: '#FFD3CF',
     },
 
     menuItemText: {
-        fontSize: 18,
-        fontWeight: '800',
         color: colors.primaryNavy,
+        fontSize: 15,
+        fontWeight: '900',
+    },
+
+    menuItemArrow: {
+        color: colors.primaryNavy,
+        fontSize: 22,
+        fontWeight: '900',
     },
 
     menuItemTextDanger: {
-        color: '#B42318',
+        color: '#A33A2B',
     },
 
     registerOverlay: {

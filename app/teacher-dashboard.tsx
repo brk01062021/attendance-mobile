@@ -159,20 +159,11 @@ export default function TeacherDashboard() {
                     <Text style={styles.headerTitle}>Teacher Dashboard</Text>
 
                     <TouchableOpacity
-                        style={styles.circleButton}
-                        onPress={() =>
-                            router.push({
-                                pathname: '/notifications',
-                                params: {
-                                    userId: teacherId,
-                                    role,
-                                    userName: teacherName,
-                                },
-                            } as any)
-                        }
+                        style={styles.headerLogoutButton}
+                        onPress={() => router.replace('/login' as any)}
                         activeOpacity={0.85}
                     >
-                        <Text style={styles.circleButtonText}>🔔</Text>
+                        <Text style={styles.headerLogoutText}>⏻</Text>
                     </TouchableOpacity>
                 </View>
 
@@ -283,13 +274,6 @@ export default function TeacherDashboard() {
                     )}
                 </View>
 
-                <TouchableOpacity
-                    style={styles.logoutButton}
-                    onPress={() => router.replace('/login' as any)}
-                    activeOpacity={0.9}
-                >
-                    <Text style={styles.logoutButtonText}>Logout</Text>
-                </TouchableOpacity>
 
             </ScrollView>
 
@@ -300,71 +284,57 @@ export default function TeacherDashboard() {
                     onPress={() => setMenuVisible(false)}
                 >
                     <View style={styles.menuContainer}>
-                        <Text style={styles.menuTitle}>Teacher Menu</Text>
+                        <ScrollView
+                            showsVerticalScrollIndicator={false}
+                            contentContainerStyle={styles.menuScrollContent}
+                        >
+                            <Text style={styles.menuTitle}>Teacher Menu</Text>
 
-                        <MenuItem
-                            title="Dashboard"
-                            onPress={() => setMenuVisible(false)}
-                        />
+                            <MenuSectionTitle title="Home" />
+                            <MenuItem title="Home" onPress={() => setMenuVisible(false)} />
 
-                        <MenuItem
-                            title="Take Attendance"
-                            onPress={goToTakeAttendance}
-                        />
+                            <MenuSectionTitle title="Attendance" />
+                            <MenuItem title="Take Attendance" onPress={goToTakeAttendance} />
+                            <MenuItem
+                                title="Date Summary"
+                                onPress={() => {
+                                    setMenuVisible(false);
+                                    router.push({ pathname: '/date-summary', params: { teacherId, teacherName, role } } as any);
+                                }}
+                            />
+                            <MenuItem
+                                title="Reports"
+                                onPress={() => {
+                                    setMenuVisible(false);
+                                    router.push({ pathname: '/attendance-report', params: { teacherId, teacherName, role } } as any);
+                                }}
+                            />
 
-                        <MenuItem
-                            title="Date Summary"
-                            onPress={() => {
-                                setMenuVisible(false);
-                                router.push({
-                                    pathname: '/date-summary',
-                                    params: {
-                                        teacherId,
-                                        teacherName,
-                                        role,
-                                    },
-                                } as any);
-                            }}
-                        />
+                            <MenuSectionTitle title="Planning" />
+                            <MenuItem
+                                title="Teacher Leave Planning"
+                                onPress={() => {
+                                    setMenuVisible(false);
+                                    router.push({ pathname: '/teacher-leave-planning', params: { teacherId, teacherName, role } } as any);
+                                }}
+                            />
+                            <MenuItem
+                                title="Assigned Replacements"
+                                onPress={() => {
+                                    setMenuVisible(false);
+                                    router.push({ pathname: '/teacher-replacements', params: { teacherId, teacherName, role } } as any);
+                                }}
+                            />
 
-                        <MenuItem
-                            title="Reports"
-                            onPress={() => {
-                                setMenuVisible(false);
-                                router.push({
-                                    pathname: '/attendance-report',
-                                    params: {
-                                        teacherId,
-                                        teacherName,
-                                        role,
-                                    },
-                                } as any);
-                            }}
-                        />
-
-                        <MenuItem
-                            title="Replacements"
-                            onPress={() => {
-                                setMenuVisible(false);
-                                router.push({
-                                    pathname: '/teacher-replacements',
-                                    params: {
-                                        teacherId,
-                                        teacherName,
-                                        role,
-                                    },
-                                } as any);
-                            }}
-                        />
-
-                        <MenuItem
-                            title="Logout"
-                            danger
-                            onPress={() => {
-                                setMenuVisible(false);
-                                router.replace('/login' as any);
-                            }}
-                        />
+                            <MenuItem
+                                title="Logout"
+                                danger
+                                onPress={() => {
+                                    setMenuVisible(false);
+                                    router.replace('/login' as any);
+                                }}
+                            />
+                        </ScrollView>
                     </View>
                 </TouchableOpacity>
             </Modal>
@@ -423,6 +393,10 @@ function ScheduleRow({
     );
 }
 
+function MenuSectionTitle({ title }: { title: string }) {
+    return <Text style={styles.menuSectionTitle}>{title}</Text>;
+}
+
 function MenuItem({
                       title,
                       onPress,
@@ -440,6 +414,10 @@ function MenuItem({
         >
             <Text style={[styles.menuItemText, danger && styles.menuItemTextDanger]}>
                 {title}
+            </Text>
+
+            <Text style={[styles.menuItemArrow, danger && styles.menuItemTextDanger]}>
+                ›
             </Text>
         </TouchableOpacity>
     );
@@ -479,6 +457,23 @@ const styles = StyleSheet.create({
         fontSize: 24,
         fontWeight: '900',
         color: colors.white,
+    },
+
+    headerLogoutButton: {
+        width: 38,
+        height: 38,
+        borderRadius: 19,
+        backgroundColor: 'rgba(255,255,255,0.14)',
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.25)',
+    },
+
+    headerLogoutText: {
+        color: '#FFFFFF',
+        fontSize: 18,
+        fontWeight: '900',
     },
 
     headerTitle: {
@@ -752,43 +747,74 @@ const styles = StyleSheet.create({
 
     modalOverlay: {
         flex: 1,
-        backgroundColor: 'rgba(0,0,0,0.45)',
-        justifyContent: 'flex-end',
+        backgroundColor: 'rgba(0,0,0,0.42)',
+        alignItems: 'flex-start',
     },
 
     menuContainer: {
-        backgroundColor: colors.white,
-        borderTopLeftRadius: 32,
-        borderTopRightRadius: 32,
-        padding: spacing.xl,
+        width: '82%',
+        maxWidth: 360,
+        height: '100%',
+        backgroundColor: '#FFFDF7',
+        borderTopRightRadius: 28,
+        borderBottomRightRadius: 28,
+        paddingTop: 54,
+        paddingHorizontal: 18,
+        ...shadows.medium,
+    },
+
+    menuScrollContent: {
+        paddingBottom: 28,
     },
 
     menuTitle: {
-        fontSize: 24,
-        fontWeight: '900',
         color: colors.primaryNavy,
-        marginBottom: spacing.lg,
+        fontSize: 26,
+        fontWeight: '900',
+        marginBottom: 18,
+    },
+
+    menuSectionTitle: {
+        color: colors.deepGold,
+        fontSize: 12,
+        fontWeight: '900',
+        textTransform: 'uppercase',
+        letterSpacing: 1,
+        marginTop: 16,
+        marginBottom: 8,
     },
 
     menuItem: {
-        backgroundColor: '#FFF8E1',
-        borderRadius: 18,
-        paddingVertical: spacing.lg,
-        paddingHorizontal: spacing.lg,
-        marginBottom: spacing.md,
+        backgroundColor: '#FFFFFF',
+        borderRadius: 16,
+        paddingVertical: 15,
+        paddingHorizontal: 14,
+        marginBottom: 8,
+        borderWidth: 1,
+        borderColor: '#F0E4C8',
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
     },
 
     menuItemDanger: {
-        backgroundColor: '#FFE8E8',
+        backgroundColor: '#FFF1F0',
+        borderColor: '#FFD3CF',
     },
 
     menuItemText: {
-        fontSize: 18,
-        fontWeight: '800',
         color: colors.primaryNavy,
+        fontSize: 15,
+        fontWeight: '900',
+    },
+
+    menuItemArrow: {
+        color: colors.primaryNavy,
+        fontSize: 22,
+        fontWeight: '900',
     },
 
     menuItemTextDanger: {
-        color: '#B42318',
+        color: '#A33A2B',
     },
 });

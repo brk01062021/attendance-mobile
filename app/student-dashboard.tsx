@@ -159,20 +159,11 @@ export default function StudentDashboard() {
                     </Text>
 
                     <TouchableOpacity
-                        style={styles.circleButton}
-                        onPress={() =>
-                            router.push({
-                                pathname: '/notifications',
-                                params: {
-                                    userId: studentId,
-                                    role: 'STUDENT',
-                                    studentName,
-                                },
-                            } as any)
-                        }
+                        style={styles.headerLogoutButton}
+                        onPress={goLogin}
                         activeOpacity={0.85}
                     >
-                        <Text style={styles.alertIcon}>🔔</Text>
+                        <Text style={styles.headerLogoutText}>⏻</Text>
                     </TouchableOpacity>
                 </View>
 
@@ -207,14 +198,22 @@ export default function StudentDashboard() {
                 )}
             </ScrollView>
 
-            <Modal transparent visible={menuOpen} animationType="fade">
+            <Modal transparent visible={menuOpen} animationType="slide">
                 <TouchableOpacity style={styles.menuOverlay} activeOpacity={1} onPress={closeMenu}>
                     <View style={styles.menuCard}>
-                        <Text style={styles.menuTitle}>Student Menu</Text>
-                        <MenuItem title="🏠 Home" onPress={goHome} />
-                        <MenuItem title="📝 Exam Results" onPress={openExamResults} />
-                        <MenuItem title="🔔 School Notices" onPress={openSchoolNotices} />
-                        <MenuItem title="🚪 Logout" onPress={goLogin} />
+                        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.menuScrollContent}>
+                            <Text style={styles.menuTitle}>Student Menu</Text>
+
+                            <MenuSectionTitle title="Home" />
+                            <MenuItem title="Home" onPress={goHome} />
+
+                            <MenuSectionTitle title="Academics" />
+                            <MenuItem title="Exam Results" onPress={openExamResults} />
+                            <MenuItem title="School Notices" onPress={openSchoolNotices} />
+
+                            <MenuSectionTitle title="Account" />
+                            <MenuItem title="Logout" danger onPress={goLogin} />
+                        </ScrollView>
                     </View>
                 </TouchableOpacity>
             </Modal>
@@ -258,9 +257,6 @@ const HomeScreen = memo(function HomeScreen({
                 </View>
             </View>
 
-            <TouchableOpacity style={styles.logoutButton} onPress={onLogout} activeOpacity={0.9}>
-                <Text style={styles.logoutButtonText}>Logout</Text>
-            </TouchableOpacity>
         </>
     );
 });
@@ -462,10 +458,32 @@ const NoticeCard = memo(function NoticeCard({ title, text }: { title: string; te
     );
 });
 
-const MenuItem = memo(function MenuItem({ title, onPress }: { title: string; onPress: () => void }) {
+function MenuSectionTitle({ title }: { title: string }) {
+    return <Text style={styles.menuSectionTitle}>{title}</Text>;
+}
+
+const MenuItem = memo(function MenuItem({
+                                            title,
+                                            onPress,
+                                            danger = false,
+                                        }: {
+    title: string;
+    onPress: () => void;
+    danger?: boolean;
+}) {
     return (
-        <TouchableOpacity style={styles.menuItem} onPress={onPress}>
-            <Text style={styles.menuItemText}>{title}</Text>
+        <TouchableOpacity
+            style={[styles.menuItem, danger && styles.menuItemDanger]}
+            onPress={onPress}
+            activeOpacity={0.85}
+        >
+            <Text style={[styles.menuItemText, danger && styles.menuItemTextDanger]}>
+                {title}
+            </Text>
+
+            <Text style={[styles.menuItemArrow, danger && styles.menuItemTextDanger]}>
+                ›
+            </Text>
         </TouchableOpacity>
     );
 });
@@ -512,6 +530,23 @@ const styles = StyleSheet.create({
         fontSize: 23,
         fontWeight: '900',
         color: colors.premiumGold,
+    },
+
+    headerLogoutButton: {
+        width: 38,
+        height: 38,
+        borderRadius: 19,
+        backgroundColor: 'rgba(255,255,255,0.14)',
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.25)',
+    },
+
+    headerLogoutText: {
+        color: '#FFFFFF',
+        fontSize: 18,
+        fontWeight: '900',
     },
     alertIcon: {
         fontSize: 22,
@@ -853,33 +888,72 @@ const styles = StyleSheet.create({
     },
     menuOverlay: {
         flex: 1,
-        backgroundColor: 'rgba(0,0,0,0.45)',
-        justifyContent: 'flex-start',
-        paddingTop: 90,
-        paddingHorizontal: spacing.screenPadding,
+        backgroundColor: 'rgba(0,0,0,0.42)',
+        alignItems: 'flex-start',
     },
+
     menuCard: {
-        backgroundColor: colors.white,
-        borderRadius: 24,
-        borderWidth: 1.5,
-        borderColor: colors.cardGoldBorder,
-        padding: spacing.xl,
+        width: '82%',
+        maxWidth: 360,
+        height: '100%',
+        backgroundColor: '#FFFDF7',
+        borderTopRightRadius: 28,
+        borderBottomRightRadius: 28,
+        paddingTop: 54,
+        paddingHorizontal: 18,
         ...shadows.medium,
     },
-    menuTitle: {
-        fontSize: 22,
-        fontWeight: '900',
-        color: colors.primaryNavy,
-        marginBottom: spacing.lg,
+
+    menuScrollContent: {
+        paddingBottom: 28,
     },
+
+    menuTitle: {
+        color: colors.primaryNavy,
+        fontSize: 26,
+        fontWeight: '900',
+        marginBottom: 18,
+    },
+    menuSectionTitle: {
+        color: colors.deepGold,
+        fontSize: 12,
+        fontWeight: '900',
+        textTransform: 'uppercase',
+        letterSpacing: 1,
+        marginTop: 16,
+        marginBottom: 8,
+    },
+
     menuItem: {
-        paddingVertical: spacing.md,
-        borderBottomWidth: 1,
-        borderBottomColor: colors.cardGoldBorder,
+        backgroundColor: '#FFFFFF',
+        borderRadius: 16,
+        paddingVertical: 15,
+        paddingHorizontal: 14,
+        marginBottom: 8,
+        borderWidth: 1,
+        borderColor: '#F0E4C8',
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+    },
+
+    menuItemDanger: {
+        backgroundColor: '#FFF1F0',
+        borderColor: '#FFD3CF',
     },
     menuItemText: {
-        fontSize: 17,
-        fontWeight: '900',
         color: colors.primaryNavy,
+        fontSize: 15,
+        fontWeight: '900',
+    },
+
+    menuItemArrow: {
+        color: colors.primaryNavy,
+        fontSize: 22,
+        fontWeight: '900',
+    },
+
+    menuItemTextDanger: {
+        color: '#A33A2B',
     },
 });
