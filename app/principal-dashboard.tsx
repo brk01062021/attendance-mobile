@@ -139,6 +139,25 @@ export default function PrincipalDashboardScreen() {
     const replacementTeachers = teacherWorkload.filter((teacher) => Number(teacher.replacementPeriods ?? 0) > 0).length;
     const dailyHighFatigue = fatigueAlerts.filter((alert) => String(alert.severity).toUpperCase() === 'HIGH').length;
     const uncoveredLoad = workloadSummary.filter((teacher) => Number(teacher.overloadScore ?? 0) >= 80).length;
+    const replacementCoveragePercent = summary.replacementPeriodsToday > 0
+        ? Math.max(0, Math.min(100, 100 - Math.round((executive.replacementStressTeachers / Math.max(summary.replacementPeriodsToday, 1)) * 100)))
+        : 100;
+    const schoolHealthScore = calculateSchoolHealthScore({
+        attendancePercentage: executive.overallAttendancePercentage || summary.todayAttendancePercentage,
+        replacementCoveragePercent,
+        highAlerts: highAlerts + dailyHighFatigue,
+        overloadedTeachers: uncoveredLoad,
+        riskStudents: executive.lowAttendanceRiskStudents || summary.lowAttendanceStudents,
+    });
+    const operationalAlerts = buildOperationalAlerts({
+        summary,
+        executive,
+        highAlerts,
+        dailyHighFatigue,
+        fatigueAlerts,
+        workloadSummary,
+        replacementCoveragePercent,
+    });
 
     const principalActions = useMemo<PrincipalAction[]>(
         () => [
@@ -271,10 +290,10 @@ export default function PrincipalDashboardScreen() {
                 </View>
 
                 <View style={styles.heroCard}>
-                    <Text style={styles.heroEyebrow}>Day 3 Executive Intelligence</Text>
+                    <Text style={styles.heroEyebrow}>Day 5 School Intelligence</Text>
                     <Text style={styles.heroTitle}>School health, risks and teacher load in one decision screen.</Text>
                     <Text style={styles.heroSubtitle}>
-                        Built for principal review: monthly risks, class comparisons, replacement pressure and action-ready alerts.
+                        Built for Admin and Principal review: school health score, operational alerts, workload pressure and action-ready drilldowns.
                     </Text>
                 </View>
 
@@ -302,6 +321,57 @@ export default function PrincipalDashboardScreen() {
                         <Text style={styles.loadingText}>Loading executive intelligence...</Text>
                     </View>
                 ) : null}
+
+
+                <View style={styles.healthCard}>
+                    <View style={styles.healthHeaderRow}>
+                        <View style={styles.healthScoreCircle}>
+                            <Text style={styles.healthScoreValue}>{schoolHealthScore}</Text>
+                            <Text style={styles.healthScoreLabel}>Score</Text>
+                        </View>
+                        <View style={styles.healthTextBox}>
+                            <Text style={styles.sectionEyebrow}>School Health Score</Text>
+                            <Text style={styles.healthTitle}>{getHealthLabel(schoolHealthScore)}</Text>
+                            <Text style={styles.healthSubtitle}>
+                                Combined view of attendance, replacement coverage, teacher fatigue and student risk.
+                            </Text>
+                        </View>
+                    </View>
+
+                    <View style={styles.healthMetricGrid}>
+                        <HealthMetric label="Attendance" value={`${Math.round(executive.overallAttendancePercentage || summary.todayAttendancePercentage)}%`} />
+                        <HealthMetric label="Coverage" value={`${replacementCoveragePercent}%`} />
+                        <HealthMetric label="Overload" value={`${uncoveredLoad}`} />
+                        <HealthMetric label="Risk" value={`${executive.lowAttendanceRiskStudents || summary.lowAttendanceStudents || 0}`} />
+                    </View>
+                </View>
+
+                <View style={styles.operationalAlertsCard}>
+                    <View style={styles.sectionHeaderRow}>
+                        <View>
+                            <Text style={styles.sectionEyebrow}>Operational Alerts</Text>
+                            <Text style={styles.sectionTitle}>Today's Principal Watchlist</Text>
+                        </View>
+                        <Text style={styles.alertCount}>{operationalAlerts.length}</Text>
+                    </View>
+
+                    {operationalAlerts.length > 0 ? (
+                        operationalAlerts.map((alert, index) => (
+                            <View key={`${alert.title}-${index}`} style={styles.operationalAlertRow}>
+                                <View style={[styles.operationalAlertIconBox, alert.severity === 'HIGH' && styles.operationalAlertHigh]}>
+                                    <Text style={styles.operationalAlertIcon}>{alert.icon}</Text>
+                                </View>
+                                <View style={styles.alertTextBox}>
+                                    <Text style={styles.alertTitle}>{alert.title}</Text>
+                                    <Text style={styles.alertDescription}>{alert.description}</Text>
+                                    <Text style={styles.recommendationText}>{alert.action}</Text>
+                                </View>
+                            </View>
+                        ))
+                    ) : (
+                        <Text style={styles.emptyText}>No critical operational alerts for the selected date.</Text>
+                    )}
+                </View>
 
                 <View style={styles.kpiGrid}>
                     <AnalyticsKpiCard
@@ -389,6 +459,14 @@ export default function PrincipalDashboardScreen() {
                     <View style={styles.actionFocusPanel}>
                         <Text style={styles.focusTitle}>{activeAction.focusTitle}</Text>
                         <Text style={styles.focusDescription}>{activeAction.focusDescription}</Text>
+                        <TouchableOpacity
+                            style={styles.drilldownButton}
+                            onPress={() => openPrincipalDrilldown(activeAction.key)}
+                            activeOpacity={0.88}
+                        >
+                            <Text style={styles.drilldownButtonText}>Open Drilldown</Text>
+                            <Text style={styles.drilldownButtonArrow}>›</Text>
+                        </TouchableOpacity>
                     </View>
                 </View>
 
@@ -511,6 +589,154 @@ export default function PrincipalDashboardScreen() {
                 ) : null}
             </ScrollView>
         </ImageBackground>
+    );
+}
+
+
+type SchoolHealthInput = {
+    attendancePercentage: number;
+    replacementCoveragePercent: number;
+    highAlerts: number;
+    overloadedTeachers: number;
+    riskStudents: number;
+};
+
+function calculateSchoolHealthScore(input: SchoolHealthInput) {
+    const attendanceScore = Math.max(0, Math.min(100, Number(input.attendancePercentage || 0)));
+    const coverageScore = Math.max(0, Math.min(100, Number(input.replacementCoveragePercent || 0)));
+    const alertPenalty = Math.min(18, Number(input.highAlerts || 0) * 4);
+    const overloadPenalty = Math.min(16, Number(input.overloadedTeachers || 0) * 3);
+    const studentRiskPenalty = Math.min(18, Number(input.riskStudents || 0) * 1.5);
+    return Math.max(0, Math.min(100, Math.round((attendanceScore * 0.45) + (coverageScore * 0.35) + 20 - alertPenalty - overloadPenalty - studentRiskPenalty)));
+}
+
+function getHealthLabel(score: number) {
+    if (score >= 85) return 'Healthy Operations';
+    if (score >= 70) return 'Stable With Watch Areas';
+    if (score >= 55) return 'Needs Principal Review';
+    return 'Critical Attention Needed';
+}
+
+type OperationalAlert = {
+    icon: string;
+    title: string;
+    description: string;
+    action: string;
+    severity: 'HIGH' | 'MEDIUM' | 'LOW';
+};
+
+function buildOperationalAlerts({
+                                    summary,
+                                    executive,
+                                    highAlerts,
+                                    dailyHighFatigue,
+                                    fatigueAlerts,
+                                    workloadSummary,
+                                    replacementCoveragePercent,
+                                }: {
+    summary: PrincipalSummary;
+    executive: ExecutiveOverview;
+    highAlerts: number;
+    dailyHighFatigue: number;
+    fatigueAlerts: TeacherFatigueAlert[];
+    workloadSummary: TeacherWorkloadInsight[];
+    replacementCoveragePercent: number;
+}): OperationalAlert[] {
+    const alerts: OperationalAlert[] = [];
+    const riskStudents = executive.lowAttendanceRiskStudents || summary.lowAttendanceStudents || 0;
+    const overloadTeachers = workloadSummary.filter((teacher) => Number(teacher.overloadScore ?? 0) >= 80).length;
+
+    if (summary.pendingTeacherAttendance > 0) {
+        alerts.push({
+            icon: '📝',
+            title: 'Pending Attendance Submission',
+            description: `${summary.pendingTeacherAttendance} teacher attendance submissions need follow-up.`,
+            action: 'Action: open Admin Reports and follow up with pending teachers.',
+            severity: 'MEDIUM',
+        });
+    }
+
+    if (replacementCoveragePercent < 80 || executive.replacementStressTeachers > 0) {
+        alerts.push({
+            icon: '🔁',
+            title: 'Replacement Coverage Pressure',
+            description: `${executive.replacementStressTeachers || 0} teachers are showing replacement stress.`,
+            action: 'Action: review replacement coverage before approving more leave.',
+            severity: replacementCoveragePercent < 65 ? 'HIGH' : 'MEDIUM',
+        });
+    }
+
+    if (overloadTeachers > 0 || dailyHighFatigue > 0) {
+        alerts.push({
+            icon: '⚖️',
+            title: 'Teacher Fatigue Risk',
+            description: `${Math.max(overloadTeachers, dailyHighFatigue)} teacher(s) have high workload or fatigue signals today.`,
+            action: 'Action: avoid assigning extra periods to high-fatigue teachers.',
+            severity: 'HIGH',
+        });
+    }
+
+    if (riskStudents > 0) {
+        alerts.push({
+            icon: '🚨',
+            title: 'Student Attendance Risk',
+            description: `${riskStudents} student(s) are below safe attendance threshold.`,
+            action: 'Action: ask class teachers to start parent follow-up.',
+            severity: riskStudents > 10 ? 'HIGH' : 'MEDIUM',
+        });
+    }
+
+    if (highAlerts > 0) {
+        alerts.push({
+            icon: '📌',
+            title: 'Executive Alerts Need Review',
+            description: `${highAlerts} high-priority executive alert(s) were found for the selected month.`,
+            action: 'Action: review the selected action focus panel and monthly alerts.',
+            severity: 'HIGH',
+        });
+    }
+
+    if (alerts.length === 0 && fatigueAlerts.length > 0) {
+        alerts.push({
+            icon: '👀',
+            title: 'Workload Watch Active',
+            description: `${fatigueAlerts.length} teacher workload watch item(s) found.`,
+            action: 'Action: monitor today before assigning replacements.',
+            severity: 'LOW',
+        });
+    }
+
+    return alerts.slice(0, 5);
+}
+
+function openPrincipalDrilldown(key: PrincipalActionKey) {
+    switch (key) {
+        case 'risk-students':
+            router.push('/student-risk-dashboard' as any);
+            break;
+        case 'compare-classes':
+            router.push('/class-wise-attendance' as any);
+            break;
+        case 'teacher-workload':
+            router.push('/teacher-workload-protection' as any);
+            break;
+        case 'replacement-analytics':
+            router.push('/admin-teacher-dashboard' as any);
+            break;
+        case 'monthly-report':
+        case 'academic-insights':
+        default:
+            router.push('/attendance-report' as any);
+            break;
+    }
+}
+
+function HealthMetric({ label, value }: { label: string; value: string }) {
+    return (
+        <View style={styles.healthMetricCard}>
+            <Text style={styles.healthMetricValue}>{value}</Text>
+            <Text style={styles.healthMetricLabel}>{label}</Text>
+        </View>
     );
 }
 
@@ -1052,6 +1278,136 @@ const styles = StyleSheet.create({
         fontSize: 10,
         fontWeight: '900',
         marginTop: 2,
+    },
+    healthCard: {
+        backgroundColor: 'rgba(255,255,255,0.97)',
+        borderRadius: 28,
+        padding: 18,
+        marginBottom: 16,
+        borderWidth: 1,
+        borderColor: 'rgba(241,212,138,0.75)',
+    },
+    healthHeaderRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    healthScoreCircle: {
+        width: 96,
+        height: 96,
+        borderRadius: 48,
+        backgroundColor: '#14345A',
+        borderWidth: 2,
+        borderColor: '#D6A84F',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginRight: 16,
+    },
+    healthScoreValue: {
+        color: '#FFFFFF',
+        fontSize: 30,
+        fontWeight: '900',
+    },
+    healthScoreLabel: {
+        color: '#F7D782',
+        fontSize: 11,
+        fontWeight: '900',
+        textTransform: 'uppercase',
+    },
+    healthTextBox: {
+        flex: 1,
+    },
+    healthTitle: {
+        color: '#14345A',
+        fontSize: 21,
+        fontWeight: '900',
+        marginTop: 3,
+    },
+    healthSubtitle: {
+        color: '#475569',
+        fontSize: 13,
+        fontWeight: '700',
+        lineHeight: 19,
+        marginTop: 6,
+    },
+    healthMetricGrid: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        justifyContent: 'space-between',
+        marginTop: 16,
+    },
+    healthMetricCard: {
+        width: '48%',
+        backgroundColor: '#FFF7E6',
+        borderRadius: 18,
+        borderWidth: 1,
+        borderColor: '#F1D48A',
+        padding: 13,
+        marginBottom: 10,
+    },
+    healthMetricValue: {
+        color: '#14345A',
+        fontSize: 22,
+        fontWeight: '900',
+    },
+    healthMetricLabel: {
+        color: '#92400E',
+        fontSize: 11,
+        fontWeight: '900',
+        marginTop: 4,
+        textTransform: 'uppercase',
+    },
+    operationalAlertsCard: {
+        backgroundColor: 'rgba(255,255,255,0.97)',
+        borderRadius: 28,
+        padding: 16,
+        marginBottom: 16,
+        borderWidth: 1,
+        borderColor: 'rgba(241,212,138,0.75)',
+    },
+    operationalAlertRow: {
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+        backgroundColor: '#FFFBEB',
+        borderRadius: 18,
+        padding: 14,
+        borderWidth: 1,
+        borderColor: '#FDE68A',
+        marginBottom: 10,
+    },
+    operationalAlertIconBox: {
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        backgroundColor: '#92400E',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginRight: 12,
+    },
+    operationalAlertHigh: {
+        backgroundColor: '#B91C1C',
+    },
+    operationalAlertIcon: {
+        fontSize: 17,
+    },
+    drilldownButton: {
+        backgroundColor: '#14345A',
+        borderRadius: 18,
+        paddingVertical: 12,
+        paddingHorizontal: 14,
+        marginTop: 12,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+    },
+    drilldownButtonText: {
+        color: '#F7D782',
+        fontSize: 13,
+        fontWeight: '900',
+    },
+    drilldownButtonArrow: {
+        color: '#FFFFFF',
+        fontSize: 22,
+        fontWeight: '900',
     },
     emptyText: {
         color: '#64748B',
