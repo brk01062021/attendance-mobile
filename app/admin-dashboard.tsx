@@ -299,17 +299,31 @@ export default function AdminDashboardScreen() {
 
                     <View style={styles.quickGrid}>
                         <QuickAction
-                            emoji="📊"
-                            title="School Intelligence"
-                            subtitle="Principal-level analytics"
-                            onPress={() => openRoute('/principal-dashboard')}
-                        />
-
-                        <QuickAction
                             emoji="✅"
                             title="Teacher Replacements"
                             subtitle="Leave replacement flow"
                             onPress={() => openRoute('/admin-teacher-dashboard')}
+                        />
+
+                        <QuickAction
+                            emoji="🛡️"
+                            title="Leave Approvals"
+                            subtitle="Approve leave requests"
+                            onPress={() => openRoute('/admin-leave-approvals')}
+                        />
+
+                        <QuickAction
+                            emoji="⚖️"
+                            title="Workload Protection"
+                            subtitle="Fatigue and overload check"
+                            onPress={() => openRoute('/teacher-workload-protection')}
+                        />
+
+                        <QuickAction
+                            emoji="🚨"
+                            title="Student Risk"
+                            subtitle="Attendance recovery alerts"
+                            onPress={() => openRoute('/student-risk-dashboard')}
                         />
 
                         <QuickAction
@@ -319,12 +333,6 @@ export default function AdminDashboardScreen() {
                             onPress={openRegisterChooser}
                         />
 
-                        <QuickAction
-                            emoji="🧩"
-                            title="Teacher Assignments"
-                            subtitle="Subject and class mapping"
-                            onPress={() => openRoute('/teacher-assignments')}
-                        />
                     </View>
                 </View>
 

@@ -68,6 +68,13 @@ export const API_ENDPOINTS = {
 
     schoolNotices: `${API_BASE_URL}/school-notices`,
     notifications: `${API_BASE_URL}/notifications`,
+
+    teacherLeavePreview: `${API_BASE_URL}/teacher-leave/preview-replacements`,
+    teacherLeaveSubmit: `${API_BASE_URL}/teacher-leave/submit`,
+    teacherLeavePending: `${API_BASE_URL}/teacher-leave/admin/pending`,
+    teacherLeaveApprove: `${API_BASE_URL}/teacher-leave/admin/approve`,
+    replacementLoadSummary: `${API_BASE_URL}/teacher-replacements/load-summary`,
+    studentAttendanceRisk: `${API_BASE_URL}/student-risk/attendance`,
 };
 
 export const api = axios.create({
