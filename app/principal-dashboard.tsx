@@ -24,6 +24,8 @@ import {
     fetchExecutiveOverview,
     fetchPrincipalSummary,
     fetchTeacherWorkload,
+    fetchTeacherWorkloadSummary,
+    fetchTeacherFatigueAlerts,
 } from '../src/services/principalApi';
 
 import type {
@@ -32,6 +34,8 @@ import type {
     PrincipalSummary,
     RiskAlert,
     TeacherWorkload,
+    TeacherWorkloadInsight,
+    TeacherFatigueAlert,
     TrendPoint,
 } from '../src/types/principal';
 
@@ -91,6 +95,8 @@ export default function PrincipalDashboardScreen() {
     const [attendanceTrend, setAttendanceTrend] = useState<TrendPoint[]>([]);
     const [classComparison, setClassComparison] = useState<ClassComparison[]>([]);
     const [teacherWorkload, setTeacherWorkload] = useState<TeacherWorkload[]>([]);
+    const [workloadSummary, setWorkloadSummary] = useState<TeacherWorkloadInsight[]>([]);
+    const [fatigueAlerts, setFatigueAlerts] = useState<TeacherFatigueAlert[]>([]);
     const [loading, setLoading] = useState(false);
 
     const monthOptions = useMemo(() => buildMonthOptions(DEFAULT_MONTH), []);
@@ -103,13 +109,15 @@ export default function PrincipalDashboardScreen() {
         setLoading(true);
 
         try {
-            const [summaryData, executiveData, alertsData, trendData, comparisonData, workloadData] = await Promise.all([
+            const [summaryData, executiveData, alertsData, trendData, comparisonData, workloadData, dailyWorkloadData, fatigueAlertData] = await Promise.all([
                 fetchPrincipalSummary(DEFAULT_DATE),
                 fetchExecutiveOverview(selectedMonth),
                 fetchExecutiveAlerts(selectedMonth),
                 fetchAttendanceTrend(selectedMonth),
                 fetchClassComparison(selectedMonth),
                 fetchTeacherWorkload(selectedMonth),
+                fetchTeacherWorkloadSummary(DEFAULT_DATE),
+                fetchTeacherFatigueAlerts(DEFAULT_DATE),
             ]);
 
             setSummary(summaryData ?? fallbackSummary);
@@ -118,6 +126,8 @@ export default function PrincipalDashboardScreen() {
             setAttendanceTrend(Array.isArray(trendData) ? trendData : []);
             setClassComparison(Array.isArray(comparisonData) ? comparisonData : []);
             setTeacherWorkload(Array.isArray(workloadData) ? workloadData : []);
+            setWorkloadSummary(Array.isArray(dailyWorkloadData) ? dailyWorkloadData : []);
+            setFatigueAlerts(Array.isArray(fatigueAlertData) ? fatigueAlertData : []);
         } finally {
             setLoading(false);
         }
@@ -127,6 +137,8 @@ export default function PrincipalDashboardScreen() {
     const mediumAlerts = riskAlerts.filter((alert) => alert.severity === 'MEDIUM').length;
     const overloadedTeachers = teacherWorkload.filter((teacher) => String(teacher.riskLevel).toUpperCase() === 'HIGH').length;
     const replacementTeachers = teacherWorkload.filter((teacher) => Number(teacher.replacementPeriods ?? 0) > 0).length;
+    const dailyHighFatigue = fatigueAlerts.filter((alert) => String(alert.severity).toUpperCase() === 'HIGH').length;
+    const uncoveredLoad = workloadSummary.filter((teacher) => Number(teacher.overloadScore ?? 0) >= 80).length;
 
     const principalActions = useMemo<PrincipalAction[]>(
         () => [
@@ -303,7 +315,7 @@ export default function PrincipalDashboardScreen() {
                         subtitle="Below safe threshold"
                     />
                     <AnalyticsKpiCard title="Class Risk" value={executive.classesBelowThreshold} subtitle="Below 75%" />
-                    <AnalyticsKpiCard title="Critical Alerts" value={highAlerts} subtitle="High priority" />
+                    <AnalyticsKpiCard title="Critical Alerts" value={highAlerts + dailyHighFatigue} subtitle="High priority" />
                     <AnalyticsKpiCard
                         title="Teacher Leave Load"
                         value={executive.teachersWithLeaveLoad || summary.teachersOnLeave}
@@ -314,9 +326,23 @@ export default function PrincipalDashboardScreen() {
                         value={executive.replacementStressTeachers || summary.replacementPeriodsToday}
                         subtitle={`Index ${Math.round(executive.replacementStressIndex || 0)}`}
                     />
+                    <AnalyticsKpiCard title="Daily Overload" value={uncoveredLoad} subtitle="Teachers ≥ 80 score" />
+                    <AnalyticsKpiCard title="Fatigue Alerts" value={fatigueAlerts.length} subtitle="Today workload watch" />
                     <AnalyticsKpiCard title="Top Class" value={executive.topPerformingClass || 'No data'} subtitle="Attendance rank" />
                     <AnalyticsKpiCard title="Weak Section" value={executive.weakestPerformingSection || 'No data'} subtitle="Needs support" />
                 </View>
+
+
+                {fatigueAlerts.length > 0 ? (
+                    <View style={styles.actionFocusPanel}>
+                        <Text style={styles.focusTitle}>Day 5 Operational Alerts</Text>
+                        {fatigueAlerts.slice(0, 3).map((alert) => (
+                            <Text key={`${alert.teacherId}-${alert.overloadScore}`} style={styles.focusDescription}>
+                                • {alert.teacherName}: {alert.reason} Action: {alert.actionRequired}
+                            </Text>
+                        ))}
+                    </View>
+                ) : null}
 
                 <View style={styles.actionCard}>
                     <View style={styles.sectionHeaderRowCompact}>

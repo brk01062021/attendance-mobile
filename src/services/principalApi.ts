@@ -5,6 +5,8 @@ import type {
     PrincipalSummary,
     RiskAlert,
     TeacherWorkload,
+    TeacherWorkloadInsight,
+    TeacherFatigueAlert,
     TrendPoint,
 } from '../types/principal';
 
@@ -62,4 +64,13 @@ export async function fetchClassComparison(month: string): Promise<ClassComparis
 
 export async function fetchTeacherWorkload(month: string): Promise<TeacherWorkload[]> {
     return getJson<TeacherWorkload[]>(`${API_BASE_URL}/principal/dashboard/teacher-workload?month=${month}`, []);
+}
+
+
+export async function fetchTeacherWorkloadSummary(date = DEV_DEFAULTS.dashboardDate): Promise<TeacherWorkloadInsight[]> {
+    return getJson<TeacherWorkloadInsight[]>(`${API_BASE_URL}/teacher-workload/summary?date=${date}`, []);
+}
+
+export async function fetchTeacherFatigueAlerts(date = DEV_DEFAULTS.dashboardDate): Promise<TeacherFatigueAlert[]> {
+    return getJson<TeacherFatigueAlert[]>(`${API_BASE_URL}/teacher-workload/fatigue-alerts?date=${date}`, []);
 }

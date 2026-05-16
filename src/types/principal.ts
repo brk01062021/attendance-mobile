@@ -56,3 +56,28 @@ export type TeacherWorkload = {
     workloadScore: number;
     riskLevel: 'HIGH' | 'MEDIUM' | 'LOW' | string;
 };
+
+
+export type TeacherWorkloadInsight = {
+    teacherId: number;
+    teacherName: string;
+    date: string;
+    scheduledPeriods: number;
+    replacementPeriods: number;
+    totalPeriods: number;
+    consecutivePeriods: number;
+    freePeriodGaps: number;
+    overloadScore: number;
+    riskLevel: 'HIGH' | 'MEDIUM' | 'LOW' | string;
+    recommendation: string;
+};
+
+export type TeacherFatigueAlert = {
+    teacherId: number;
+    teacherName: string;
+    date: string;
+    severity: 'HIGH' | 'MEDIUM' | 'LOW' | string;
+    overloadScore: number;
+    reason: string;
+    actionRequired: string;
+};
