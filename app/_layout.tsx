@@ -20,10 +20,22 @@ export default function RootLayout() {
             <Stack.Screen name="teacher-leave-planning" />
             <Stack.Screen name="teacher-replacements" />
             <Stack.Screen name="admin-dashboard" />
+            <Stack.Screen name="principal-home" />
             <Stack.Screen name="principal-dashboard" />
             <Stack.Screen name="admin-teacher-dashboard" />
             <Stack.Screen name="date-summary" />
             <Stack.Screen name="attendance-report" />
+            <Stack.Screen name="admin-leave-approvals" />
+            <Stack.Screen name="teacher-workload-protection" />
+            <Stack.Screen name="student-risk-dashboard" />
+            <Stack.Screen name="teacher-assignments" />
+            <Stack.Screen name="import-school-data" />
+            <Stack.Screen name="create-school-notice" />
+            <Stack.Screen name="register-teacher" />
+            <Stack.Screen name="register-student" />
+            <Stack.Screen name="register-parent" />
+            <Stack.Screen name="class-wise-attendance" />
+
 
             <Stack.Screen name="parent-dashboard" />
             <Stack.Screen name="student-dashboard" />

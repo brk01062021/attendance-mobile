@@ -13,14 +13,14 @@ import {
 import { router } from 'expo-router';
 import { colors, spacing, typography, shadows } from '../src/theme';
 
-type LoginRole = 'ADMIN' | 'TEACHER' | 'PARENT' | 'STUDENT';
+type LoginRole = 'ADMIN' | 'PRINCIPAL' | 'TEACHER' | 'PARENT' | 'STUDENT';
 
 export default function LoginScreen() {
     const [selectedRole, setSelectedRole] = useState<LoginRole>('TEACHER');
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
 
-    const roles: LoginRole[] = ['ADMIN', 'TEACHER', 'PARENT', 'STUDENT'];
+    const roles: LoginRole[] = ['ADMIN', 'PRINCIPAL', 'TEACHER', 'PARENT', 'STUDENT'];
 
     const handleLogin = () => {
         const cleanUsername = username.trim();
@@ -35,7 +35,20 @@ export default function LoginScreen() {
                 pathname: '/admin-dashboard',
                 params: {
                     role: selectedRole,
+                    adminName: cleanUsername,
+                    userId: '1',
+                },
+            } as any);
+            return;
+        }
+
+        if (selectedRole === 'PRINCIPAL') {
+            router.replace({
+                pathname: '/principal-home',
+                params: {
+                    role: selectedRole,
                     principalName: cleanUsername,
+                    userId: '1',
                 },
             } as any);
             return;
