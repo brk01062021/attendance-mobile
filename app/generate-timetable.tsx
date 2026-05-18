@@ -20,6 +20,7 @@ import {
     TimetableGenerationResponse,
 } from '../src/types/timetable';
 import { CLASS_OPTIONS, DEFAULT_CLASS_TEACHER_POOLS, EXCEL_POOL_TABS } from '../src/data/timetableDefaults';
+import { saveTimetableReviewSnapshot } from '../src/state/timetableReviewStore';
 
 const modes: TimetableGenerationMode[] = ['ANNUAL', 'QUARTERLY', 'MONTHLY', 'CUSTOM'];
 const poolSources: { key: TeacherPoolSource; label: string; subtitle: string }[] = [
@@ -36,7 +37,7 @@ export default function GenerateTimetableScreen() {
 
     const [academicYear, setAcademicYear] = useState('2026-2027');
     const [generationMode, setGenerationMode] = useState<TimetableGenerationMode>('ANNUAL');
-    const [selectedClasses, setSelectedClasses] = useState<string[]>(['10', '9', '8']);
+    const [selectedClasses, setSelectedClasses] = useState<string[]>(['1', '2']);
     const [manualSections, setManualSections] = useState<string[]>([]);
     const [teacherPoolSource, setTeacherPoolSource] = useState<TeacherPoolSource>('AUTO_DEFAULT_POOL');
     const [manualTeacherIds, setManualTeacherIds] = useState('');
@@ -103,6 +104,7 @@ export default function GenerateTimetableScreen() {
         setMessage('');
         try {
             const data = await generateTimetable(request);
+            saveTimetableReviewSnapshot(request, data);
             setResult(data);
             setMessage('Live timetable generated successfully with class checklist, auto sections, and teacher pools.');
         } catch {
@@ -117,14 +119,21 @@ export default function GenerateTimetableScreen() {
                 conflicts: [],
                 workloadSummary: [],
             };
+            saveTimetableReviewSnapshot(request, demo);
             setResult(demo);
-            setMessage('Backend timetable API not available yet. Showing Day 10 production workflow demo.');
+            setMessage('Backend timetable API not available yet. Showing Day 11 dynamic review workflow demo.');
         } finally {
             setLoading(false);
         }
     };
 
-    const navParams = { role, sourceRole, generatedBatchId: result?.generatedBatchId || 'DEMO' };
+    const navParams = {
+        role,
+        sourceRole,
+        generatedBatchId: result?.generatedBatchId || 'DEMO',
+        classNames: selectedClasses.join(','),
+        sections: selectedSections.join(','),
+    };
 
     return (
         <ImageBackground source={require('../assets/branding/splash-gold.png')} style={styles.bg} resizeMode="cover">
