@@ -384,6 +384,48 @@ export default function PrincipalHomeScreen() {
                                 }
                             />
 
+                            <MenuSectionTitle title="Scheduling" />
+
+                            <MenuItem
+                                title="Generate Timetable"
+                                onPress={() =>
+                                    openRoute('/generate-timetable', {
+                                        role: 'PRINCIPAL',
+                                        sourceRole: 'principal',
+                                    })
+                                }
+                            />
+
+                            <MenuItem
+                                title="Timetable Review"
+                                onPress={() =>
+                                    openRoute('/timetable-review', {
+                                        role: 'PRINCIPAL',
+                                        sourceRole: 'principal',
+                                    })
+                                }
+                            />
+
+                            <MenuItem
+                                title="Timetable Conflicts"
+                                onPress={() =>
+                                    openRoute('/timetable-conflicts', {
+                                        role: 'PRINCIPAL',
+                                        sourceRole: 'principal',
+                                    })
+                                }
+                            />
+
+                            <MenuItem
+                                title="Teacher Workload Dashboard"
+                                onPress={() =>
+                                    openRoute('/teacher-workload-dashboard', {
+                                        role: 'PRINCIPAL',
+                                        sourceRole: 'principal',
+                                    })
+                                }
+                            />
+
                             <MenuSectionTitle title="Management" />
 
                             <MenuItem

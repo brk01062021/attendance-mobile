@@ -17,6 +17,8 @@ export const roleMenus: Record<DashboardRole, DashboardMenuConfig[]> = {
         { icon: '👨‍🏫', label: 'Teacher Reports', route: '/admin-teacher-dashboard', description: 'Teacher performance and leave' },
         { icon: '🗓️', label: 'Teacher Leave Planning', route: '/admin-leave-approvals', description: 'Leave and replacement approvals' },
         { icon: '🧩', label: 'Teacher Assignments', route: '/teacher-assignments', description: 'Subject and class mapping' },
+        { icon: '🕒', label: 'Generate Timetable', route: '/generate-timetable?role=PRINCIPAL&sourceRole=principal', description: 'Auto timetable engine' },
+        { icon: '🕒', label: 'Generate Timetable', route: '/generate-timetable?role=ADMIN&sourceRole=admin', description: 'Auto timetable engine' },
         { icon: '📝', label: 'Register Here', action: 'register', description: 'Teacher, student, parent' },
         { icon: '📥', label: 'Import School Data', route: '/import-school-data', description: 'Excel onboarding engine' },
         { icon: '📣', label: 'Create School Notice', route: '/create-school-notice', description: 'Announcements and alerts' },

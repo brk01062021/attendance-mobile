@@ -479,6 +479,28 @@ export default function AdminDashboardScreen() {
                                 onPress={() => openRoute('/teacher-assignments')}
                             />
 
+                            <MenuSectionTitle title="Scheduling" />
+
+                            <MenuItem
+                                title="Generate Timetable"
+                                onPress={() => openRoute('/generate-timetable', { role: 'ADMIN', sourceRole: 'admin' })}
+                            />
+
+                            <MenuItem
+                                title="Timetable Review"
+                                onPress={() => openRoute('/timetable-review', { role: 'ADMIN', sourceRole: 'admin' })}
+                            />
+
+                            <MenuItem
+                                title="Timetable Conflicts"
+                                onPress={() => openRoute('/timetable-conflicts', { role: 'ADMIN', sourceRole: 'admin' })}
+                            />
+
+                            <MenuItem
+                                title="Teacher Workload Dashboard"
+                                onPress={() => openRoute('/teacher-workload-dashboard', { role: 'ADMIN', sourceRole: 'admin' })}
+                            />
+
                             <MenuSectionTitle title="Management" />
 
                             <MenuItem
