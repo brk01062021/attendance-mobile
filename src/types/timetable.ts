@@ -1,11 +1,25 @@
 export type TimetableGenerationMode = 'ANNUAL' | 'QUARTERLY' | 'MONTHLY' | 'CUSTOM';
 
+export type TeacherPoolSource = 'AUTO_DEFAULT_POOL' | 'EXCEL_CLASS_POOL' | 'MANUAL_TEACHER_IDS';
+
+export type ClassTeacherPool = {
+    poolId: string;
+    poolName: string;
+    className: string;
+    teacherIds: number[];
+    teacherNames?: string[];
+};
+
 export type TimetableGenerationRequest = {
     academicYear: string;
     generationMode: TimetableGenerationMode;
     classNames: string[];
     sections: string[];
     teacherIds: number[];
+    teacherPoolSource?: TeacherPoolSource;
+    autoLoadSectionsEnabled?: boolean;
+    autoDefaultTeacherPoolEnabled?: boolean;
+    selectedTeacherPools?: ClassTeacherPool[];
     equalDistributionEnabled: boolean;
     workloadBalancingEnabled: boolean;
     fixedLabPeriodsEnabled: boolean;
