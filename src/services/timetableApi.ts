@@ -14,6 +14,7 @@ import {
     TimetableExportResponse,
     PrincipalTimetableIntelligence,
     TimetablePublishAudit,
+    TimetableBatchSummary,
 } from '../types/timetable';
 
 async function safeJson<T>(response: Response): Promise<T> {
@@ -144,4 +145,10 @@ export async function getTimetablePublishHistory(generatedBatchId: string): Prom
 export async function getLatestPublishedTimetable(): Promise<TimetablePublishAudit> {
     const response = await fetch(`${API_BASE_URL}/timetable/latest-published`);
     return safeJson<TimetablePublishAudit>(response);
+}
+
+
+export async function getTimetableBatches(): Promise<TimetableBatchSummary[]> {
+    const response = await fetch(`${API_BASE_URL}/timetable/batches`);
+    return safeJson<TimetableBatchSummary[]>(response);
 }

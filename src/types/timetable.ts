@@ -189,3 +189,17 @@ export type PrincipalTimetableIntelligence = {
     insights: string[];
     topWorkloadRisks: TeacherWorkloadSummary[];
 };
+
+
+export type TimetableBatchSummary = {
+    batchId: string;
+    status: 'GENERATED_READY' | 'REVIEW_REQUIRED' | 'PUBLISHED' | 'DEMO_READY' | string;
+    totalEntries: number;
+    classSections: number;
+    conflicts: number;
+    overloadRiskTeachers: number;
+    completionPercentage: number;
+    lastPublishedAt?: string | null;
+    approvedBy?: string | null;
+    message: string;
+};

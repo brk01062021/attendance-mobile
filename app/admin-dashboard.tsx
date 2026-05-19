@@ -487,6 +487,16 @@ export default function AdminDashboardScreen() {
                             />
 
                             <MenuItem
+                                title="Timetable Batch Center"
+                                onPress={() =>
+                                    openRoute('/timetable-batch-center', {
+                                        role: 'ADMIN',
+                                        sourceRole: 'admin',
+                                    })
+                                }
+                            />
+
+                            <MenuItem
                                 title="Timetable Review"
                                 onPress={() => openRoute('/timetable-review', { role: 'ADMIN', sourceRole: 'admin' })}
                             />

@@ -37,7 +37,11 @@ export default function RootLayout() {
             <Stack.Screen name="class-wise-attendance" />
             <Stack.Screen name="generate-timetable" />
             <Stack.Screen name="timetable-review" />
+            <Stack.Screen name="timetable-batch-center" />
             <Stack.Screen name="timetable-conflicts" />
+            <Stack.Screen name="timetable-repair" />
+            <Stack.Screen name="timetable-publish" />
+            <Stack.Screen name="principal-timetable-intelligence" />
             <Stack.Screen name="teacher-workload-dashboard" />
 
 

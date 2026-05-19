@@ -397,6 +397,16 @@ export default function PrincipalHomeScreen() {
                             />
 
                             <MenuItem
+                                title="Timetable Batch Center"
+                                onPress={() =>
+                                    openRoute('/timetable-batch-center', {
+                                        role: 'PRINCIPAL',
+                                        sourceRole: 'principal',
+                                    })
+                                }
+                            />
+
+                            <MenuItem
                                 title="Timetable Review"
                                 onPress={() =>
                                     openRoute('/timetable-review', {
