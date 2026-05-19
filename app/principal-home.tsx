@@ -305,6 +305,18 @@ export default function PrincipalHomeScreen() {
                         />
 
                         <QuickAction
+                            emoji="🔒"
+                            title="Day 18 Control"
+                            subtitle="Lock, export, versions"
+                            onPress={() =>
+                                openRoute('/timetable-day18-center', {
+                                    role: 'PRINCIPAL',
+                                    sourceRole: 'principal',
+                                })
+                            }
+                        />
+
+                        <QuickAction
                             emoji="📣"
                             title="Create School Notice"
                             subtitle="Announcements"
@@ -400,6 +412,16 @@ export default function PrincipalHomeScreen() {
                                 title="Timetable Batch Center"
                                 onPress={() =>
                                     openRoute('/timetable-batch-center', {
+                                        role: 'PRINCIPAL',
+                                        sourceRole: 'principal',
+                                    })
+                                }
+                            />
+
+                            <MenuItem
+                                title="Day 18 Timetable Control"
+                                onPress={() =>
+                                    openRoute('/timetable-day18-center', {
                                         role: 'PRINCIPAL',
                                         sourceRole: 'principal',
                                     })

@@ -203,3 +203,62 @@ export type TimetableBatchSummary = {
     approvedBy?: string | null;
     message: string;
 };
+
+export type TimetableLiveResponse = {
+    batchId: string;
+    role: string;
+    visibilityScope: string;
+    published: boolean;
+    locked: boolean;
+    message: string;
+    entries: TimetableEntry[];
+};
+
+export type TimetableBinaryExportResponse = {
+    batchId: string;
+    format: 'PDF' | 'EXCEL';
+    fileName: string;
+    contentType: string;
+    base64Content: string;
+    byteSize: number;
+    message: string;
+};
+
+export type TimetableVersion = {
+    versionNumber: number;
+    batchId: string;
+    createdAt: string;
+    createdBy: string;
+    changeType: string;
+    entriesCount: number;
+    notes: string;
+};
+
+export type TimetableNotification = {
+    notificationId: string;
+    batchId: string;
+    audience: string;
+    title: string;
+    message: string;
+    createdAt: string;
+};
+
+export type TimetableArchiveSummary = {
+    batchId: string;
+    archivedAt: string;
+    archivedBy: string;
+    entriesCount: number;
+    status: string;
+    message: string;
+};
+
+export type TimetableDay18Status = {
+    batchId: string;
+    latestPublished: boolean;
+    locked: boolean;
+    versions: number;
+    notifications: number;
+    archived: boolean;
+    entries: number;
+    conflicts: number;
+};

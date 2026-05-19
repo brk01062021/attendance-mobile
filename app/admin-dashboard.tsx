@@ -330,6 +330,13 @@ export default function AdminDashboardScreen() {
                         />
 
                         <QuickAction
+                            emoji="🔒"
+                            title="Day 18 Control"
+                            subtitle="Lock, export, versions"
+                            onPress={() => openRoute('/timetable-day18-center', { role: 'ADMIN', sourceRole: 'admin' })}
+                        />
+
+                        <QuickAction
                             emoji="📝"
                             title="Register Here"
                             subtitle="Teacher, student or parent"
@@ -490,6 +497,16 @@ export default function AdminDashboardScreen() {
                                 title="Timetable Batch Center"
                                 onPress={() =>
                                     openRoute('/timetable-batch-center', {
+                                        role: 'ADMIN',
+                                        sourceRole: 'admin',
+                                    })
+                                }
+                            />
+
+                            <MenuItem
+                                title="Day 18 Timetable Control"
+                                onPress={() =>
+                                    openRoute('/timetable-day18-center', {
                                         role: 'ADMIN',
                                         sourceRole: 'admin',
                                     })
