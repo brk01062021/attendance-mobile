@@ -98,7 +98,7 @@ export default function TimetableReviewScreen() {
     return (
         <ImageBackground source={require('../assets/branding/splash-gold.png')} style={styles.bg} resizeMode="cover">
             <ScrollView contentContainerStyle={styles.container}>
-                <PageHeader title="Timetable Review" eyebrow="DAY 12 • BACKEND REVIEW" homePath={backHome} />
+                <PageHeader title="Timetable Review" eyebrow="DAY 13 • CONFLICT-FREE REVIEW" homePath={backHome} />
                 <Text style={styles.status}>{status}</Text>
                 <Text style={styles.batch}>Batch: {generatedBatchId}</Text>
                 {loading ? <ActivityIndicator color={colors.primaryNavy} style={{ marginBottom: 10 }} /> : null}

@@ -82,6 +82,7 @@ export default function GenerateTimetableScreen() {
         avoidTeacherGapsEnabled: true,
         sameTeacherContinuityEnabled: true,
         preventConsecutiveLabsEnabled: true,
+        conflictFreeGenerationEnabled: true,
     }), [academicYear, generationMode, resolvedTeacherIds, selectedClasses, selectedSections, selectedTeacherPools, teacherPoolSource]);
 
     const toggleClass = (className: string) => {
@@ -106,14 +107,14 @@ export default function GenerateTimetableScreen() {
             const data = await generateTimetable(request);
             saveTimetableReviewSnapshot(request, data);
             setResult(data);
-            setMessage('Live timetable generated successfully with class checklist, auto sections, and teacher pools.');
+            setMessage(data.conflictsDetected === 0 ? 'Smart conflict-free timetable generated successfully. No teacher double-booking found.' : 'Timetable generated. Please review remaining alerts in Conflict Center.');
         } catch {
             const demo: TimetableGenerationResponse = {
                 generatedBatchId: `DAY10-DEMO-${Date.now()}`,
                 completionPercentage: 94,
                 totalClassesScheduled: request.classNames.length * request.sections.length,
                 totalEntries: request.classNames.length * request.sections.length * 6 * 6,
-                conflictsDetected: Math.max(1, request.classNames.length - 1),
+                conflictsDetected: 0,
                 overloadRiskTeachers: 1,
                 entries: [],
                 conflicts: [],
@@ -121,7 +122,7 @@ export default function GenerateTimetableScreen() {
             };
             saveTimetableReviewSnapshot(request, demo);
             setResult(demo);
-            setMessage('Backend timetable API not available yet. Showing Day 11 dynamic review workflow demo.');
+            setMessage('Backend timetable API not available yet. Showing Day 13 conflict-free workflow demo.');
         } finally {
             setLoading(false);
         }
@@ -138,7 +139,7 @@ export default function GenerateTimetableScreen() {
     return (
         <ImageBackground source={require('../assets/branding/splash-gold.png')} style={styles.bg} resizeMode="cover">
             <ScrollView contentContainerStyle={styles.container}>
-                <PageHeader title="Generate Timetable" eyebrow="DAY 10 • AUTO TIMETABLE" homePath={backHome} />
+                <PageHeader title="Generate Timetable" eyebrow="DAY 13 • SMART CONFLICT-FREE GENERATOR" homePath={backHome} />
 
                 <View style={styles.card}>
                     <Text style={styles.cardTitle}>Generation Setup</Text>
@@ -228,6 +229,8 @@ export default function GenerateTimetableScreen() {
                         'Avoid teacher timetable gaps',
                         'Same teacher continuity for same class-section',
                         'Prevent consecutive labs',
+                        'Teacher availability map prevents double-booking',
+                        'Lowest workload teacher selected first',
                     ].map(item => <Text key={item} style={styles.rule}>✓ {item}</Text>)}
                 </View>
 

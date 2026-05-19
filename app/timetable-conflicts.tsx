@@ -5,11 +5,7 @@ import { colors, shadows, spacing } from '../src/theme';
 import { getTimetableConflicts } from '../src/services/timetableApi';
 import { TimetableConflict } from '../src/types/timetable';
 
-const demoConflicts: TimetableConflict[] = [
-    { id: 1, severity: 'HIGH', type: 'TEACHER_OVERLAP', title: 'Teacher double booking', description: 'Ravi Kumar is assigned to 10-A and 9-B during Period 3.', teacherName: 'Ravi Kumar', dayOfWeek: 'WEDNESDAY', periodNumber: 3 },
-    { id: 2, severity: 'MEDIUM', type: 'SUBJECT_OVERLOAD', title: 'Subject overload', description: '10-A Science exceeds weekly planned count by one period.', className: '10', section: 'A' },
-    { id: 3, severity: 'LOW', type: 'TEACHER_GAP', title: 'Teacher gap warning', description: 'Anitha Reddy has a long idle gap on Friday.', teacherName: 'Anitha Reddy', dayOfWeek: 'FRIDAY' },
-];
+const demoConflicts: TimetableConflict[] = [];
 
 export default function TimetableConflictsScreen() {
     const params = useLocalSearchParams();
@@ -18,7 +14,7 @@ export default function TimetableConflictsScreen() {
     const backHome = sourceRole === 'principal' ? '/principal-home' : '/admin-dashboard';
     const [conflicts, setConflicts] = useState<TimetableConflict[]>(generatedBatchId === 'DEMO' ? demoConflicts : []);
     const [loading, setLoading] = useState(false);
-    const [status, setStatus] = useState(generatedBatchId === 'DEMO' ? 'Demo conflict center loaded' : 'Loading backend conflict center...');
+    const [status, setStatus] = useState(generatedBatchId === 'DEMO' ? 'Day 13 demo: conflict-free timetable has no teacher double-booking.' : 'Loading backend conflict center...');
 
     useEffect(() => {
         let active = true;
@@ -33,7 +29,7 @@ export default function TimetableConflictsScreen() {
                 if (!active) return;
                 if (generatedBatchId === 'DEMO') {
                     setConflicts(demoConflicts);
-                    setStatus('Backend conflict API unavailable. Showing demo conflicts.');
+                    setStatus('Backend conflict API unavailable. Showing Day 13 conflict-free demo.');
                 } else {
                     setConflicts([]);
                     setStatus('Backend conflict API unavailable for this batch.');
@@ -48,7 +44,7 @@ export default function TimetableConflictsScreen() {
     return (
         <ImageBackground source={require('../assets/branding/splash-gold.png')} style={styles.bg} resizeMode="cover">
             <ScrollView contentContainerStyle={styles.container}>
-                <PageHeader title="Conflict Center" eyebrow="DAY 12 • BACKEND VALIDATION" homePath={backHome} />
+                <PageHeader title="Conflict Center" eyebrow="DAY 13 • CONFLICT-FREE VALIDATION" homePath={backHome} />
                 <Text style={styles.status}>{status}</Text>
                 <Text style={styles.batch}>Batch: {generatedBatchId}</Text>
                 {loading ? <ActivityIndicator color={colors.primaryNavy} style={{ marginBottom: 10 }} /> : null}
@@ -64,7 +60,7 @@ export default function TimetableConflictsScreen() {
                         <Text style={styles.description}>{conflict.description}</Text>
                         <Text style={styles.meta}>{[conflict.teacherName, conflict.className && `${conflict.className}-${conflict.section}`, conflict.dayOfWeek, conflict.periodNumber && `P${conflict.periodNumber}`].filter(Boolean).join(' • ')}</Text>
                     </View>
-                )) : <View style={styles.emptyCard}><Text style={styles.emptyTitle}>No conflicts found</Text><Text style={styles.emptyText}>This generated timetable batch is clean. Continue with workload review before publish.</Text></View>}
+                )) : <View style={styles.emptyCard}><Text style={styles.emptyTitle}>No conflicts found</Text><Text style={styles.emptyText}>This generated timetable batch is clean. Teacher availability map prevented same-period double-booking. Continue with workload review before publish.</Text></View>}
                 <TouchableOpacity style={styles.primaryButton} onPress={() => router.push({ pathname: '/teacher-workload-dashboard' as any, params: navParams })}><Text style={styles.primaryText}>Open Workload Intelligence</Text></TouchableOpacity>
                 <TouchableOpacity style={styles.secondaryButton} onPress={() => router.push({ pathname: '/timetable-review' as any, params: navParams })}><Text style={styles.secondaryText}>Return to Review</Text></TouchableOpacity>
             </ScrollView>

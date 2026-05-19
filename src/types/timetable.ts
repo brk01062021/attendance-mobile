@@ -26,6 +26,7 @@ export type TimetableGenerationRequest = {
     avoidTeacherGapsEnabled: boolean;
     sameTeacherContinuityEnabled: boolean;
     preventConsecutiveLabsEnabled: boolean;
+    conflictFreeGenerationEnabled?: boolean;
 };
 
 export type TimetableEntry = {
@@ -89,4 +90,5 @@ export type TimetableGenerationResponse = {
     entries: TimetableEntry[];
     conflicts: TimetableConflict[];
     workloadSummary: TeacherWorkloadSummary[];
+    classSectionReviews?: TimetableClassSectionReview[];
 };

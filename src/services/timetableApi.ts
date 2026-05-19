@@ -38,7 +38,11 @@ export async function getTeacherTimetable(teacherId: number): Promise<TimetableE
 
 export async function getTimetableReview(generatedBatchId: string): Promise<TimetableClassSectionReview[]> {
     const response = await fetch(`${API_BASE_URL}/timetable/review/${encodeURIComponent(generatedBatchId)}`);
-    return safeJson<TimetableClassSectionReview[]>(response);
+    const data = await safeJson<TimetableGenerationResponse | TimetableClassSectionReview[]>(response);
+    if (Array.isArray(data)) {
+        return data;
+    }
+    return data.classSectionReviews || [];
 }
 
 export async function getTimetableConflicts(generatedBatchId?: string): Promise<TimetableConflict[]> {

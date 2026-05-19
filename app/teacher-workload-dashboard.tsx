@@ -51,7 +51,7 @@ export default function TeacherWorkloadDashboardScreen() {
     return (
         <ImageBackground source={require('../assets/branding/splash-gold.png')} style={styles.bg} resizeMode="cover">
             <ScrollView contentContainerStyle={styles.container}>
-                <PageHeader title="Workload Intelligence" eyebrow="DAY 12 • BACKEND WORKLOAD" homePath={backHome} />
+                <PageHeader title="Workload Intelligence" eyebrow="DAY 13 • WORKLOAD BALANCING" homePath={backHome} />
                 <Text style={styles.status}>{status}</Text>
                 <Text style={styles.batch}>Batch: {generatedBatchId}</Text>
                 {loading ? <ActivityIndicator color={colors.primaryNavy} style={{ marginBottom: 10 }} /> : null}
