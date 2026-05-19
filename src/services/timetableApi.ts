@@ -6,6 +6,8 @@ import {
     TimetableClassSectionReview,
     TimetableGenerationRequest,
     TimetableGenerationResponse,
+    AcademicRule,
+    AcademicRulesSummary,
 } from '../types/timetable';
 
 async function safeJson<T>(response: Response): Promise<T> {
@@ -68,4 +70,23 @@ export async function publishTimetable(generatedBatchId: string): Promise<{ succ
         body: JSON.stringify({ generatedBatchId }),
     });
     return safeJson<{ success: boolean; message: string }>(response);
+}
+
+
+export async function getDefaultAcademicRules(request: Partial<TimetableGenerationRequest>): Promise<AcademicRule[]> {
+    const response = await fetch(`${API_BASE_URL}/timetable/academic-rules/defaults`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(request),
+    });
+    return safeJson<AcademicRule[]>(response);
+}
+
+export async function validateAcademicRules(request: Partial<TimetableGenerationRequest>): Promise<AcademicRulesSummary> {
+    const response = await fetch(`${API_BASE_URL}/timetable/academic-rules/validate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(request),
+    });
+    return safeJson<AcademicRulesSummary>(response);
 }

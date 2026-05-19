@@ -11,18 +11,31 @@ import {
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { colors, shadows, spacing } from '../src/theme';
-import { generateTimetable } from '../src/services/timetableApi';
+import { generateTimetable, getDefaultAcademicRules, validateAcademicRules } from '../src/services/timetableApi';
 import {
     ClassTeacherPool,
     TeacherPoolSource,
     TimetableGenerationMode,
     TimetableGenerationRequest,
     TimetableGenerationResponse,
+    AcademicRule,
+    AcademicRulesSummary,
 } from '../src/types/timetable';
 import { CLASS_OPTIONS, DEFAULT_CLASS_TEACHER_POOLS, EXCEL_POOL_TABS } from '../src/data/timetableDefaults';
 import { saveTimetableReviewSnapshot } from '../src/state/timetableReviewStore';
 
 const modes: TimetableGenerationMode[] = ['ANNUAL', 'QUARTERLY', 'MONTHLY', 'CUSTOM'];
+const DEFAULT_DAY14_RULES: AcademicRule[] = ['1', '2'].flatMap(className => [
+    { ruleId: `AR-${className}-TEL`, className, subjectName: 'Telugu', subjectType: 'THEORY', weeklyPeriods: 5, sameTeacherContinuityRequired: true, priority: 'HIGH' },
+    { ruleId: `AR-${className}-ENG`, className, subjectName: 'English', subjectType: 'THEORY', weeklyPeriods: 5, sameTeacherContinuityRequired: true, priority: 'HIGH' },
+    { ruleId: `AR-${className}-MAT`, className, subjectName: 'Mathematics', subjectType: 'THEORY', weeklyPeriods: 6, sameTeacherContinuityRequired: true, priority: 'HIGH' },
+    { ruleId: `AR-${className}-SCI`, className, subjectName: 'Science', subjectType: 'THEORY', weeklyPeriods: 5, sameTeacherContinuityRequired: true, priority: 'HIGH' },
+    { ruleId: `AR-${className}-SOC`, className, subjectName: 'Social', subjectType: 'THEORY', weeklyPeriods: 5, sameTeacherContinuityRequired: true, priority: 'MEDIUM' },
+    { ruleId: `AR-${className}-COM`, className, subjectName: 'Computer', subjectType: 'LAB', weeklyPeriods: 2, fixedPeriodRequired: true, preferredPeriodNumber: 5, sameTeacherContinuityRequired: true, priority: 'MEDIUM' },
+    { ruleId: `AR-${className}-SPO`, className, subjectName: 'Sports', subjectType: 'SPORTS', weeklyPeriods: 2, fixedPeriodRequired: true, preferredPeriodNumber: 6, priority: 'LOW' },
+    { ruleId: `AR-${className}-LIB`, className, subjectName: 'Library', subjectType: 'ACTIVITY', weeklyPeriods: 1, priority: 'LOW' },
+]);
+
 const poolSources: { key: TeacherPoolSource; label: string; subtitle: string }[] = [
     { key: 'AUTO_DEFAULT_POOL', label: 'Auto Default Teacher Pool', subtitle: 'Use class-wise pool automatically' },
     { key: 'EXCEL_CLASS_POOL', label: 'Excel Class Pool', subtitle: 'Principal upload: Pool 1, Pool 2, ...' },
@@ -44,6 +57,8 @@ export default function GenerateTimetableScreen() {
     const [loading, setLoading] = useState(false);
     const [result, setResult] = useState<TimetableGenerationResponse | null>(null);
     const [message, setMessage] = useState('');
+    const [academicRules, setAcademicRules] = useState<AcademicRule[]>(DEFAULT_DAY14_RULES);
+    const [academicRulesSummary, setAcademicRulesSummary] = useState<AcademicRulesSummary | null>(null);
 
     const autoSections = useMemo(() => {
         const sections = new Set<string>();
@@ -83,12 +98,27 @@ export default function GenerateTimetableScreen() {
         sameTeacherContinuityEnabled: true,
         preventConsecutiveLabsEnabled: true,
         conflictFreeGenerationEnabled: true,
-    }), [academicYear, generationMode, resolvedTeacherIds, selectedClasses, selectedSections, selectedTeacherPools, teacherPoolSource]);
+        academicRulesEngineEnabled: true,
+        academicRules: academicRules.filter(rule => selectedClasses.includes(rule.className)),
+    }), [academicRules, academicYear, generationMode, resolvedTeacherIds, selectedClasses, selectedSections, selectedTeacherPools, teacherPoolSource]);
 
     const toggleClass = (className: string) => {
         setResult(null);
         setSelectedClasses(prev => prev.includes(className) ? prev.filter(item => item !== className) : [...prev, className]);
         setManualSections([]);
+        loadAcademicRulesForClasses(prevClassesAfterToggle(selectedClasses, className));
+    };
+
+    const prevClassesAfterToggle = (current: string[], className: string) => current.includes(className) ? current.filter(item => item !== className) : [...current, className];
+
+    const loadAcademicRulesForClasses = async (classes: string[]) => {
+        try {
+            const rules = await getDefaultAcademicRules({ classNames: classes.length ? classes : selectedClasses, sections: selectedSections });
+            setAcademicRules(rules);
+        } catch {
+            const fallbackClasses = classes.length ? classes : selectedClasses;
+            setAcademicRules(DEFAULT_DAY14_RULES.filter(rule => fallbackClasses.includes(rule.className)));
+        }
     };
 
     const toggleSection = (section: string) => {
@@ -104,6 +134,8 @@ export default function GenerateTimetableScreen() {
         setLoading(true);
         setMessage('');
         try {
+            const summary = await validateAcademicRules(request);
+            setAcademicRulesSummary(summary);
             const data = await generateTimetable(request);
             saveTimetableReviewSnapshot(request, data);
             setResult(data);
@@ -119,6 +151,7 @@ export default function GenerateTimetableScreen() {
                 entries: [],
                 conflicts: [],
                 workloadSummary: [],
+                academicRulesSummary: academicRulesSummary || undefined,
             };
             saveTimetableReviewSnapshot(request, demo);
             setResult(demo);
@@ -139,7 +172,7 @@ export default function GenerateTimetableScreen() {
     return (
         <ImageBackground source={require('../assets/branding/splash-gold.png')} style={styles.bg} resizeMode="cover">
             <ScrollView contentContainerStyle={styles.container}>
-                <PageHeader title="Generate Timetable" eyebrow="DAY 13 • SMART CONFLICT-FREE GENERATOR" homePath={backHome} />
+                <PageHeader title="Generate Timetable" eyebrow="DAY 14 • SMART ACADEMIC RULES ENGINE" homePath={backHome} />
 
                 <View style={styles.card}>
                     <Text style={styles.cardTitle}>Generation Setup</Text>
@@ -221,6 +254,23 @@ export default function GenerateTimetableScreen() {
                 </View>
 
                 <View style={styles.card}>
+                    <View style={styles.poolTopRow}>
+                        <Text style={styles.cardTitle}>Smart Academic Rules Engine</Text>
+                        <TouchableOpacity style={styles.poolBadgeButton} onPress={() => router.push({ pathname: '/academic-rules-engine' as any, params: { ...navParams, classNames: selectedClasses.join(','), sections: selectedSections.join(',') } })}>
+                            <Text style={styles.poolBadgeButtonText}>Open</Text>
+                        </TouchableOpacity>
+                    </View>
+                    <Text style={styles.helper}>Rules loaded: {request.academicRules?.length || 0}. Theory, Lab, Sports and Activity periods are sent to backend generation.</Text>
+                    {(academicRulesSummary || result?.academicRulesSummary) ? <View style={styles.kpiGrid}>
+                        <Kpi label="Required" value={String((academicRulesSummary || result?.academicRulesSummary)?.totalWeeklyPeriodsRequired || 0)} />
+                        <Kpi label="Slots" value={String((academicRulesSummary || result?.academicRulesSummary)?.availableWeeklySlots || 0)} />
+                        <Kpi label="Labs" value={String((academicRulesSummary || result?.academicRulesSummary)?.labPeriods || 0)} />
+                        <Kpi label="Sports" value={String((academicRulesSummary || result?.academicRulesSummary)?.sportsPeriods || 0)} />
+                    </View> : null}
+                    {(academicRulesSummary || result?.academicRulesSummary)?.warnings?.slice(0, 2).map(warning => <Text key={warning} style={styles.note}>⚠ {warning}</Text>)}
+                </View>
+
+                <View style={styles.card}>
                     <Text style={styles.cardTitle}>Smart Rules Enabled</Text>
                     {[
                         'Equal theory distribution',
@@ -231,6 +281,8 @@ export default function GenerateTimetableScreen() {
                         'Prevent consecutive labs',
                         'Teacher availability map prevents double-booking',
                         'Lowest workload teacher selected first',
+                        'Subject-aware weekly academic allocation',
+                        'Fixed Computer lab and Sports period preferences',
                     ].map(item => <Text key={item} style={styles.rule}>✓ {item}</Text>)}
                 </View>
 
@@ -315,6 +367,8 @@ const styles = StyleSheet.create({
     poolTopRow: { flexDirection: 'row', justifyContent: 'space-between', gap: 8 },
     poolName: { flex: 1, color: colors.primaryNavy, fontWeight: '900', fontSize: 12 },
     poolBadge: { color: colors.deepGold, fontWeight: '900', fontSize: 10 },
+    poolBadgeButton: { backgroundColor: colors.primaryNavy, borderRadius: 16, paddingHorizontal: 12, paddingVertical: 6 },
+    poolBadgeButtonText: { color: '#fff', fontWeight: '900', fontSize: 10 },
     poolTeachers: { color: colors.slateText, fontWeight: '700', fontSize: 10, lineHeight: 15, marginTop: 5 },
     rule: { color: colors.slateText, fontWeight: '700', marginBottom: 8, fontSize: 11 },
     primaryButton: { backgroundColor: colors.primaryNavy, borderRadius: 14, padding: 12, alignItems: 'center', marginBottom: 8, ...shadows.medium },

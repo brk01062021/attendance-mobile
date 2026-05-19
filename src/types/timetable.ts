@@ -27,6 +27,8 @@ export type TimetableGenerationRequest = {
     sameTeacherContinuityEnabled: boolean;
     preventConsecutiveLabsEnabled: boolean;
     conflictFreeGenerationEnabled?: boolean;
+    academicRulesEngineEnabled?: boolean;
+    academicRules?: AcademicRule[];
 };
 
 export type TimetableEntry = {
@@ -91,4 +93,32 @@ export type TimetableGenerationResponse = {
     conflicts: TimetableConflict[];
     workloadSummary: TeacherWorkloadSummary[];
     classSectionReviews?: TimetableClassSectionReview[];
+    academicRulesSummary?: AcademicRulesSummary;
+};
+
+export type AcademicSubjectType = 'THEORY' | 'LAB' | 'SPORTS' | 'ACTIVITY';
+export type AcademicRulePriority = 'HIGH' | 'MEDIUM' | 'LOW';
+
+export type AcademicRule = {
+    ruleId: string;
+    className: string;
+    subjectName: string;
+    subjectType: AcademicSubjectType;
+    weeklyPeriods: number;
+    fixedPeriodRequired?: boolean;
+    preferredPeriodNumber?: number | null;
+    sameTeacherContinuityRequired?: boolean;
+    priority?: AcademicRulePriority;
+};
+
+export type AcademicRulesSummary = {
+    totalRules: number;
+    totalWeeklyPeriodsRequired: number;
+    availableWeeklySlots: number;
+    theoryPeriods: number;
+    labPeriods: number;
+    sportsPeriods: number;
+    activityPeriods: number;
+    valid: boolean;
+    warnings: string[];
 };
