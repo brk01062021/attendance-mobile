@@ -306,10 +306,10 @@ export default function PrincipalHomeScreen() {
 
                         <QuickAction
                             emoji="🔒"
-                            title="Day 18 Control"
+                            title="Timetable Operations"
                             subtitle="Lock, export, versions"
                             onPress={() =>
-                                openRoute('/timetable-day18-center', {
+                                openRoute('/timetable-operations', {
                                     role: 'PRINCIPAL',
                                     sourceRole: 'principal',
                                 })
@@ -419,9 +419,9 @@ export default function PrincipalHomeScreen() {
                             />
 
                             <MenuItem
-                                title="Day 18 Timetable Control"
+                                title="Timetable Operations"
                                 onPress={() =>
-                                    openRoute('/timetable-day18-center', {
+                                    openRoute('/timetable-operations', {
                                         role: 'PRINCIPAL',
                                         sourceRole: 'principal',
                                     })

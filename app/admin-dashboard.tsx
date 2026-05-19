@@ -331,9 +331,9 @@ export default function AdminDashboardScreen() {
 
                         <QuickAction
                             emoji="🔒"
-                            title="Day 18 Control"
+                            title="Timetable Operations"
                             subtitle="Lock, export, versions"
-                            onPress={() => openRoute('/timetable-day18-center', { role: 'ADMIN', sourceRole: 'admin' })}
+                            onPress={() => openRoute('/timetable-operations', { role: 'ADMIN', sourceRole: 'admin' })}
                         />
 
                         <QuickAction
@@ -504,9 +504,9 @@ export default function AdminDashboardScreen() {
                             />
 
                             <MenuItem
-                                title="Day 18 Timetable Control"
+                                title="Timetable Operations"
                                 onPress={() =>
-                                    openRoute('/timetable-day18-center', {
+                                    openRoute('/timetable-operations', {
                                         role: 'ADMIN',
                                         sourceRole: 'admin',
                                     })

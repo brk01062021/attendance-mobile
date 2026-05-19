@@ -2,7 +2,7 @@ import { API_BASE_URL } from './api';
 import {
     TimetableArchiveSummary,
     TimetableBinaryExportResponse,
-    TimetableDay18Status,
+    TimetableOperationsStatus,
     TimetableLiveResponse,
     TimetableManualEditRequest,
     TimetableNotification,
@@ -12,7 +12,7 @@ import {
 
 async function safeJson<T>(response: Response): Promise<T> {
     if (!response.ok) {
-        throw new Error(`Day 18 timetable API failed with status ${response.status}`);
+        throw new Error(`Timetable operations API failed with status ${response.status}`);
     }
     return response.json();
 }
@@ -25,40 +25,61 @@ export async function getLiveTimetable(params: {
     section?: string;
 }): Promise<TimetableLiveResponse> {
     const query = new URLSearchParams();
+
     if (params.batchId) query.append('batchId', params.batchId);
     if (params.role) query.append('role', params.role);
     if (params.teacherId) query.append('teacherId', String(params.teacherId));
     if (params.className) query.append('className', params.className);
     if (params.section) query.append('section', params.section);
+
     const response = await fetch(`${API_BASE_URL}/timetable/day18/live?${query.toString()}`);
     return safeJson<TimetableLiveResponse>(response);
 }
 
-export async function getDay18Status(batchId: string): Promise<TimetableDay18Status> {
+export async function getTimetableOperationsStatus(batchId: string): Promise<TimetableOperationsStatus> {
     const response = await fetch(`${API_BASE_URL}/timetable/day18/status/${encodeURIComponent(batchId)}`);
-    return safeJson<TimetableDay18Status>(response);
+    return safeJson<TimetableOperationsStatus>(response);
 }
 
-export async function publishLockTimetable(batchId: string, role = 'ADMIN', approvedBy = 'Admin'): Promise<TimetablePublishResponse> {
-    const response = await fetch(`${API_BASE_URL}/timetable/day18/publish-lock/${encodeURIComponent(batchId)}?role=${encodeURIComponent(role)}&approvedBy=${encodeURIComponent(approvedBy)}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-    });
+export async function publishLockTimetable(
+    batchId: string,
+    role = 'ADMIN',
+    approvedBy = 'Admin'
+): Promise<TimetablePublishResponse> {
+    const response = await fetch(
+        `${API_BASE_URL}/timetable/day18/publish-lock/${encodeURIComponent(batchId)}?role=${encodeURIComponent(role)}&approvedBy=${encodeURIComponent(approvedBy)}`,
+        {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+        }
+    );
+
     return safeJson<TimetablePublishResponse>(response);
 }
 
-export async function exportTimetableBinary(batchId: string, format: 'PDF' | 'EXCEL'): Promise<TimetableBinaryExportResponse> {
+export async function exportTimetableBinary(
+    batchId: string,
+    format: 'PDF' | 'EXCEL'
+): Promise<TimetableBinaryExportResponse> {
     const response = await fetch(`${API_BASE_URL}/timetable/day18/export/${encodeURIComponent(batchId)}?format=${format}`);
     return safeJson<TimetableBinaryExportResponse>(response);
 }
 
-export async function swapTimetableEntry(batchId: string, request: TimetableManualEditRequest, role = 'ADMIN') {
-    const response = await fetch(`${API_BASE_URL}/timetable/day18/swap/${encodeURIComponent(batchId)}?role=${encodeURIComponent(role)}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(request),
-    });
-    return safeJson(response);
+export async function swapTimetableEntry(
+    batchId: string,
+    request: TimetableManualEditRequest,
+    role = 'ADMIN'
+): Promise<unknown> {
+    const response = await fetch(
+        `${API_BASE_URL}/timetable/day18/swap/${encodeURIComponent(batchId)}?role=${encodeURIComponent(role)}`,
+        {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(request),
+        }
+    );
+
+    return safeJson<unknown>(response);
 }
 
 export async function getTimetableVersions(batchId: string): Promise<TimetableVersion[]> {
@@ -66,11 +87,19 @@ export async function getTimetableVersions(batchId: string): Promise<TimetableVe
     return safeJson<TimetableVersion[]>(response);
 }
 
-export async function rollbackTimetableVersion(batchId: string, versionNumber: number, role = 'ADMIN'): Promise<TimetableVersion> {
-    const response = await fetch(`${API_BASE_URL}/timetable/day18/rollback/${encodeURIComponent(batchId)}/${versionNumber}?role=${encodeURIComponent(role)}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-    });
+export async function rollbackTimetableVersion(
+    batchId: string,
+    versionNumber: number,
+    role = 'ADMIN'
+): Promise<TimetableVersion> {
+    const response = await fetch(
+        `${API_BASE_URL}/timetable/day18/rollback/${encodeURIComponent(batchId)}/${versionNumber}?role=${encodeURIComponent(role)}`,
+        {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+        }
+    );
+
     return safeJson<TimetableVersion>(response);
 }
 

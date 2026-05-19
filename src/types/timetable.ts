@@ -252,7 +252,7 @@ export type TimetableArchiveSummary = {
     message: string;
 };
 
-export type TimetableDay18Status = {
+export type TimetableOperationsStatus = {
     batchId: string;
     latestPublished: boolean;
     locked: boolean;

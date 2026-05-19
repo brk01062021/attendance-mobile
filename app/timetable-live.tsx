@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, ImageBackground, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { colors, shadows, spacing } from '../src/theme';
-import { getLiveTimetable } from '../src/services/timetableDay18Api';
+import { getLiveTimetable } from '../src/services/timetableOperationsApi';
 import { TimetableEntry, TimetableLiveResponse } from '../src/types/timetable';
 
 export default function TimetableLiveScreen() {

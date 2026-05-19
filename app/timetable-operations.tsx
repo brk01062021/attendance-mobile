@@ -2,18 +2,18 @@ import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, ImageBackground, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { colors, shadows, spacing } from '../src/theme';
-import { exportTimetableBinary, getDay18Status, getTimetableArchives, getTimetableNotifications, getTimetableVersions, publishLockTimetable, rollbackTimetableVersion } from '../src/services/timetableDay18Api';
-import { TimetableArchiveSummary, TimetableDay18Status, TimetableNotification, TimetableVersion } from '../src/types/timetable';
+import { exportTimetableBinary, getTimetableOperationsStatus, getTimetableArchives, getTimetableNotifications, getTimetableVersions, publishLockTimetable, rollbackTimetableVersion } from '../src/services/timetableOperationsApi';
+import { TimetableArchiveSummary, TimetableOperationsStatus, TimetableNotification, TimetableVersion } from '../src/types/timetable';
 
-export default function TimetableDay18CenterScreen() {
+export default function TimetableOperationsScreen() {
     const params = useLocalSearchParams();
     const sourceRole = String(params.sourceRole || 'admin');
     const role = sourceRole === 'principal' ? 'PRINCIPAL' : 'ADMIN';
     const backHome = sourceRole === 'principal' ? '/principal-home' : '/admin-dashboard';
     const [batchId, setBatchId] = useState(String(params.generatedBatchId || params.batchId || ''));
     const [loading, setLoading] = useState(false);
-    const [message, setMessage] = useState('Paste/select a batch ID, then validate Day 18 publish lock, real exports, versions, notifications, and archive history.');
-    const [status, setStatus] = useState<TimetableDay18Status | null>(null);
+    const [message, setMessage] = useState('Paste/select a batch ID, then validate publish lock, real exports, versions, notifications, live timetable visibility, and archive history.');
+    const [status, setStatus] = useState<TimetableOperationsStatus | null>(null);
     const [versions, setVersions] = useState<TimetableVersion[]>([]);
     const [notifications, setNotifications] = useState<TimetableNotification[]>([]);
     const [archives, setArchives] = useState<TimetableArchiveSummary[]>([]);
@@ -28,7 +28,7 @@ export default function TimetableDay18CenterScreen() {
         setLoading(true);
         try {
             const [nextStatus, nextVersions, nextNotifications, nextArchives] = await Promise.all([
-                getDay18Status(cleanBatchId),
+                getTimetableOperationsStatus(cleanBatchId),
                 getTimetableVersions(cleanBatchId),
                 getTimetableNotifications(cleanBatchId),
                 getTimetableArchives().catch(() => []),
@@ -37,9 +37,9 @@ export default function TimetableDay18CenterScreen() {
             setVersions(nextVersions || []);
             setNotifications(nextNotifications || []);
             setArchives(nextArchives || []);
-            setMessage('Day 18 operational status loaded.');
+            setMessage('Timetable operational status loaded.');
         } catch {
-            setMessage('Unable to load Day 18 APIs. Confirm backend is running and batch ID exists.');
+            setMessage('Unable to load timetable operations APIs. Confirm backend is running and batch ID exists.');
         } finally {
             setLoading(false);
         }
@@ -70,7 +70,7 @@ export default function TimetableDay18CenterScreen() {
             const response = await exportTimetableBinary(cleanBatchId, format);
             setMessage(`${response.fileName} generated • ${response.byteSize} bytes • ${response.contentType}`);
         } catch {
-            setMessage(`${format} export failed. Confirm backend Day 18 export endpoint.`);
+            setMessage(`${format} export failed. Confirm backend operations export endpoint.`);
         } finally {
             setLoading(false);
         }
@@ -94,7 +94,7 @@ export default function TimetableDay18CenterScreen() {
         <ScrollView contentContainerStyle={styles.container}>
             <View style={styles.headerRow}>
                 <TouchableOpacity style={styles.circleButton} onPress={() => router.back()}><Text style={styles.backText}>‹</Text></TouchableOpacity>
-                <View style={styles.headerTextWrap}><Text style={styles.eyebrow}>DAY 18 • PRODUCTION CONTROL</Text><Text style={styles.title}>Timetable Operations</Text></View>
+                <View style={styles.headerTextWrap}><Text style={styles.eyebrow}>DAY 19 • TIMETABLE OPERATIONS</Text><Text style={styles.title}>Timetable Operations</Text></View>
                 <TouchableOpacity style={styles.circleButton} onPress={() => router.replace(backHome as any)}><Text style={styles.homeIcon}>⌂</Text></TouchableOpacity>
             </View>
 
@@ -106,7 +106,7 @@ export default function TimetableDay18CenterScreen() {
             <View style={styles.card}>
                 <Text style={styles.label}>Batch ID</Text>
                 <TextInput value={batchId} onChangeText={setBatchId} autoCapitalize="characters" placeholder="Example: TT-99266EBB" placeholderTextColor={colors.mutedText} style={styles.input} />
-                <TouchableOpacity style={styles.primaryButton} onPress={load}>{loading ? <ActivityIndicator color={colors.white} /> : <Text style={styles.primaryText}>Load Day 18 Status</Text>}</TouchableOpacity>
+                <TouchableOpacity style={styles.primaryButton} onPress={load}>{loading ? <ActivityIndicator color={colors.white} /> : <Text style={styles.primaryText}>Load Operations Status</Text>}</TouchableOpacity>
             </View>
 
             {status ? <View style={styles.grid}>
@@ -125,7 +125,7 @@ export default function TimetableDay18CenterScreen() {
                 <Action title="Intelligence" subtitle="Principal analytics" onPress={() => router.push({ pathname: '/principal-timetable-intelligence' as any, params: { generatedBatchId: cleanBatchId, sourceRole } })} />
             </View>
 
-            <Section title="Version History" items={versions.map(v => `V${v.versionNumber} • ${v.changeType} • ${v.createdBy}`)} />
+            <Section title="Version / Rollback History" items={versions.map(v => `V${v.versionNumber} • ${v.changeType} • ${v.createdBy}`)} />
             <Section title="Notifications" items={notifications.map(n => `${n.audience}: ${n.title}`)} />
             <Section title="Archive History" items={archives.map(a => `${a.batchId} • ${a.status} • ${a.entriesCount} entries`)} />
         </ScrollView>
