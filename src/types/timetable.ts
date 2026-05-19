@@ -152,6 +152,21 @@ export type TimetablePublishResponse = {
     message: string;
     publishedEntries: number;
     remainingConflicts: number;
+    publishedAt?: string;
+    approvedBy?: string;
+    notificationMessage?: string;
+};
+
+export type TimetablePublishAudit = {
+    auditId: string;
+    batchId: string;
+    status: 'PUBLISHED' | 'BLOCKED_BY_CONFLICTS' | 'NOT_PUBLISHED';
+    publishedAt?: string | null;
+    approvedBy?: string | null;
+    publishedEntries: number;
+    remainingConflicts: number;
+    classSections: number;
+    message: string;
 };
 
 export type TimetableExportResponse = {

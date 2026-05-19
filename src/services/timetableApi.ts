@@ -13,6 +13,7 @@ import {
     TimetablePublishResponse,
     TimetableExportResponse,
     PrincipalTimetableIntelligence,
+    TimetablePublishAudit,
 } from '../types/timetable';
 
 async function safeJson<T>(response: Response): Promise<T> {
@@ -133,4 +134,14 @@ export async function exportGeneratedTimetable(generatedBatchId: string, format:
 export async function getPrincipalTimetableIntelligence(generatedBatchId: string): Promise<PrincipalTimetableIntelligence> {
     const response = await fetch(`${API_BASE_URL}/timetable/principal-intelligence/${encodeURIComponent(generatedBatchId)}`);
     return safeJson<PrincipalTimetableIntelligence>(response);
+}
+
+export async function getTimetablePublishHistory(generatedBatchId: string): Promise<TimetablePublishAudit[]> {
+    const response = await fetch(`${API_BASE_URL}/timetable/publish-history/${encodeURIComponent(generatedBatchId)}`);
+    return safeJson<TimetablePublishAudit[]>(response);
+}
+
+export async function getLatestPublishedTimetable(): Promise<TimetablePublishAudit> {
+    const response = await fetch(`${API_BASE_URL}/timetable/latest-published`);
+    return safeJson<TimetablePublishAudit>(response);
 }

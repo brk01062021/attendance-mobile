@@ -2,8 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, ImageBackground, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { colors, shadows, spacing } from '../src/theme';
-import { getPrincipalTimetableIntelligence } from '../src/services/timetableApi';
-import { PrincipalTimetableIntelligence } from '../src/types/timetable';
+import { getLatestPublishedTimetable, getPrincipalTimetableIntelligence } from '../src/services/timetableApi';
+import { PrincipalTimetableIntelligence, TimetablePublishAudit } from '../src/types/timetable';
 
 export default function PrincipalTimetableIntelligenceScreen() {
     const params = useLocalSearchParams();
@@ -12,14 +12,15 @@ export default function PrincipalTimetableIntelligenceScreen() {
     const backHome = sourceRole === 'principal' ? '/principal-home' : '/admin-dashboard';
     const [loading, setLoading] = useState(false);
     const [data, setData] = useState<PrincipalTimetableIntelligence | null>(null);
+    const [latestPublished, setLatestPublished] = useState<TimetablePublishAudit | null>(null);
     const [status, setStatus] = useState('Loading principal timetable intelligence...');
-    useEffect(() => { setLoading(true); getPrincipalTimetableIntelligence(generatedBatchId).then(result => { setData(result); setStatus('Principal intelligence loaded.'); }).catch(() => setStatus('Principal timetable intelligence API unavailable.')).finally(() => setLoading(false)); }, [generatedBatchId]);
+    useEffect(() => { setLoading(true); Promise.all([getPrincipalTimetableIntelligence(generatedBatchId), getLatestPublishedTimetable().catch(() => null)]).then(([result, latest]) => { setData(result); setLatestPublished(latest); setStatus('Principal intelligence loaded.'); }).catch(() => setStatus('Principal timetable intelligence API unavailable.')).finally(() => setLoading(false)); }, [generatedBatchId]);
     const navParams = { sourceRole, generatedBatchId };
     return <ImageBackground source={require('../assets/branding/splash-gold.png')} style={styles.bg} resizeMode="cover"><ScrollView contentContainerStyle={styles.container}>
         <Header title="Timetable Intelligence" eyebrow="DAY 15 • PRINCIPAL VIEW" homePath={backHome} />
         <Text style={styles.status}>{status}</Text><Text style={styles.batch}>Batch: {data?.batchId || generatedBatchId}</Text>{loading ? <ActivityIndicator color={colors.primaryNavy} style={{ marginVertical: 10 }} /> : null}
         <View style={styles.summaryRow}><Kpi label="Readiness" value={`${data?.publishReadinessScore ?? '-'}%`} /><Kpi label="Conflicts" value={String(data?.conflicts ?? '-')} /><Kpi label="Workload" value={String(data?.overloadRiskTeachers ?? '-')} /></View>
-        <View style={styles.card}><Text style={styles.big}>{data?.readinessStatus || 'LOADING'}</Text><Text style={styles.text}>Class sections: {data?.classSections ?? '-'}</Text><Text style={styles.text}>Total periods: {data?.totalEntries ?? '-'}</Text><Text style={styles.text}>High risk conflicts: {data?.highRiskConflicts ?? '-'}</Text></View>
+        <View style={styles.card}><Text style={styles.big}>{data?.readinessStatus || 'LOADING'}</Text><Text style={styles.text}>Class sections: {data?.classSections ?? '-'}</Text><Text style={styles.text}>Total periods: {data?.totalEntries ?? '-'}</Text><Text style={styles.text}>High risk conflicts: {data?.highRiskConflicts ?? '-'}</Text><Text style={styles.text}>Latest published batch: {latestPublished?.batchId || '-'}</Text><Text style={styles.text}>Latest published at: {latestPublished?.publishedAt || '-'}</Text></View>
         <View style={styles.card}><Text style={styles.cardTitle}>Executive Insights</Text>{(data?.insights || []).map((item, index) => <Text key={index} style={styles.insight}>• {item}</Text>)}</View>
         <View style={styles.card}><Text style={styles.cardTitle}>Top Workload Risks</Text>{(data?.topWorkloadRisks || []).map(item => <View key={item.teacherId} style={styles.riskRow}><Text style={styles.riskName}>{item.teacherName}</Text><Text style={styles.riskScore}>{item.overloadRiskScore}</Text></View>)}</View>
         <TouchableOpacity style={styles.primaryButton} onPress={() => router.push({ pathname: '/timetable-repair' as any, params: navParams })}><Text style={styles.primaryText}>Open Auto Repair</Text></TouchableOpacity>
