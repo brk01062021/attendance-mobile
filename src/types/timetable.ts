@@ -58,6 +58,16 @@ export type TimetableConflict = {
     periodNumber?: number;
 };
 
+
+export type TimetableClassSectionReview = {
+    className: string;
+    section: string;
+    label: string;
+    totalPeriods?: number;
+    conflictCount?: number;
+    entries: TimetableEntry[];
+};
+
 export type TeacherWorkloadSummary = {
     teacherId: number;
     teacherName: string;

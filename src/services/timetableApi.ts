@@ -3,6 +3,7 @@ import {
     TeacherWorkloadSummary,
     TimetableConflict,
     TimetableEntry,
+    TimetableClassSectionReview,
     TimetableGenerationRequest,
     TimetableGenerationResponse,
 } from '../types/timetable';
@@ -35,13 +36,24 @@ export async function getTeacherTimetable(teacherId: number): Promise<TimetableE
     return safeJson<TimetableEntry[]>(response);
 }
 
-export async function getTimetableConflicts(): Promise<TimetableConflict[]> {
-    const response = await fetch(`${API_BASE_URL}/timetable/conflicts`);
+export async function getTimetableReview(generatedBatchId: string): Promise<TimetableClassSectionReview[]> {
+    const response = await fetch(`${API_BASE_URL}/timetable/review/${encodeURIComponent(generatedBatchId)}`);
+    return safeJson<TimetableClassSectionReview[]>(response);
+}
+
+export async function getTimetableConflicts(generatedBatchId?: string): Promise<TimetableConflict[]> {
+    const url = generatedBatchId && generatedBatchId !== 'DEMO'
+        ? `${API_BASE_URL}/timetable/conflicts/${encodeURIComponent(generatedBatchId)}`
+        : `${API_BASE_URL}/timetable/conflicts`;
+    const response = await fetch(url);
     return safeJson<TimetableConflict[]>(response);
 }
 
-export async function getTeacherWorkloadSummary(): Promise<TeacherWorkloadSummary[]> {
-    const response = await fetch(`${API_BASE_URL}/timetable/workload-summary`);
+export async function getTeacherWorkloadSummary(generatedBatchId?: string): Promise<TeacherWorkloadSummary[]> {
+    const url = generatedBatchId && generatedBatchId !== 'DEMO'
+        ? `${API_BASE_URL}/timetable/workload-analysis/${encodeURIComponent(generatedBatchId)}`
+        : `${API_BASE_URL}/timetable/workload-summary`;
+    const response = await fetch(url);
     return safeJson<TeacherWorkloadSummary[]>(response);
 }
 
