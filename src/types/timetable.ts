@@ -122,3 +122,55 @@ export type AcademicRulesSummary = {
     valid: boolean;
     warnings: string[];
 };
+
+export type TimetableRepairResult = {
+    batchId: string;
+    conflictsBefore: number;
+    conflictsAfter: number;
+    repairedItems: number;
+    publishReady: boolean;
+    actions: string[];
+    timetable?: TimetableGenerationResponse;
+};
+
+export type TimetableManualEditRequest = {
+    entryId: string;
+    subjectName?: string;
+    teacherId?: number;
+    teacherName?: string;
+    dayOfWeek?: string;
+    periodNumber?: number;
+    roomNumber?: string;
+    startTime?: string;
+    endTime?: string;
+};
+
+export type TimetablePublishResponse = {
+    success: boolean;
+    batchId: string;
+    status: 'PUBLISHED' | 'BLOCKED_BY_CONFLICTS';
+    message: string;
+    publishedEntries: number;
+    remainingConflicts: number;
+};
+
+export type TimetableExportResponse = {
+    batchId: string;
+    format: 'PDF' | 'EXCEL';
+    fileName: string;
+    contentType: string;
+    content: string;
+};
+
+export type PrincipalTimetableIntelligence = {
+    batchId: string;
+    totalEntries: number;
+    classSections: number;
+    conflicts: number;
+    highRiskConflicts: number;
+    overloadRiskTeachers: number;
+    publishReadinessScore: number;
+    readinessStatus: 'READY_TO_PUBLISH' | 'REVIEW_RECOMMENDED' | 'NEEDS_REPAIR';
+    insights: string[];
+    topWorkloadRisks: TeacherWorkloadSummary[];
+};

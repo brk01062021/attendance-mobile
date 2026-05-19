@@ -98,7 +98,7 @@ export default function TimetableReviewScreen() {
     return (
         <ImageBackground source={require('../assets/branding/splash-gold.png')} style={styles.bg} resizeMode="cover">
             <ScrollView contentContainerStyle={styles.container}>
-                <PageHeader title="Timetable Review" eyebrow="DAY 13 • CONFLICT-FREE REVIEW" homePath={backHome} />
+                <PageHeader title="Timetable Review" eyebrow="DAY 15 • REVIEW + PUBLISH" homePath={backHome} />
                 <Text style={styles.status}>{status}</Text>
                 <Text style={styles.batch}>Batch: {generatedBatchId}</Text>
                 {loading ? <ActivityIndicator color={colors.primaryNavy} style={{ marginBottom: 10 }} /> : null}
@@ -154,6 +154,10 @@ export default function TimetableReviewScreen() {
                 <View style={styles.actionRow}>
                     <TouchableOpacity style={styles.primaryButton} onPress={() => router.push({ pathname: '/teacher-workload-dashboard' as any, params: navParams })}><Text style={styles.primaryText}>Workload</Text></TouchableOpacity>
                     <TouchableOpacity style={styles.primaryButton} onPress={() => router.push({ pathname: '/timetable-conflicts' as any, params: navParams })}><Text style={styles.primaryText}>Conflicts</Text></TouchableOpacity>
+                </View>
+                <View style={styles.actionRow}>
+                    <TouchableOpacity style={styles.primaryButton} onPress={() => router.push({ pathname: '/timetable-repair' as any, params: navParams })}><Text style={styles.primaryText}>Auto Repair</Text></TouchableOpacity>
+                    <TouchableOpacity style={styles.primaryButton} onPress={() => router.push({ pathname: '/timetable-publish' as any, params: navParams })}><Text style={styles.primaryText}>Publish</Text></TouchableOpacity>
                 </View>
                 <TouchableOpacity style={styles.homeButton} onPress={() => router.replace(backHome as any)}><Text style={styles.homeText}>Back to Home</Text></TouchableOpacity>
             </ScrollView>

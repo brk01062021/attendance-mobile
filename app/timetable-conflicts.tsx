@@ -44,7 +44,7 @@ export default function TimetableConflictsScreen() {
     return (
         <ImageBackground source={require('../assets/branding/splash-gold.png')} style={styles.bg} resizeMode="cover">
             <ScrollView contentContainerStyle={styles.container}>
-                <PageHeader title="Conflict Center" eyebrow="DAY 13 • CONFLICT-FREE VALIDATION" homePath={backHome} />
+                <PageHeader title="Conflict Center" eyebrow="DAY 15 • CONFLICT REPAIR" homePath={backHome} />
                 <Text style={styles.status}>{status}</Text>
                 <Text style={styles.batch}>Batch: {generatedBatchId}</Text>
                 {loading ? <ActivityIndicator color={colors.primaryNavy} style={{ marginBottom: 10 }} /> : null}
@@ -61,6 +61,7 @@ export default function TimetableConflictsScreen() {
                         <Text style={styles.meta}>{[conflict.teacherName, conflict.className && `${conflict.className}-${conflict.section}`, conflict.dayOfWeek, conflict.periodNumber && `P${conflict.periodNumber}`].filter(Boolean).join(' • ')}</Text>
                     </View>
                 )) : <View style={styles.emptyCard}><Text style={styles.emptyTitle}>No conflicts found</Text><Text style={styles.emptyText}>This generated timetable batch is clean. Teacher availability map prevented same-period double-booking. Continue with workload review before publish.</Text></View>}
+                <TouchableOpacity style={styles.primaryButton} onPress={() => router.push({ pathname: '/timetable-repair' as any, params: navParams })}><Text style={styles.primaryText}>Run Auto Conflict Repair</Text></TouchableOpacity>
                 <TouchableOpacity style={styles.primaryButton} onPress={() => router.push({ pathname: '/teacher-workload-dashboard' as any, params: navParams })}><Text style={styles.primaryText}>Open Workload Intelligence</Text></TouchableOpacity>
                 <TouchableOpacity style={styles.secondaryButton} onPress={() => router.push({ pathname: '/timetable-review' as any, params: navParams })}><Text style={styles.secondaryText}>Return to Review</Text></TouchableOpacity>
             </ScrollView>

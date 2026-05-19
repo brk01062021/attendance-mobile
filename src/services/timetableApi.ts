@@ -8,6 +8,11 @@ import {
     TimetableGenerationResponse,
     AcademicRule,
     AcademicRulesSummary,
+    TimetableRepairResult,
+    TimetableManualEditRequest,
+    TimetablePublishResponse,
+    TimetableExportResponse,
+    PrincipalTimetableIntelligence,
 } from '../types/timetable';
 
 async function safeJson<T>(response: Response): Promise<T> {
@@ -89,4 +94,43 @@ export async function validateAcademicRules(request: Partial<TimetableGeneration
         body: JSON.stringify(request),
     });
     return safeJson<AcademicRulesSummary>(response);
+}
+
+
+export async function repairTimetable(generatedBatchId: string): Promise<TimetableRepairResult> {
+    const response = await fetch(`${API_BASE_URL}/timetable/repair/${encodeURIComponent(generatedBatchId)}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+    });
+    return safeJson<TimetableRepairResult>(response);
+}
+
+export async function manualEditTimetableEntry(
+    generatedBatchId: string,
+    request: TimetableManualEditRequest
+): Promise<TimetableGenerationResponse> {
+    const response = await fetch(`${API_BASE_URL}/timetable/manual-edit/${encodeURIComponent(generatedBatchId)}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(request),
+    });
+    return safeJson<TimetableGenerationResponse>(response);
+}
+
+export async function publishGeneratedTimetable(generatedBatchId: string): Promise<TimetablePublishResponse> {
+    const response = await fetch(`${API_BASE_URL}/timetable/publish/${encodeURIComponent(generatedBatchId)}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+    });
+    return safeJson<TimetablePublishResponse>(response);
+}
+
+export async function exportGeneratedTimetable(generatedBatchId: string, format: 'PDF' | 'EXCEL'): Promise<TimetableExportResponse> {
+    const response = await fetch(`${API_BASE_URL}/timetable/export/${encodeURIComponent(generatedBatchId)}?format=${format}`);
+    return safeJson<TimetableExportResponse>(response);
+}
+
+export async function getPrincipalTimetableIntelligence(generatedBatchId: string): Promise<PrincipalTimetableIntelligence> {
+    const response = await fetch(`${API_BASE_URL}/timetable/principal-intelligence/${encodeURIComponent(generatedBatchId)}`);
+    return safeJson<PrincipalTimetableIntelligence>(response);
 }

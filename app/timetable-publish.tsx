@@ -1,0 +1,30 @@
+import React, { useState } from 'react';
+import { ActivityIndicator, ImageBackground, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { router, useLocalSearchParams } from 'expo-router';
+import { colors, shadows, spacing } from '../src/theme';
+import { exportGeneratedTimetable, publishGeneratedTimetable } from '../src/services/timetableApi';
+import { TimetableExportResponse, TimetablePublishResponse } from '../src/types/timetable';
+
+export default function TimetablePublishScreen() {
+    const params = useLocalSearchParams();
+    const generatedBatchId = String(params.generatedBatchId || 'DEMO');
+    const sourceRole = String(params.sourceRole || 'admin');
+    const backHome = sourceRole === 'principal' ? '/principal-home' : '/admin-dashboard';
+    const [loading, setLoading] = useState(false);
+    const [publishResult, setPublishResult] = useState<TimetablePublishResponse | null>(null);
+    const [exportResult, setExportResult] = useState<TimetableExportResponse | null>(null);
+    const [status, setStatus] = useState('Review, export, and publish the generated timetable.');
+    const publishNow = () => { setLoading(true); publishGeneratedTimetable(generatedBatchId).then(data => { setPublishResult(data); setStatus(data.message); }).catch(() => setStatus('Publish API unavailable.')).finally(() => setLoading(false)); };
+    const exportNow = (format: 'PDF' | 'EXCEL') => { setLoading(true); exportGeneratedTimetable(generatedBatchId, format).then(data => { setExportResult(data); setStatus(`${format} export preview ready: ${data.fileName}`); }).catch(() => setStatus('Export API unavailable.')).finally(() => setLoading(false)); };
+    return <ImageBackground source={require('../assets/branding/splash-gold.png')} style={styles.bg} resizeMode="cover"><ScrollView contentContainerStyle={styles.container}>
+        <Header title="Publish Timetable" eyebrow="DAY 15 • PUBLISH WORKFLOW" homePath={backHome} />
+        <Text style={styles.status}>{status}</Text><Text style={styles.batch}>Batch: {generatedBatchId}</Text>{loading ? <ActivityIndicator color={colors.primaryNavy} style={{ marginVertical: 10 }} /> : null}
+        <View style={styles.card}><Text style={styles.cardTitle}>Publish Status</Text><Text style={styles.big}>{publishResult?.status || 'NOT PUBLISHED'}</Text><Text style={styles.text}>Published entries: {publishResult?.publishedEntries ?? 0}</Text><Text style={styles.text}>Remaining conflicts: {publishResult?.remainingConflicts ?? '-'}</Text></View>
+        <View style={styles.row}><TouchableOpacity style={styles.secondaryButton} onPress={() => exportNow('EXCEL')}><Text style={styles.secondaryText}>Excel Export</Text></TouchableOpacity><TouchableOpacity style={styles.secondaryButton} onPress={() => exportNow('PDF')}><Text style={styles.secondaryText}>PDF Export</Text></TouchableOpacity></View>
+        {exportResult ? <View style={styles.card}><Text style={styles.cardTitle}>{exportResult.fileName}</Text><Text numberOfLines={8} style={styles.preview}>{exportResult.content}</Text></View> : null}
+        <TouchableOpacity style={styles.primaryButton} onPress={publishNow}><Text style={styles.primaryText}>Publish Final Timetable</Text></TouchableOpacity>
+        <TouchableOpacity style={styles.secondaryFull} onPress={() => router.push({ pathname: '/principal-timetable-intelligence' as any, params: { sourceRole, generatedBatchId } })}><Text style={styles.secondaryText}>Open Principal Intelligence</Text></TouchableOpacity>
+    </ScrollView></ImageBackground>;
+}
+function Header({ title, eyebrow, homePath }: { title: string; eyebrow: string; homePath: string }) { return <View style={styles.headerRow}><TouchableOpacity style={styles.circleButton} onPress={() => router.back()}><Text style={styles.backText}>‹</Text></TouchableOpacity><View style={styles.headerTextWrap}><Text style={styles.eyebrow}>{eyebrow}</Text><Text style={styles.title}>{title}</Text></View><TouchableOpacity style={styles.circleButton} onPress={() => router.replace(homePath as any)}><Text style={styles.homeIcon}>⌂</Text></TouchableOpacity></View>; }
+const styles = StyleSheet.create({ bg:{flex:1}, container:{paddingHorizontal:spacing.lg,paddingTop:72,paddingBottom:32}, headerRow:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',marginBottom:16,gap:7}, circleButton:{width:52,height:52,borderRadius:26,borderWidth:1.5,borderColor:'rgba(255,255,255,0.78)',backgroundColor:'rgba(255,255,255,0.12)',alignItems:'center',justifyContent:'center'}, backText:{color:colors.primaryNavy,fontSize:40,fontWeight:'900',marginTop:-7}, homeIcon:{color:colors.primaryNavy,fontSize:30,fontWeight:'900',marginTop:-3}, headerTextWrap:{flex:1,alignItems:'center'}, eyebrow:{color:colors.deepGold,fontWeight:'900',fontSize:9,letterSpacing:1.5,textAlign:'center'}, title:{color:colors.primaryNavy,fontSize:22,fontWeight:'900',textAlign:'center'}, status:{color:colors.deepGold,fontWeight:'900',marginBottom:5}, batch:{color:colors.slateText,fontWeight:'800',marginBottom:10}, card:{backgroundColor:'rgba(255,253,247,0.96)',borderRadius:20,padding:14,borderWidth:1,borderColor:colors.cardGoldBorder,marginBottom:10,...shadows.medium}, cardTitle:{color:colors.primaryNavy,fontSize:14,fontWeight:'900',marginBottom:8}, big:{color:colors.primaryNavy,fontSize:20,fontWeight:'900',marginBottom:6}, text:{color:colors.slateText,fontWeight:'800',marginBottom:4}, preview:{color:colors.mutedText,fontWeight:'700',lineHeight:18}, row:{flexDirection:'row',gap:9,marginBottom:8}, primaryButton:{backgroundColor:colors.primaryNavy,borderRadius:13,padding:12,alignItems:'center',marginTop:8}, primaryText:{color:colors.white,fontWeight:'900'}, secondaryButton:{flex:1,backgroundColor:colors.cardCream,borderRadius:13,padding:12,alignItems:'center',borderWidth:1,borderColor:colors.cardGoldBorder}, secondaryFull:{backgroundColor:colors.cardCream,borderRadius:13,padding:12,alignItems:'center',marginTop:8,borderWidth:1,borderColor:colors.cardGoldBorder}, secondaryText:{color:colors.primaryNavy,fontWeight:'900'} });
