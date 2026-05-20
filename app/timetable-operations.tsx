@@ -12,7 +12,7 @@ export default function TimetableOperationsScreen() {
     const backHome = sourceRole === 'principal' ? '/principal-home' : '/admin-dashboard';
     const [batchId, setBatchId] = useState(String(params.generatedBatchId || params.batchId || ''));
     const [loading, setLoading] = useState(false);
-    const [message, setMessage] = useState('Paste/select a batch ID, then validate publish lock, real exports, versions, notifications, live timetable visibility, and archive history.');
+    const [message, setMessage] = useState('Paste/select a batch ID, then validate publish lock, exports, live role visibility, rollout readiness, versions, notifications, and archive history.');
     const [status, setStatus] = useState<TimetableOperationsStatus | null>(null);
     const [versions, setVersions] = useState<TimetableVersion[]>([]);
     const [notifications, setNotifications] = useState<TimetableNotification[]>([]);
@@ -94,12 +94,12 @@ export default function TimetableOperationsScreen() {
         <ScrollView contentContainerStyle={styles.container}>
             <View style={styles.headerRow}>
                 <TouchableOpacity style={styles.circleButton} onPress={() => router.back()}><Text style={styles.backText}>‹</Text></TouchableOpacity>
-                <View style={styles.headerTextWrap}><Text style={styles.eyebrow}>DAY 19 • TIMETABLE OPERATIONS</Text><Text style={styles.title}>Timetable Operations</Text></View>
+                <View style={styles.headerTextWrap}><Text style={styles.eyebrow}>DAY 20 • TIMETABLE OPERATIONS</Text><Text style={styles.title}>Timetable Operations</Text></View>
                 <TouchableOpacity style={styles.circleButton} onPress={() => router.replace(backHome as any)}><Text style={styles.homeIcon}>⌂</Text></TouchableOpacity>
             </View>
 
             <View style={styles.heroCard}>
-                <Text style={styles.heroTitle}>Publish Lock + Export + Versioning</Text>
+                <Text style={styles.heroTitle}>Publish Lock + Export + Rollout Readiness</Text>
                 <Text style={styles.heroText}>{message}</Text>
             </View>
 
@@ -121,6 +121,7 @@ export default function TimetableOperationsScreen() {
                 <Action title="PDF Export" subtitle="Real PDF payload" onPress={() => runExport('PDF')} />
                 <Action title="Excel Export" subtitle="Excel .xls payload" onPress={() => runExport('EXCEL')} />
                 <Action title="Live Timetable" subtitle="Teacher/student/parent view" onPress={() => router.push({ pathname: '/timetable-live' as any, params: { batchId: cleanBatchId, role, sourceRole } })} />
+                <Action title="Rollout Readiness" subtitle="Day 20 final gate" onPress={() => router.push({ pathname: '/timetable-rollout-readiness' as any, params: { batchId: cleanBatchId, sourceRole } })} />
                 <Action title="Rollback" subtitle="Unlock to review mode" onPress={runRollback} />
                 <Action title="Intelligence" subtitle="Principal analytics" onPress={() => router.push({ pathname: '/principal-timetable-intelligence' as any, params: { generatedBatchId: cleanBatchId, sourceRole } })} />
             </View>

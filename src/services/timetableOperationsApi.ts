@@ -3,6 +3,7 @@ import {
     TimetableArchiveSummary,
     TimetableBinaryExportResponse,
     TimetableOperationsStatus,
+    TimetableRolloutReadiness,
     TimetableLiveResponse,
     TimetableManualEditRequest,
     TimetableNotification,
@@ -32,13 +33,18 @@ export async function getLiveTimetable(params: {
     if (params.className) query.append('className', params.className);
     if (params.section) query.append('section', params.section);
 
-    const response = await fetch(`${API_BASE_URL}/timetable/day18/live?${query.toString()}`);
+    const response = await fetch(`${API_BASE_URL}/timetable/operations/live?${query.toString()}`);
     return safeJson<TimetableLiveResponse>(response);
 }
 
 export async function getTimetableOperationsStatus(batchId: string): Promise<TimetableOperationsStatus> {
-    const response = await fetch(`${API_BASE_URL}/timetable/day18/status/${encodeURIComponent(batchId)}`);
+    const response = await fetch(`${API_BASE_URL}/timetable/operations/status/${encodeURIComponent(batchId)}`);
     return safeJson<TimetableOperationsStatus>(response);
+}
+
+export async function getTimetableRolloutReadiness(batchId: string): Promise<TimetableRolloutReadiness> {
+    const response = await fetch(`${API_BASE_URL}/timetable/operations/rollout-readiness/${encodeURIComponent(batchId)}`);
+    return safeJson<TimetableRolloutReadiness>(response);
 }
 
 export async function publishLockTimetable(
@@ -47,7 +53,7 @@ export async function publishLockTimetable(
     approvedBy = 'Admin'
 ): Promise<TimetablePublishResponse> {
     const response = await fetch(
-        `${API_BASE_URL}/timetable/day18/publish-lock/${encodeURIComponent(batchId)}?role=${encodeURIComponent(role)}&approvedBy=${encodeURIComponent(approvedBy)}`,
+        `${API_BASE_URL}/timetable/operations/publish-lock/${encodeURIComponent(batchId)}?role=${encodeURIComponent(role)}&approvedBy=${encodeURIComponent(approvedBy)}`,
         {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -61,7 +67,7 @@ export async function exportTimetableBinary(
     batchId: string,
     format: 'PDF' | 'EXCEL'
 ): Promise<TimetableBinaryExportResponse> {
-    const response = await fetch(`${API_BASE_URL}/timetable/day18/export/${encodeURIComponent(batchId)}?format=${format}`);
+    const response = await fetch(`${API_BASE_URL}/timetable/operations/export/${encodeURIComponent(batchId)}?format=${format}`);
     return safeJson<TimetableBinaryExportResponse>(response);
 }
 
@@ -71,7 +77,7 @@ export async function swapTimetableEntry(
     role = 'ADMIN'
 ): Promise<unknown> {
     const response = await fetch(
-        `${API_BASE_URL}/timetable/day18/swap/${encodeURIComponent(batchId)}?role=${encodeURIComponent(role)}`,
+        `${API_BASE_URL}/timetable/operations/swap/${encodeURIComponent(batchId)}?role=${encodeURIComponent(role)}`,
         {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -83,7 +89,7 @@ export async function swapTimetableEntry(
 }
 
 export async function getTimetableVersions(batchId: string): Promise<TimetableVersion[]> {
-    const response = await fetch(`${API_BASE_URL}/timetable/day18/versions/${encodeURIComponent(batchId)}`);
+    const response = await fetch(`${API_BASE_URL}/timetable/operations/versions/${encodeURIComponent(batchId)}`);
     return safeJson<TimetableVersion[]>(response);
 }
 
@@ -93,7 +99,7 @@ export async function rollbackTimetableVersion(
     role = 'ADMIN'
 ): Promise<TimetableVersion> {
     const response = await fetch(
-        `${API_BASE_URL}/timetable/day18/rollback/${encodeURIComponent(batchId)}/${versionNumber}?role=${encodeURIComponent(role)}`,
+        `${API_BASE_URL}/timetable/operations/rollback/${encodeURIComponent(batchId)}/${versionNumber}?role=${encodeURIComponent(role)}`,
         {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -104,11 +110,11 @@ export async function rollbackTimetableVersion(
 }
 
 export async function getTimetableNotifications(batchId: string): Promise<TimetableNotification[]> {
-    const response = await fetch(`${API_BASE_URL}/timetable/day18/notifications/${encodeURIComponent(batchId)}`);
+    const response = await fetch(`${API_BASE_URL}/timetable/operations/notifications/${encodeURIComponent(batchId)}`);
     return safeJson<TimetableNotification[]>(response);
 }
 
 export async function getTimetableArchives(): Promise<TimetableArchiveSummary[]> {
-    const response = await fetch(`${API_BASE_URL}/timetable/day18/archives`);
+    const response = await fetch(`${API_BASE_URL}/timetable/operations/archives`);
     return safeJson<TimetableArchiveSummary[]>(response);
 }

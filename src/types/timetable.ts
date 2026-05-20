@@ -262,3 +262,19 @@ export type TimetableOperationsStatus = {
     entries: number;
     conflicts: number;
 };
+
+export type TimetableRolloutReadiness = {
+    batchId: string;
+    readyForRollout: boolean;
+    locked: boolean;
+    latestPublished: boolean;
+    totalEntries: number;
+    teacherVisibleEntries: number;
+    studentParentVisibleEntries: number;
+    conflicts: number;
+    notifications: number;
+    versions: number;
+    readinessScore: number;
+    blockers: string[];
+    checks: string[];
+};
