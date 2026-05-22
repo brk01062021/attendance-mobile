@@ -1,4 +1,4 @@
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
     ActivityIndicator,
@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import DashboardIntelligencePanel from '../components/dashboard/DashboardIntelligencePanel';
 import { API_BASE_URL, DEV_DEFAULTS } from '../src/services/api';
+import { getRoleGreeting, getSession } from '../src/services/sessionService';
 import { colors, shadows, spacing } from '../src/theme';
 
 const DASHBOARD_TEST_DATE = DEV_DEFAULTS.dashboardDate;
@@ -75,8 +76,10 @@ export default function AdminDashboardScreen() {
     const [subjectBreakdown, setSubjectBreakdown] = useState<SubjectDashboardStats[]>([]);
     const [loadingBreakdown, setLoadingBreakdown] = useState(false);
     const [breakdownError, setBreakdownError] = useState('');
+    const params = useLocalSearchParams<{ adminName?: string; schoolId?: string }>();
+    const session = getSession();
 
-    const adminName = useMemo(() => 'Principal', []);
+    const adminName = useMemo(() => getRoleGreeting('ADMIN', params.adminName || session?.displayName || 'Admin'), [params.adminName, session?.displayName]);
 
     useEffect(() => {
         const loadAdminDashboard = async () => {

@@ -1,17 +1,18 @@
+import { router } from 'expo-router';
 import React, { useState } from 'react';
 import {
-    View,
+    Alert,
+    Image,
+    ImageBackground,
+    ScrollView,
+    StyleSheet,
     Text,
     TextInput,
     TouchableOpacity,
-    StyleSheet,
-    Alert,
-    ScrollView,
-    Image,
-    ImageBackground,
+    View,
 } from 'react-native';
-import { router } from 'expo-router';
-import { colors, spacing, typography, shadows } from '../src/theme';
+import { normalizeSchoolId, saveSession } from '../src/services/sessionService';
+import { colors, shadows, spacing, typography } from '../src/theme';
 
 type LoginRole = 'ADMIN' | 'PRINCIPAL' | 'TEACHER' | 'PARENT' | 'STUDENT';
 
@@ -19,24 +20,29 @@ export default function LoginScreen() {
     const [selectedRole, setSelectedRole] = useState<LoginRole>('TEACHER');
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
+    const [schoolId, setSchoolId] = useState('DEMO');
 
     const roles: LoginRole[] = ['ADMIN', 'PRINCIPAL', 'TEACHER', 'PARENT', 'STUDENT'];
 
     const handleLogin = () => {
         const cleanUsername = username.trim();
+        const cleanSchoolId = normalizeSchoolId(schoolId);
 
         if (!cleanUsername || !password.trim()) {
             Alert.alert('Validation', 'Please enter username and password');
             return;
         }
 
+        saveSession({ role: selectedRole, userId: '1', displayName: cleanUsername, schoolId: cleanSchoolId, schoolName: 'VidyaSetu Demo School' });
+
         if (selectedRole === 'ADMIN') {
             router.replace({
                 pathname: '/admin-dashboard',
                 params: {
                     role: selectedRole,
-                    adminName: cleanUsername,
+                    adminName: cleanUsername || 'Admin',
                     userId: '1',
+                    schoolId: cleanSchoolId,
                 },
             } as any);
             return;
@@ -47,8 +53,9 @@ export default function LoginScreen() {
                 pathname: '/principal-home',
                 params: {
                     role: selectedRole,
-                    principalName: cleanUsername,
+                    principalName: cleanUsername || 'Principal',
                     userId: '1',
+                    schoolId: cleanSchoolId,
                 },
             } as any);
             return;
@@ -61,6 +68,7 @@ export default function LoginScreen() {
                     role: selectedRole,
                     teacherId: '1',
                     teacherName: cleanUsername,
+                    schoolId: cleanSchoolId,
                 },
             } as any);
             return;
@@ -75,6 +83,7 @@ export default function LoginScreen() {
                     parentName: cleanUsername,
                     studentId: '1',
                     studentName: 'Demo Student',
+                    schoolId: cleanSchoolId,
                 },
             } as any);
             return;
@@ -87,6 +96,7 @@ export default function LoginScreen() {
                     role: selectedRole,
                     studentId: '1',
                     studentName: cleanUsername,
+                    schoolId: cleanSchoolId,
                 },
             } as any);
         }
@@ -158,6 +168,17 @@ export default function LoginScreen() {
                             value={username}
                             onChangeText={setUsername}
                             autoCapitalize="none"
+                        />
+
+                        <Text style={styles.label}>School ID</Text>
+                        <TextInput
+                            style={styles.input}
+                            placeholder="4-char school ID, e.g. DEMO"
+                            placeholderTextColor={colors.mutedText}
+                            value={schoolId}
+                            onChangeText={(value) => setSchoolId(value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 4))}
+                            autoCapitalize="characters"
+                            maxLength={4}
                         />
 
                         <Text style={styles.label}>Password</Text>

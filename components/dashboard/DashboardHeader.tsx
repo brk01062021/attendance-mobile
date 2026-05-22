@@ -40,7 +40,7 @@ const styles = StyleSheet.create({
         borderColor: dashboardTheme.colors.border,
     },
     circleText: { color: dashboardTheme.colors.white, fontSize: 20, fontWeight: '900' },
-    title: { flex: 1, color: dashboardTheme.colors.white, textAlign: 'center', fontSize: 18, fontWeight: '900' },
+    title: { flex: 1, color: dashboardTheme.colors.white, textAlign: 'center', fontSize: 20, fontWeight: '900', letterSpacing: 0.2, textShadowColor: 'rgba(0,0,0,0.55)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 3 },
     logoutButton: {
         width: 42,
         height: 42,
