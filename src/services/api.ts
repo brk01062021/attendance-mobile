@@ -68,6 +68,8 @@ export const API_ENDPOINTS = {
 
     schoolNotices: `${API_BASE_URL}/school-notices`,
     notifications: `${API_BASE_URL}/notifications`,
+    pilotOnboardingHealth: `${API_BASE_URL}/pilot-onboarding/health`,
+    pilotOnboardingSummary: `${API_BASE_URL}/pilot-onboarding/summary`,
 
     teacherLeavePreview: `${API_BASE_URL}/teacher-leave/preview-replacements`,
     teacherLeaveSubmit: `${API_BASE_URL}/teacher-leave/submit`,

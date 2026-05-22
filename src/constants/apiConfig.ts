@@ -1,14 +1,3 @@
-/**
- * VidyaSetu frontend API/environment constants.
- *
- * Day 1 validation + Day 2 cleanup goal:
- * - keep backend URL in one place
- * - avoid duplicate hardcoded localhost/LAN URLs across screens
- * - preserve existing endpoint names used by older screens/services
- * - make future pilot-school environment switching safer
- *
- * For local Expo testing, update DEFAULT_API_BASE_URL here if your machine IP changes.
- */
 export const DEFAULT_API_BASE_URL = 'http://192.168.1.75:8080';
 
 export const API_BASE_URL = DEFAULT_API_BASE_URL;
@@ -85,6 +74,8 @@ export const API_ENDPOINTS = {
 
     schoolNotices: `${API_BASE_URL}/school-notices`,
     notifications: `${API_BASE_URL}/notifications`,
+    pilotOnboardingHealth: `${API_BASE_URL}/pilot-onboarding/health`,
+    pilotOnboardingSummary: `${API_BASE_URL}/pilot-onboarding/summary`,
 };
 
 export default API_ENDPOINTS;

@@ -1,3 +1,4 @@
+import { router } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
     ActivityIndicator,
@@ -9,10 +10,9 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
-import { router } from 'expo-router';
 import DashboardIntelligencePanel from '../components/dashboard/DashboardIntelligencePanel';
-import { colors, shadows, spacing } from '../src/theme';
 import { API_BASE_URL, DEV_DEFAULTS } from '../src/services/api';
+import { colors, shadows, spacing } from '../src/theme';
 
 const DASHBOARD_TEST_DATE = DEV_DEFAULTS.dashboardDate;
 const SHOW_ADVANCED_ANALYTICS = false;
@@ -343,6 +343,13 @@ export default function AdminDashboardScreen() {
                             onPress={openRegisterChooser}
                         />
 
+                        <QuickAction
+                            emoji="🚀"
+                            title="Pilot Onboarding"
+                            subtitle="Day 26 API validation"
+                            onPress={() => openRoute('/pilot-onboarding')}
+                        />
+
                     </View>
                 </View>
 
@@ -538,6 +545,11 @@ export default function AdminDashboardScreen() {
                             <MenuItem
                                 title="Import School Data"
                                 onPress={() => openRoute('/import-school-data')}
+                            />
+
+                            <MenuItem
+                                title="Pilot Onboarding"
+                                onPress={() => openRoute('/pilot-onboarding')}
                             />
 
                             <MenuSectionTitle title="Communication" />
