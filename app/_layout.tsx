@@ -1,5 +1,5 @@
-import React from 'react';
 import { Stack } from 'expo-router';
+import React from 'react';
 
 export default function RootLayout() {
     return (
@@ -18,6 +18,7 @@ export default function RootLayout() {
             <Stack.Screen name="attendance" />
             <Stack.Screen name="teacher-dashboard" />
             <Stack.Screen name="teacher-leave-planning" />
+            <Stack.Screen name="teacher-leave-request" />
             <Stack.Screen name="teacher-replacements" />
             <Stack.Screen name="admin-dashboard" />
             <Stack.Screen name="principal-home" />

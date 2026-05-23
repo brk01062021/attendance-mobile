@@ -1,3 +1,4 @@
+import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
     ActivityIndicator,
@@ -9,10 +10,9 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
-import { router, useLocalSearchParams } from 'expo-router';
 import DashboardIntelligencePanel from '../components/dashboard/DashboardIntelligencePanel';
-import { colors, shadows, spacing } from '../src/theme';
 import { API_BASE_URL, DEV_DEFAULTS } from '../src/services/api';
+import { colors, shadows, spacing } from '../src/theme';
 
 type PrincipalStats = {
     attendanceDate: string;
@@ -300,7 +300,7 @@ export default function PrincipalHomeScreen() {
                             title="Teacher Leave Planning"
                             subtitle="Leave and replacements"
                             onPress={() =>
-                                openRoute('/teacher-leave-planning')
+                                openRoute('/admin-leave-approvals')
                             }
                         />
 
@@ -385,7 +385,7 @@ export default function PrincipalHomeScreen() {
                             <MenuItem
                                 title="Teacher Leave Planning"
                                 onPress={() =>
-                                    openRoute('/teacher-leave-planning')
+                                    openRoute('/admin-leave-approvals')
                                 }
                             />
 

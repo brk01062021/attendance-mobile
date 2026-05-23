@@ -1,16 +1,16 @@
+import { API_ENDPOINTS } from '@/src/services/api';
+import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
-    View,
-    Text,
-    TouchableOpacity,
-    StyleSheet,
-    ScrollView,
-    ImageBackground,
     ActivityIndicator,
     Alert,
+    ImageBackground,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from 'react-native';
-import { router, useLocalSearchParams } from 'expo-router';
-import { API_ENDPOINTS } from '@/src/services/api';
 import { colors } from '../src/theme';
 
 type UserRole = 'ADMIN' | 'TEACHER' | 'PARENT' | 'STUDENT';
@@ -165,9 +165,9 @@ export default function HomeV2Screen() {
         },
         {
             icon: '🗓️',
-            title: 'Leave Planning',
+            title: 'Request Leave',
             subtitle: 'Plan and assign replacements',
-            onPress: () => router.push('/teacher-leave-planning' as any),
+            onPress: () => router.push('/teacher-leave-request' as any),
         },
         {
             icon: '👨‍👩‍👧',

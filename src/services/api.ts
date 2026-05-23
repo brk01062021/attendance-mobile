@@ -74,6 +74,8 @@ export const API_ENDPOINTS = {
 
     teacherLeavePreview: `${API_BASE_URL}/teacher-leave/preview-replacements`,
     teacherLeaveSubmit: `${API_BASE_URL}/teacher-leave/submit`,
+    teacherLeaveEnquiry: `${API_BASE_URL}/teacher-leave/enquiry`,
+    teacherLeaveEnquiries: `${API_BASE_URL}/teacher-leave/admin/enquiries`,
     teacherLeavePending: `${API_BASE_URL}/teacher-leave/admin/pending`,
     teacherLeaveApprove: `${API_BASE_URL}/teacher-leave/admin/approve`,
     replacementLoadSummary: `${API_BASE_URL}/teacher-replacements/load-summary`,

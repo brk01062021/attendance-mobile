@@ -1,19 +1,19 @@
+import { API_ENDPOINTS } from '@/src/services/api';
+import { Stack, router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
-    View,
-    Text,
-    TouchableOpacity,
-    StyleSheet,
-    Modal,
     ActivityIndicator,
     Alert,
-    ScrollView,
     ImageBackground,
+    Modal,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from 'react-native';
-import { Stack, router, useLocalSearchParams } from 'expo-router';
-import { API_ENDPOINTS } from '@/src/services/api';
-import { colors, spacing, shadows } from '../src/theme';
 import { images } from '../src/constants/images';
+import { colors, shadows, spacing } from '../src/theme';
 
 type AdminStudentAttendance = {
     studentId: number;
@@ -431,7 +431,7 @@ export default function HomeScreen() {
 
     const navigateToTeacherLeavePlanning = () => {
         setShowMenuModal(false);
-        router.push('/teacher-leave-planning' as any);
+        router.push('/teacher-leave-request' as any);
     };
 
     const navigateToAdminParentDashboard = () => {
@@ -735,7 +735,7 @@ export default function HomeScreen() {
                                     {isAdmin ? (
                                         <>
                                             <MenuItem title="Admin Teacher Dashboard" onPress={navigateToAdminTeacherDashboard} />
-                                            <MenuItem title="Teacher Leave Planning" onPress={navigateToTeacherLeavePlanning} />
+                                            <MenuItem title="Request Leave / Leave Enquiry" onPress={navigateToTeacherLeavePlanning} />
                                             <MenuItem title="Admin Parent Dashboard" onPress={navigateToAdminParentDashboard} />
                                             <MenuItem title="Attendance Report" onPress={navigateToAttendanceReport} />
                                             <MenuItem title="Import School Data" onPress={navigateToImportSchoolData} />

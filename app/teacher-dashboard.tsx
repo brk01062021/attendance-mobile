@@ -315,10 +315,10 @@ export default function TeacherDashboard() {
 
                             <MenuSectionTitle title="Planning" />
                             <MenuItem
-                                title="Teacher Leave Planning"
+                                title="Request Leave / Leave Enquiry"
                                 onPress={() => {
                                     setMenuVisible(false);
-                                    router.push({ pathname: '/teacher-leave-planning', params: { teacherId, teacherName, role: 'TEACHER', sourceRole: 'teacher' } } as any);
+                                    router.push({ pathname: '/teacher-leave-request', params: { teacherId, teacherName, role: 'TEACHER', sourceRole: 'teacher' } } as any);
                                 }}
                             />
                             <MenuItem

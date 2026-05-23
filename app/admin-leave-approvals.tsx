@@ -1,20 +1,19 @@
-import React, { useEffect, useState } from 'react';
+import { router, useLocalSearchParams } from 'expo-router';
+import React, { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, ImageBackground, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { router } from 'expo-router';
 import { images } from '../src/constants/images';
-import { approveTeacherLeave, getPendingLeaveApprovals } from '../src/services/day4AutomationApi';
+import { approveTeacherLeaveEnquiry, getPendingLeaveEnquiries, rejectTeacherLeaveEnquiry } from '../src/services/day4AutomationApi';
 
-type PendingLeave = {
+type PendingLeaveEnquiry = {
     id: number;
     teacherId: number;
     teacherName: string;
-    className: string;
-    section: string;
-    subjectName: string;
-    scheduleDate: string;
-    startTime: string;
-    endTime: string;
+    fromDate: string;
+    toDate: string;
+    leaveType: string;
+    reason?: string;
     status: string;
+    requestedAt?: string;
 };
 
 const today = () => new Date().toISOString().split('T')[0];
@@ -25,16 +24,20 @@ const plusDays = (days: number) => {
 };
 
 export default function AdminLeaveApprovalsScreen() {
-    const [items, setItems] = useState<PendingLeave[]>([]);
+    const params = useLocalSearchParams();
+    const sourceRole = String(params.sourceRole || params.role || '').toLowerCase();
+    const backPath = useMemo(() => sourceRole === 'principal' ? '/principal-home' : '/admin-dashboard', [sourceRole]);
+    const [items, setItems] = useState<PendingLeaveEnquiry[]>([]);
     const [loading, setLoading] = useState(false);
+    const [savingId, setSavingId] = useState<number | null>(null);
 
     const loadData = async () => {
         try {
             setLoading(true);
-            const data = await getPendingLeaveApprovals(today(), plusDays(30));
+            const data = await getPendingLeaveEnquiries(today(), plusDays(30));
             setItems(data || []);
         } catch (error) {
-            Alert.alert('Unable to load', 'Please confirm backend is running and Day 4 APIs are available.');
+            Alert.alert('Unable to load', 'Please confirm backend is running and Day 29 leave enquiry APIs are available.');
         } finally {
             setLoading(false);
         }
@@ -42,45 +45,68 @@ export default function AdminLeaveApprovalsScreen() {
 
     useEffect(() => { loadData(); }, []);
 
-    const approveWithoutReplacement = async (scheduleId: number) => {
+    const approve = async (enquiryId: number) => {
         try {
-            await approveTeacherLeave(scheduleId, null, null);
-            Alert.alert('Updated', 'Leave approval has been updated.');
+            setSavingId(enquiryId);
+            await approveTeacherLeaveEnquiry(enquiryId, 'Approved from Leave Approvals');
+            Alert.alert('Approved', 'Leave enquiry approved. Replacement workflow can now start.');
             loadData();
         } catch (error) {
             Alert.alert('Approval failed', 'Please try again.');
+        } finally {
+            setSavingId(null);
+        }
+    };
+
+    const reject = async (enquiryId: number) => {
+        try {
+            setSavingId(enquiryId);
+            await rejectTeacherLeaveEnquiry(enquiryId, 'Rejected from Leave Approvals');
+            Alert.alert('Rejected', 'Leave enquiry rejected.');
+            loadData();
+        } catch (error) {
+            Alert.alert('Reject failed', 'Please try again.');
+        } finally {
+            setSavingId(null);
         }
     };
 
     return (
         <ImageBackground source={images.splashGold} style={styles.background} resizeMode="cover">
             <ScrollView contentContainerStyle={styles.container}>
-                <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+                <TouchableOpacity style={styles.backButton} onPress={() => router.replace(backPath as any)}>
                     <Text style={styles.backText}>Back</Text>
                 </TouchableOpacity>
-                <Text style={styles.title}>Admin Leave Approvals</Text>
-                <Text style={styles.subtitle}>Review planned and emergency leaves for the next 30 days.</Text>
+                <Text style={styles.eyebrow}>Admin / Principal Workflow</Text>
+                <Text style={styles.title}>Leave Approvals</Text>
+                <Text style={styles.subtitle}>Approve or reject teacher leave enquiries. Approved enquiries mark the teacher schedule as leave and then replacement planning can start.</Text>
 
                 {loading ? <ActivityIndicator size="large" /> : null}
 
                 {!loading && items.length === 0 ? (
                     <View style={styles.emptyCard}>
-                        <Text style={styles.emptyTitle}>No pending approvals</Text>
-                        <Text style={styles.emptyText}>Teacher leave planning is clear for the selected window.</Text>
+                        <Text style={styles.emptyTitle}>No pending leave enquiries</Text>
+                        <Text style={styles.emptyText}>Teachers have not submitted new leave enquiries for the selected window.</Text>
                     </View>
                 ) : null}
 
                 {items.map((item) => (
                     <View key={item.id} style={styles.card}>
                         <View style={styles.rowBetween}>
-                            <Text style={styles.teacher}>{item.teacherName}</Text>
-                            <Text style={[styles.badge, item.status === 'UNPLANNED_LEAVE' ? styles.danger : styles.warning]}>{item.status}</Text>
+                            <Text style={styles.teacher}>{item.teacherName || `Teacher #${item.teacherId}`}</Text>
+                            <Text style={[styles.badge, item.leaveType === 'UNPLANNED_LEAVE' ? styles.danger : styles.warning]}>{item.leaveType || 'PLANNED_LEAVE'}</Text>
                         </View>
-                        <Text style={styles.meta}>{item.scheduleDate} • {item.startTime} - {item.endTime}</Text>
-                        <Text style={styles.meta}>Class {item.className}-{item.section} • {item.subjectName}</Text>
-                        <TouchableOpacity style={styles.actionButton} onPress={() => approveWithoutReplacement(item.id)}>
-                            <Text style={styles.actionText}>Approve / Keep for Manual Replacement</Text>
-                        </TouchableOpacity>
+                        <Text style={styles.meta}>{item.fromDate} → {item.toDate}</Text>
+                        <Text style={styles.meta}>Reason: {item.reason || 'Not provided'}</Text>
+                        <Text style={styles.status}>Status: {item.status}</Text>
+                        <View style={styles.actionRow}>
+                            <TouchableOpacity style={[styles.actionButton, styles.approveButton]} onPress={() => approve(item.id)} disabled={savingId === item.id}>
+                                <Text style={styles.actionText}>{savingId === item.id ? 'Updating...' : 'Approve'}</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity style={[styles.actionButton, styles.rejectButton]} onPress={() => reject(item.id)} disabled={savingId === item.id}>
+                                <Text style={styles.rejectText}>Reject</Text>
+                            </TouchableOpacity>
+                        </View>
                     </View>
                 ))}
             </ScrollView>
@@ -93,8 +119,9 @@ const styles = StyleSheet.create({
     container: { padding: 20, paddingTop: 54, paddingBottom: 44 },
     backButton: { alignSelf: 'flex-start', backgroundColor: 'rgba(255,255,255,0.8)', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 18, marginBottom: 14 },
     backText: { color: '#3b2a05', fontWeight: '800' },
-    title: { fontSize: 28, fontWeight: '900', color: '#2f2106' },
-    subtitle: { color: '#5b4515', marginTop: 6, marginBottom: 18, fontSize: 14 },
+    eyebrow: { color: '#7a5200', fontWeight: '900', letterSpacing: 1, textTransform: 'uppercase' },
+    title: { fontSize: 28, fontWeight: '900', color: '#2f2106', marginTop: 6 },
+    subtitle: { color: '#5b4515', marginTop: 6, marginBottom: 18, fontSize: 14, lineHeight: 20, fontWeight: '700' },
     card: { backgroundColor: 'rgba(255,255,255,0.92)', borderRadius: 22, padding: 16, marginBottom: 14, borderWidth: 1, borderColor: 'rgba(116,83,15,0.18)' },
     emptyCard: { backgroundColor: 'rgba(255,255,255,0.85)', borderRadius: 24, padding: 22 },
     emptyTitle: { fontWeight: '900', fontSize: 18, color: '#2f2106' },
@@ -105,6 +132,11 @@ const styles = StyleSheet.create({
     warning: { backgroundColor: '#fff4cf', color: '#7a5200' },
     danger: { backgroundColor: '#ffe0de', color: '#9a241c' },
     meta: { color: '#5b4515', marginTop: 8, fontWeight: '700' },
-    actionButton: { marginTop: 14, backgroundColor: '#2f2106', paddingVertical: 12, borderRadius: 16, alignItems: 'center' },
+    status: { color: '#2f2106', marginTop: 8, fontWeight: '900' },
+    actionRow: { flexDirection: 'row', gap: 10, marginTop: 14 },
+    actionButton: { flex: 1, paddingVertical: 12, borderRadius: 16, alignItems: 'center' },
+    approveButton: { backgroundColor: '#2f2106' },
+    rejectButton: { backgroundColor: '#fff8df', borderWidth: 1, borderColor: 'rgba(122,82,0,0.3)' },
     actionText: { color: '#fff7d6', fontWeight: '900' },
+    rejectText: { color: '#7a1d16', fontWeight: '900' },
 });

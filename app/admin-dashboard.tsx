@@ -488,7 +488,7 @@ export default function AdminDashboardScreen() {
 
                             <MenuItem
                                 title="Teacher Leave Planning"
-                                onPress={() => openRoute('/teacher-leave-planning')}
+                                onPress={() => openRoute('/admin-leave-approvals')}
                             />
 
                             <MenuItem

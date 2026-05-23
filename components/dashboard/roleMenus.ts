@@ -44,7 +44,7 @@ export const roleMenus: Record<DashboardRole, DashboardMenuConfig[]> = {
         { icon: '✅', label: 'Take Attendance', route: '/home', description: 'Mark class attendance' },
         { icon: '📅', label: 'Date Summary', route: '/date-summary', description: 'Daily attendance summary' },
         { icon: '📊', label: 'Attendance Reports', route: '/attendance-report?role=TEACHER&sourceRole=teacher', description: 'Class records' },
-        { icon: '🗓️', label: 'Leave Planning', route: '/teacher-leave-planning?role=TEACHER&sourceRole=teacher', description: 'Plan leave and preview replacements' },
+        { icon: '📝', label: 'Request Leave / Leave Enquiry', route: '/teacher-leave-request?role=TEACHER&sourceRole=teacher', description: 'Submit leave enquiry for approval' },
         { icon: '🔁', label: 'Replacement Duties', route: '/teacher-replacements', description: 'Assigned replacement periods' },
         { icon: '🕒', label: 'Live Timetable', route: '/timetable-live?role=TEACHER&sourceRole=teacher', description: 'Published teaching schedule' },
     ],
