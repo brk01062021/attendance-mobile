@@ -1,18 +1,18 @@
+import { API_ENDPOINTS } from "@/src/services/api";
+import { router, useLocalSearchParams } from "expo-router";
 import React, { useEffect, useMemo, useState } from "react";
 import {
-    View,
-    Text,
-    TouchableOpacity,
-    StyleSheet,
+    ActivityIndicator,
     Alert,
+    ImageBackground,
     Modal,
     ScrollView,
-    ActivityIndicator,
-    ImageBackground,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import { Calendar } from "react-native-calendars";
-import { router } from "expo-router";
-import { API_ENDPOINTS } from "@/src/services/api";
 import { images } from "../src/constants/images";
 
 type TeacherSchedule = {
@@ -57,6 +57,10 @@ type ReplacementTab = "BEST_MATCH" | "SAME_CLASS" | "OTHERS";
 const MAX_VISIBLE_PERIOD_CARDS = 10;
 
 export default function TeacherLeavePlanningScreen() {
+    const params = useLocalSearchParams();
+    const sourceRole = String(params.sourceRole || params.role || "admin").toLowerCase();
+    const backHome = sourceRole === "teacher" ? "/teacher-dashboard" : sourceRole === "principal" ? "/principal-home" : "/admin-dashboard";
+    const workspaceLabel = sourceRole === "teacher" ? "Teacher Workspace" : sourceRole === "principal" ? "Principal Workspace" : "Admin Workspace";
     const todayString = new Date().toISOString().split("T")[0];
 
     const [fromDate, setFromDate] = useState(todayString);
@@ -761,9 +765,7 @@ export default function TeacherLeavePlanningScreen() {
 
 
     const goBackToAdminDashboard = () => {
-        router.replace({
-            pathname: "/admin-dashboard",
-        } as any);
+        router.replace({ pathname: backHome } as any);
     };
 
     const applyButtonText = useMemo(() => {
@@ -805,7 +807,7 @@ export default function TeacherLeavePlanningScreen() {
                     </View>
 
                     <View style={styles.titleBlock}>
-                        <Text style={styles.workspaceTitle}>Admin Workspace</Text>
+                        <Text style={styles.workspaceTitle}>{workspaceLabel}</Text>
                         <Text style={styles.title}>Teacher Leave Planning</Text>
                         <Text style={styles.subtitle}>
                             Planned & Unplanned Leave Workflow

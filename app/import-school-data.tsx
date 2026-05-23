@@ -1,5 +1,7 @@
-import React from 'react';
+import { router } from 'expo-router';
+import React, { useMemo, useState } from 'react';
 import {
+    ActivityIndicator,
     ImageBackground,
     ScrollView,
     StyleSheet,
@@ -7,10 +9,34 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
-import { router } from 'expo-router';
+import { day28SampleSheets, validateImportPreview, type ImportPreviewResponse } from '../src/services/importValidationApi';
+import { getSession } from '../src/services/sessionService';
 import { colors, shadows, spacing } from '../src/theme';
 
 export default function ImportSchoolDataScreen() {
+    const [loading, setLoading] = useState(false);
+    const [preview, setPreview] = useState<ImportPreviewResponse | null>(null);
+    const [error, setError] = useState<string | null>(null);
+    const session = getSession();
+
+    const totalRows = useMemo(() => Object.values(preview?.rowCounts || {}).reduce((sum, count) => sum + count, 0), [preview]);
+    const errors = preview?.issues?.filter((issue) => issue.severity === 'ERROR') || [];
+    const warnings = preview?.issues?.filter((issue) => issue.severity === 'WARNING') || [];
+
+    const runPreview = async () => {
+        try {
+            setLoading(true);
+            setError(null);
+            const result = await validateImportPreview(day28SampleSheets);
+            setPreview(result);
+        } catch (previewError: any) {
+            console.log(previewError);
+            setError(previewError?.response?.data?.message || previewError?.message || 'Unable to validate import preview');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     return (
         <ImageBackground
             source={require('../assets/branding/splash-gold.png')}
@@ -23,142 +49,95 @@ export default function ImportSchoolDataScreen() {
                 </TouchableOpacity>
 
                 <View style={styles.heroCard}>
-                    <Text style={styles.heroEyebrow}>School Onboarding</Text>
-                    <Text style={styles.heroTitle}>Import School Data</Text>
-                    <Text style={styles.heroSubtitle}>SUBImport School Data</Text>
+                    <Text style={styles.heroEyebrow}>Day 28 Foundation</Text>
+                    <Text style={styles.heroTitle}>Excel Import Validation</Text>
+                    <Text style={styles.heroSubtitle}>Tenant-safe preview before importing real school data.</Text>
                 </View>
 
                 <View style={styles.contentCard}>
-                    <Text style={styles.sectionEyebrow}>CURRENT STATUS</Text>
-                    <Text style={styles.sectionTitle}>SECTION_Import School Data</Text>
-                    <Text style={styles.bodyText}>This keeps the admin menu route stable while the Excel onboarding engine is built.</Text>
+                    <Text style={styles.sectionEyebrow}>ACTIVE TENANT</Text>
+                    <Text style={styles.sectionTitle}>{session?.schoolId || 'DEMO'} · {session?.role || 'ADMIN'}</Text>
+                    <Text style={styles.bodyText}>Validate workbook sheets, required tabs, row counts, role permission, and school_id isolation before final import processing.</Text>
 
-                    <View style={styles.infoBox}>
-                        <Text style={styles.infoTitle}>Next build</Text>
-                        <Text style={styles.infoText}>Connect Excel workbook upload, validation summary, error download and import confirmation.</Text>
-                    </View>
+                    <TouchableOpacity style={styles.primaryButton} onPress={runPreview} activeOpacity={0.88} disabled={loading}>
+                        {loading ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.primaryButtonText}>Run Preview Validation</Text>}
+                    </TouchableOpacity>
+
+                    {error ? <Text style={styles.errorText}>{error}</Text> : null}
+
+                    {preview ? (
+                        <View style={styles.previewBox}>
+                            <Text style={styles.previewStatus}>{preview.status}</Text>
+                            <Text style={styles.previewSummary}>{preview.summary}</Text>
+                            <View style={styles.metricRow}>
+                                <Metric label="Sheets" value={String(Object.keys(preview.rowCounts || {}).length)} />
+                                <Metric label="Rows" value={String(totalRows)} />
+                                <Metric label="Errors" value={String(errors.length)} />
+                                <Metric label="Warnings" value={String(warnings.length)} />
+                            </View>
+
+                            <Text style={styles.subTitle}>Sheet Preview</Text>
+                            {preview.previewSheets?.map((sheet) => (
+                                <View key={sheet.sheetName} style={styles.sheetRow}>
+                                    <Text style={styles.sheetName}>{sheet.sheetName}</Text>
+                                    <Text style={styles.sheetMeta}>{sheet.totalRows} rows · {sheet.headers?.length || 0} headers</Text>
+                                </View>
+                            ))}
+
+                            <Text style={styles.subTitle}>Import Issues</Text>
+                            {preview.issues?.length ? preview.issues.map((issue, index) => (
+                                <View key={`${issue.sheetName}-${index}`} style={styles.issueRow}>
+                                    <Text style={[styles.issueSeverity, issue.severity === 'ERROR' && styles.issueError]}>{issue.severity}</Text>
+                                    <Text style={styles.issueMessage}>{issue.sheetName}: {issue.message}</Text>
+                                </View>
+                            )) : <Text style={styles.successText}>No blocking errors found. Preview is ready for final import confirmation.</Text>}
+                        </View>
+                    ) : null}
                 </View>
             </ScrollView>
         </ImageBackground>
     );
 }
 
+function Metric({ label, value }: { label: string; value: string }) {
+    return (
+        <View style={styles.metricCard}>
+            <Text style={styles.metricValue}>{value}</Text>
+            <Text style={styles.metricLabel}>{label}</Text>
+        </View>
+    );
+}
+
 const styles = StyleSheet.create({
-    background: {
-        flex: 1,
-        backgroundColor: '#F5BE38',
-    },
-
-    container: {
-        paddingHorizontal: spacing.screenPadding,
-        paddingTop: 70,
-        paddingBottom: 120,
-    },
-
-    backButton: {
-        width: 52,
-        height: 52,
-        borderRadius: 26,
-        backgroundColor: 'rgba(255,255,255,0.45)',
-        borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.65)',
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginBottom: spacing.xl,
-    },
-
-    backButtonText: {
-        fontSize: 38,
-        lineHeight: 40,
-        fontWeight: '900',
-        color: colors.primaryNavy,
-    },
-
-    heroCard: {
-        backgroundColor: 'rgba(255,255,255,0.20)',
-        borderRadius: 34,
-        borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.45)',
-        padding: spacing.xl,
-        marginBottom: spacing.xl,
-    },
-
-    heroEyebrow: {
-        fontSize: 14,
-        fontWeight: '900',
-        color: colors.primaryNavy,
-        letterSpacing: 1.1,
-        textTransform: 'uppercase',
-    },
-
-    heroTitle: {
-        fontSize: 34,
-        lineHeight: 40,
-        fontWeight: '900',
-        color: colors.primaryNavy,
-        marginTop: spacing.sm,
-    },
-
-    heroSubtitle: {
-        fontSize: 16,
-        lineHeight: 24,
-        fontWeight: '800',
-        color: colors.primaryNavy,
-        marginTop: spacing.md,
-    },
-
-    contentCard: {
-        backgroundColor: 'rgba(255,255,255,0.96)',
-        borderRadius: 34,
-        borderWidth: 1.5,
-        borderColor: colors.cardGoldBorder,
-        padding: spacing.xl,
-        ...shadows.medium,
-    },
-
-    sectionEyebrow: {
-        fontSize: 13,
-        fontWeight: '900',
-        color: colors.premiumGold,
-        textTransform: 'uppercase',
-        letterSpacing: 1.1,
-    },
-
-    sectionTitle: {
-        fontSize: 26,
-        fontWeight: '900',
-        color: colors.primaryNavy,
-        marginTop: spacing.xs,
-    },
-
-    bodyText: {
-        fontSize: 16,
-        lineHeight: 24,
-        fontWeight: '800',
-        color: colors.slateText,
-        marginTop: spacing.md,
-    },
-
-    infoBox: {
-        backgroundColor: '#FFF8E1',
-        borderRadius: 24,
-        borderWidth: 1.2,
-        borderColor: colors.cardGoldBorder,
-        padding: spacing.lg,
-        marginTop: spacing.xl,
-    },
-
-    infoTitle: {
-        fontSize: 18,
-        fontWeight: '900',
-        color: colors.primaryNavy,
-    },
-
-    infoText: {
-        fontSize: 14,
-        lineHeight: 21,
-        fontWeight: '800',
-        color: colors.slateText,
-        marginTop: spacing.sm,
-    },
+    background: { flex: 1, backgroundColor: '#F5BE38' },
+    container: { paddingHorizontal: spacing.screenPadding, paddingTop: 70, paddingBottom: 120 },
+    backButton: { width: 52, height: 52, borderRadius: 26, backgroundColor: 'rgba(255,255,255,0.45)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.65)', alignItems: 'center', justifyContent: 'center', marginBottom: spacing.xl },
+    backButtonText: { fontSize: 38, lineHeight: 40, fontWeight: '900', color: colors.primaryNavy },
+    heroCard: { backgroundColor: 'rgba(255,255,255,0.20)', borderRadius: 34, borderWidth: 1, borderColor: 'rgba(255,255,255,0.45)', padding: spacing.xl, marginBottom: spacing.xl },
+    heroEyebrow: { fontSize: 14, fontWeight: '900', color: colors.primaryNavy, letterSpacing: 1.1, textTransform: 'uppercase' },
+    heroTitle: { fontSize: 34, lineHeight: 40, fontWeight: '900', color: colors.primaryNavy, marginTop: spacing.sm },
+    heroSubtitle: { fontSize: 16, lineHeight: 24, fontWeight: '800', color: colors.primaryNavy, marginTop: spacing.md },
+    contentCard: { backgroundColor: 'rgba(255,255,255,0.96)', borderRadius: 34, borderWidth: 1.5, borderColor: colors.cardGoldBorder, padding: spacing.xl, ...shadows.medium },
+    sectionEyebrow: { fontSize: 13, fontWeight: '900', color: colors.premiumGold, textTransform: 'uppercase', letterSpacing: 1.1 },
+    sectionTitle: { fontSize: 26, fontWeight: '900', color: colors.primaryNavy, marginTop: spacing.xs },
+    bodyText: { fontSize: 16, lineHeight: 24, fontWeight: '800', color: colors.slateText, marginTop: spacing.md },
+    primaryButton: { marginTop: spacing.xl, backgroundColor: colors.primaryNavy, borderRadius: 22, paddingVertical: 16, alignItems: 'center' },
+    primaryButtonText: { color: '#FFFFFF', fontSize: 16, fontWeight: '900' },
+    errorText: { marginTop: spacing.md, color: '#B91C1C', fontWeight: '900' },
+    previewBox: { marginTop: spacing.xl, backgroundColor: '#FFF8E1', borderRadius: 24, borderWidth: 1.2, borderColor: colors.cardGoldBorder, padding: spacing.lg },
+    previewStatus: { fontSize: 18, fontWeight: '900', color: colors.primaryNavy },
+    previewSummary: { fontSize: 14, lineHeight: 21, fontWeight: '800', color: colors.slateText, marginTop: spacing.xs },
+    metricRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: spacing.md },
+    metricCard: { width: '47%', backgroundColor: '#FFFFFF', borderRadius: 18, padding: 14, borderWidth: 1, borderColor: colors.cardGoldBorder },
+    metricValue: { fontSize: 22, fontWeight: '900', color: colors.primaryNavy },
+    metricLabel: { fontSize: 12, fontWeight: '900', color: colors.slateText, marginTop: 2, textTransform: 'uppercase' },
+    subTitle: { fontSize: 17, fontWeight: '900', color: colors.primaryNavy, marginTop: spacing.lg, marginBottom: spacing.sm },
+    sheetRow: { backgroundColor: '#FFFFFF', borderRadius: 16, padding: 12, marginBottom: 8, borderWidth: 1, borderColor: colors.cardGoldBorder },
+    sheetName: { fontSize: 15, fontWeight: '900', color: colors.primaryNavy },
+    sheetMeta: { fontSize: 13, fontWeight: '800', color: colors.slateText, marginTop: 3 },
+    issueRow: { backgroundColor: '#FFFFFF', borderRadius: 16, padding: 12, marginBottom: 8, borderWidth: 1, borderColor: colors.cardGoldBorder },
+    issueSeverity: { fontSize: 12, fontWeight: '900', color: '#92400E' },
+    issueError: { color: '#B91C1C' },
+    issueMessage: { fontSize: 13, lineHeight: 19, fontWeight: '800', color: colors.slateText, marginTop: 3 },
+    successText: { fontSize: 14, lineHeight: 20, fontWeight: '900', color: '#166534' },
 });

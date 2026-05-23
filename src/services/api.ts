@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { getSession, normalizeSchoolId } from './sessionService';
 
 export const API_BASE_URL = 'http://192.168.1.75:8080';
 
@@ -89,6 +90,13 @@ export const api = axios.create({
 
 api.interceptors.request.use(
     async (config: any) => {
+        const session = getSession();
+        const schoolId = normalizeSchoolId(session?.schoolId);
+        config.headers = {
+            ...(config.headers || {}),
+            'X-School-Id': schoolId,
+            ...(session?.token ? { Authorization: `Bearer ${session.token}` } : {}),
+        };
         return config;
     },
     (error: any) => Promise.reject(error)
@@ -97,6 +105,9 @@ api.interceptors.request.use(
 api.interceptors.response.use(
     (response: any) => response,
     async (error: any) => {
+        if (error?.response?.status === 401) {
+            console.log('VidyaSetu session expired. Please login again.');
+        }
         console.log('API Error:', error?.response?.data || error.message);
         return Promise.reject(error);
     }

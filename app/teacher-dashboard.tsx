@@ -1,3 +1,4 @@
+import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
     ActivityIndicator,
@@ -9,10 +10,9 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
-import { router, useLocalSearchParams } from 'expo-router';
 import DashboardIntelligencePanel from '../components/dashboard/DashboardIntelligencePanel';
-import { colors, shadows, spacing } from '../src/theme';
 import { API_BASE_URL, DEV_DEFAULTS } from '../src/services/api';
+import { colors, shadows, spacing } from '../src/theme';
 
 
 
@@ -318,7 +318,7 @@ export default function TeacherDashboard() {
                                 title="Teacher Leave Planning"
                                 onPress={() => {
                                     setMenuVisible(false);
-                                    router.push({ pathname: '/teacher-leave-planning', params: { teacherId, teacherName, role } } as any);
+                                    router.push({ pathname: '/teacher-leave-planning', params: { teacherId, teacherName, role: 'TEACHER', sourceRole: 'teacher' } } as any);
                                 }}
                             />
                             <MenuItem
