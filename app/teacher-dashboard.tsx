@@ -10,6 +10,7 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
+import DashboardHeader from '../components/dashboard/DashboardHeader';
 import DashboardIntelligencePanel from '../components/dashboard/DashboardIntelligencePanel';
 import { API_BASE_URL, DEV_DEFAULTS } from '../src/services/api';
 import { getSession, normalizeSchoolId } from '../src/services/sessionService';
@@ -57,6 +58,7 @@ export default function TeacherDashboard() {
     const teacherName = params.teacherName || session?.displayName;
     const role = 'TEACHER';
     const schoolId = normalizeSchoolId(String(params.schoolId || session?.schoolId || ''));
+    const schoolName = String(session?.schoolName || `${schoolId} School`);
 
     const displayTeacherName = useMemo(() => {
         const name = String(teacherName || '').trim();
@@ -153,25 +155,14 @@ export default function TeacherDashboard() {
                 contentContainerStyle={styles.container}
                 showsVerticalScrollIndicator={false}
             >
-                <View style={styles.topHeader}>
-                    <TouchableOpacity
-                        style={styles.circleButton}
-                        onPress={() => setMenuVisible(true)}
-                        activeOpacity={0.85}
-                    >
-                        <Text style={styles.circleButtonText}>☰</Text>
-                    </TouchableOpacity>
-
-                    <Text style={styles.headerTitle}>Teacher Dashboard</Text>
-
-                    <TouchableOpacity
-                        style={styles.headerLogoutButton}
-                        onPress={() => router.replace('/login' as any)}
-                        activeOpacity={0.85}
-                    >
-                        <Text style={styles.headerLogoutText}>⏻</Text>
-                    </TouchableOpacity>
-                </View>
+                <DashboardHeader
+                    schoolName={schoolName}
+                    workspaceTitle="Teacher Daily Workspace"
+                    roleLabel="TEACHER"
+                    schoolId={schoolId}
+                    onMenuPress={() => setMenuVisible(true)}
+                    onLogoutPress={() => router.replace('/login' as any)}
+                />
 
                 <View style={styles.heroCard}>
                     <Text style={styles.heroSmallText}>Good morning</Text>

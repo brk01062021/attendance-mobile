@@ -1,8 +1,8 @@
+import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, ImageBackground, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { router, useLocalSearchParams } from 'expo-router';
-import { colors, shadows, spacing } from '../src/theme';
 import { getLiveTimetable } from '../src/services/timetableOperationsApi';
+import { colors, shadows, spacing } from '../src/theme';
 import { TimetableEntry, TimetableLiveResponse } from '../src/types/timetable';
 
 export default function TimetableLiveScreen() {
@@ -41,7 +41,7 @@ export default function TimetableLiveScreen() {
         <ScrollView contentContainerStyle={styles.container}>
             <View style={styles.headerRow}>
                 <TouchableOpacity style={styles.circleButton} onPress={() => router.back()}><Text style={styles.backText}>‹</Text></TouchableOpacity>
-                <View style={styles.headerTextWrap}><Text style={styles.eyebrow}>DAY 18 • LIVE VISIBILITY</Text><Text style={styles.title}>Live Timetable</Text></View>
+                <View style={styles.headerTextWrap}><Text style={styles.eyebrow}>LIVE TIMETABLE</Text><Text style={styles.title}>Live Timetable</Text></View>
                 <TouchableOpacity style={styles.circleButton} onPress={() => router.replace('/teacher-dashboard' as any)}><Text style={styles.homeIcon}>⌂</Text></TouchableOpacity>
             </View>
 

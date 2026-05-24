@@ -1,8 +1,8 @@
+import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, ImageBackground, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { router, useLocalSearchParams } from 'expo-router';
-import { colors, shadows, spacing } from '../src/theme';
 import { getTimetableConflicts } from '../src/services/timetableApi';
+import { colors, shadows, spacing } from '../src/theme';
 import { TimetableConflict } from '../src/types/timetable';
 
 const demoConflicts: TimetableConflict[] = [];
@@ -44,7 +44,7 @@ export default function TimetableConflictsScreen() {
     return (
         <ImageBackground source={require('../assets/branding/splash-gold.png')} style={styles.bg} resizeMode="cover">
             <ScrollView contentContainerStyle={styles.container}>
-                <PageHeader title="Conflict Center" eyebrow="DAY 15 • CONFLICT REPAIR" homePath={backHome} />
+                <PageHeader title="Conflict Center" eyebrow="CONFLICT REPAIR" homePath={backHome} />
                 <Text style={styles.status}>{status}</Text>
                 <Text style={styles.batch}>Batch: {generatedBatchId}</Text>
                 {loading ? <ActivityIndicator color={colors.primaryNavy} style={{ marginBottom: 10 }} /> : null}

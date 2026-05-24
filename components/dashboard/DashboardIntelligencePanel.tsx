@@ -54,7 +54,7 @@ type Props = {
 export default function DashboardIntelligencePanel({ role }: Props) {
     return (
         <View style={styles.card}>
-            <Text style={styles.eyebrow}>DAY 8 INTELLIGENCE</Text>
+            <Text style={styles.eyebrow}>SCHOOL INTELLIGENCE</Text>
             <Text style={styles.title}>Production Intelligence Layer</Text>
             <Text style={styles.subtitle}>Shared dashboard foundation for mobile now, web app reuse later.</Text>
             <View style={styles.grid}>

@@ -1,8 +1,8 @@
+import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, ImageBackground, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { router, useLocalSearchParams } from 'expo-router';
-import { colors, shadows, spacing } from '../src/theme';
 import { repairTimetable } from '../src/services/timetableApi';
+import { colors, shadows, spacing } from '../src/theme';
 import { TimetableRepairResult } from '../src/types/timetable';
 
 export default function TimetableRepairScreen() {
@@ -27,7 +27,7 @@ export default function TimetableRepairScreen() {
     const navParams = { sourceRole, generatedBatchId: result?.batchId || generatedBatchId };
 
     return <ImageBackground source={require('../assets/branding/splash-gold.png')} style={styles.bg} resizeMode="cover"><ScrollView contentContainerStyle={styles.container}>
-        <Header title="Auto Conflict Repair" eyebrow="DAY 15 • REPAIR ENGINE" homePath={backHome} />
+        <Header title="Auto Conflict Repair" eyebrow="REPAIR ENGINE" homePath={backHome} />
         <Text style={styles.status}>{status}</Text><Text style={styles.batch}>Batch: {result?.batchId || generatedBatchId}</Text>
         {loading ? <ActivityIndicator color={colors.primaryNavy} style={{ marginVertical: 10 }} /> : null}
         <View style={styles.summaryRow}><Kpi label="Before" value={String(result?.conflictsBefore ?? '-')} /><Kpi label="After" value={String(result?.conflictsAfter ?? '-')} /><Kpi label="Fixed" value={String(result?.repairedItems ?? '-')} /></View>

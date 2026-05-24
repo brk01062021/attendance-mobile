@@ -1,8 +1,8 @@
+import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, ImageBackground, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { router, useLocalSearchParams } from 'expo-router';
-import { colors, shadows, spacing } from '../src/theme';
 import { getLatestPublishedTimetable, getPrincipalTimetableIntelligence } from '../src/services/timetableApi';
+import { colors, shadows, spacing } from '../src/theme';
 import { PrincipalTimetableIntelligence, TimetablePublishAudit } from '../src/types/timetable';
 
 export default function PrincipalTimetableIntelligenceScreen() {
@@ -17,7 +17,7 @@ export default function PrincipalTimetableIntelligenceScreen() {
     useEffect(() => { setLoading(true); Promise.all([getPrincipalTimetableIntelligence(generatedBatchId), getLatestPublishedTimetable().catch(() => null)]).then(([result, latest]) => { setData(result); setLatestPublished(latest); setStatus('Principal intelligence loaded.'); }).catch(() => setStatus('Principal timetable intelligence API unavailable.')).finally(() => setLoading(false)); }, [generatedBatchId]);
     const navParams = { sourceRole, generatedBatchId };
     return <ImageBackground source={require('../assets/branding/splash-gold.png')} style={styles.bg} resizeMode="cover"><ScrollView contentContainerStyle={styles.container}>
-        <Header title="Timetable Intelligence" eyebrow="DAY 15 • PRINCIPAL VIEW" homePath={backHome} />
+        <Header title="Timetable Intelligence" eyebrow="PRINCIPAL VIEW" homePath={backHome} />
         <Text style={styles.status}>{status}</Text><Text style={styles.batch}>Batch: {data?.batchId || generatedBatchId}</Text>{loading ? <ActivityIndicator color={colors.primaryNavy} style={{ marginVertical: 10 }} /> : null}
         <View style={styles.summaryRow}><Kpi label="Readiness" value={`${data?.publishReadinessScore ?? '-'}%`} /><Kpi label="Conflicts" value={String(data?.conflicts ?? '-')} /><Kpi label="Workload" value={String(data?.overloadRiskTeachers ?? '-')} /></View>
         <View style={styles.card}><Text style={styles.big}>{data?.readinessStatus || 'LOADING'}</Text><Text style={styles.text}>Class sections: {data?.classSections ?? '-'}</Text><Text style={styles.text}>Total periods: {data?.totalEntries ?? '-'}</Text><Text style={styles.text}>High risk conflicts: {data?.highRiskConflicts ?? '-'}</Text><Text style={styles.text}>Latest published batch: {latestPublished?.batchId || '-'}</Text><Text style={styles.text}>Latest published at: {latestPublished?.publishedAt || '-'}</Text></View>

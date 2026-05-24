@@ -1,9 +1,7 @@
+import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, ImageBackground, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { router, useLocalSearchParams } from 'expo-router';
-import { colors, shadows, spacing } from '../src/theme';
 import { getTimetableReview } from '../src/services/timetableApi';
-import { TimetableClassSectionReview, TimetableEntry } from '../src/types/timetable';
 import {
     buildClassSections,
     buildDemoTimetableEntries,
@@ -11,6 +9,8 @@ import {
     getTimetableReviewSnapshot,
     TimetableClassSection,
 } from '../src/state/timetableReviewStore';
+import { colors, shadows, spacing } from '../src/theme';
+import { TimetableClassSectionReview, TimetableEntry } from '../src/types/timetable';
 
 const days = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
 
@@ -98,7 +98,7 @@ export default function TimetableReviewScreen() {
     return (
         <ImageBackground source={require('../assets/branding/splash-gold.png')} style={styles.bg} resizeMode="cover">
             <ScrollView contentContainerStyle={styles.container}>
-                <PageHeader title="Timetable Review" eyebrow="DAY 15 • REVIEW + PUBLISH" homePath={backHome} />
+                <PageHeader title="Timetable Review" eyebrow="REVIEW + PUBLISH" homePath={backHome} />
                 <Text style={styles.status}>{status}</Text>
                 <Text style={styles.batch}>Batch: {generatedBatchId}</Text>
                 {loading ? <ActivityIndicator color={colors.primaryNavy} style={{ marginBottom: 10 }} /> : null}

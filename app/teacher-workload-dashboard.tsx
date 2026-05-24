@@ -1,8 +1,8 @@
+import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, ImageBackground, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { router, useLocalSearchParams } from 'expo-router';
-import { colors, shadows, spacing } from '../src/theme';
 import { getTeacherWorkloadSummary } from '../src/services/timetableApi';
+import { colors, shadows, spacing } from '../src/theme';
 import { TeacherWorkloadSummary } from '../src/types/timetable';
 
 const demoWorkload: TeacherWorkloadSummary[] = [
@@ -51,7 +51,7 @@ export default function TeacherWorkloadDashboardScreen() {
     return (
         <ImageBackground source={require('../assets/branding/splash-gold.png')} style={styles.bg} resizeMode="cover">
             <ScrollView contentContainerStyle={styles.container}>
-                <PageHeader title="Workload Intelligence" eyebrow="DAY 13 • WORKLOAD BALANCING" homePath={backHome} />
+                <PageHeader title="Workload Intelligence" eyebrow="WORKLOAD BALANCING" homePath={backHome} />
                 <Text style={styles.status}>{status}</Text>
                 <Text style={styles.batch}>Batch: {generatedBatchId}</Text>
                 {loading ? <ActivityIndicator color={colors.primaryNavy} style={{ marginBottom: 10 }} /> : null}

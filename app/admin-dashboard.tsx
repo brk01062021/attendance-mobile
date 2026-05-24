@@ -10,6 +10,7 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
+import DashboardHeader from '../components/dashboard/DashboardHeader';
 import DashboardIntelligencePanel from '../components/dashboard/DashboardIntelligencePanel';
 import { API_BASE_URL, DEV_DEFAULTS } from '../src/services/api';
 import { getRoleGreeting, getSession } from '../src/services/sessionService';
@@ -78,6 +79,8 @@ export default function AdminDashboardScreen() {
     const [breakdownError, setBreakdownError] = useState('');
     const params = useLocalSearchParams<{ adminName?: string; schoolId?: string }>();
     const session = getSession();
+    const schoolId = String(params.schoolId || session?.schoolId || 'BRK1').toUpperCase();
+    const schoolName = String(session?.schoolName || `${schoolId} School`);
 
     const adminName = useMemo(() => getRoleGreeting('ADMIN', params.adminName || session?.displayName || 'Admin'), [params.adminName, session?.displayName]);
 
@@ -211,25 +214,14 @@ export default function AdminDashboardScreen() {
                 contentContainerStyle={styles.container}
                 showsVerticalScrollIndicator={false}
             >
-                <View style={styles.topHeader}>
-                    <TouchableOpacity
-                        style={styles.circleButton}
-                        onPress={() => setMenuVisible(true)}
-                        activeOpacity={0.85}
-                    >
-                        <Text style={styles.circleButtonText}>☰</Text>
-                    </TouchableOpacity>
-
-                    <Text style={styles.headerTitle}>Admin Dashboard</Text>
-
-                    <TouchableOpacity
-                        style={styles.headerLogoutButton}
-                        onPress={logout}
-                        activeOpacity={0.85}
-                    >
-                        <Text style={styles.headerLogoutText}>⏻</Text>
-                    </TouchableOpacity>
-                </View>
+                <DashboardHeader
+                    schoolName={schoolName}
+                    workspaceTitle="Admin Operations Workspace"
+                    roleLabel="ADMIN"
+                    schoolId={schoolId}
+                    onMenuPress={() => setMenuVisible(true)}
+                    onLogoutPress={logout}
+                />
 
                 <View style={styles.heroCard}>
                     <Text style={styles.heroSmallText}>Good morning</Text>
@@ -349,7 +341,7 @@ export default function AdminDashboardScreen() {
                         <QuickAction
                             emoji="🚀"
                             title="Pilot Onboarding"
-                            subtitle="Day 26 API validation"
+                            subtitle="API validation"
                             onPress={() => openRoute('/pilot-onboarding')}
                         />
 

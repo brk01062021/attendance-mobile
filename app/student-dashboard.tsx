@@ -1,3 +1,4 @@
+import { router, useLocalSearchParams } from 'expo-router';
 import React, { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import {
     ImageBackground,
@@ -9,9 +10,10 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
-import { router, useLocalSearchParams } from 'expo-router';
+import DashboardHeader from '../components/dashboard/DashboardHeader';
 import DashboardIntelligencePanel from '../components/dashboard/DashboardIntelligencePanel';
-import { colors, spacing, shadows } from '../src/theme';
+import { getSession, normalizeSchoolId } from '../src/services/sessionService';
+import { colors, shadows, spacing } from '../src/theme';
 
 type AttendanceView = 'TODAY' | 'WEEKLY' | 'MONTHLY';
 type MenuView = 'HOME' | 'EXAM_RESULTS' | 'SCHOOL_NOTICES';
@@ -73,6 +75,9 @@ const examResults = {
 
 export default function StudentDashboard() {
     const params = useLocalSearchParams();
+    const session = getSession();
+    const schoolId = normalizeSchoolId(String(params.schoolId || session?.schoolId || ''));
+    const schoolName = String(session?.schoolName || `${schoolId} School`);
     const studentName = String(params.studentName || 'Student');
     const studentId = String(params.studentId || params.userId || '1');
 
@@ -150,23 +155,14 @@ export default function StudentDashboard() {
     return (
         <ImageBackground source={backgroundSource} style={styles.background} resizeMode="cover">
             <ScrollView contentContainerStyle={styles.container}>
-                <View style={styles.topRow}>
-                    <TouchableOpacity style={styles.circleButton} onPress={openMenu} activeOpacity={0.85}>
-                        <Text style={styles.circleButtonText}>☰</Text>
-                    </TouchableOpacity>
-
-                    <Text style={[styles.topCenterTitle, isHomePage && styles.homeTopTitle]}>
-                        {topCenterTitle}
-                    </Text>
-
-                    <TouchableOpacity
-                        style={styles.headerLogoutButton}
-                        onPress={goLogin}
-                        activeOpacity={0.85}
-                    >
-                        <Text style={styles.headerLogoutText}>⏻</Text>
-                    </TouchableOpacity>
-                </View>
+                <DashboardHeader
+                    schoolName={schoolName}
+                    workspaceTitle="Student Academic Workspace"
+                    roleLabel="STUDENT"
+                    schoolId={schoolId}
+                    onMenuPress={() => setMenuOpen(true)}
+                    onLogoutPress={goLogin}
+                />
 
                 {selectedAttendance ? (
                     contentReady ? (

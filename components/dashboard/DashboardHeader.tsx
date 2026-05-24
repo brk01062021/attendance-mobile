@@ -3,53 +3,53 @@ import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { dashboardTheme } from '../../theme/dashboardTheme';
 
 type Props = {
-    title: string;
+    schoolName: string;
+    workspaceTitle: string;
+    roleLabel: string;
+    schoolId: string;
     onMenuPress: () => void;
     onLogoutPress: () => void;
 };
 
-export default function DashboardHeader({ title, onMenuPress, onLogoutPress }: Props) {
+export default function DashboardHeader({ schoolName, workspaceTitle, roleLabel, schoolId, onMenuPress, onLogoutPress }: Props) {
     return (
-        <View style={styles.header}>
-            <TouchableOpacity style={styles.circleButton} onPress={onMenuPress} activeOpacity={0.85}>
-                <Text style={styles.circleText}>☰</Text>
-            </TouchableOpacity>
-            <Text style={styles.title}>{title}</Text>
-            <TouchableOpacity style={styles.logoutButton} onPress={onLogoutPress} activeOpacity={0.85}>
-                <Text style={styles.logoutText}>⏻</Text>
-            </TouchableOpacity>
+        <View style={styles.headerShell}>
+            <View style={styles.headerActionsRow}>
+                <TouchableOpacity style={styles.circleButton} onPress={onMenuPress} activeOpacity={0.85}>
+                    <Text style={styles.circleText}>☰</Text>
+                </TouchableOpacity>
+
+                <View style={styles.chipRow}>
+                    <View style={styles.roleChip}><Text style={styles.roleChipText}>{roleLabel}</Text></View>
+                    <View style={styles.schoolChip}><Text style={styles.schoolChipText}>school_id: {schoolId}</Text></View>
+                </View>
+
+                <TouchableOpacity style={styles.logoutButton} onPress={onLogoutPress} activeOpacity={0.85}>
+                    <Text style={styles.logoutText}>⏻</Text>
+                </TouchableOpacity>
+            </View>
+
+            <View style={styles.titleBlock}>
+                <Text style={styles.schoolName}>{schoolName}</Text>
+                <Text style={styles.workspace}>VidyaSetu ERP • {workspaceTitle}</Text>
+            </View>
         </View>
     );
 }
 
 const styles = StyleSheet.create({
-    header: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        marginBottom: 16,
-    },
-    circleButton: {
-        width: 42,
-        height: 42,
-        borderRadius: 21,
-        backgroundColor: 'rgba(255,255,255,0.14)',
-        alignItems: 'center',
-        justifyContent: 'center',
-        borderWidth: 1,
-        borderColor: dashboardTheme.colors.border,
-    },
+    headerShell: { marginBottom: 18 },
+    headerActionsRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 14 },
+    circleButton: { width: 42, height: 42, borderRadius: 21, backgroundColor: 'rgba(255,255,255,0.14)', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: dashboardTheme.colors.border },
     circleText: { color: dashboardTheme.colors.white, fontSize: 20, fontWeight: '900' },
-    title: { flex: 1, color: dashboardTheme.colors.white, textAlign: 'center', fontSize: 20, fontWeight: '900', letterSpacing: 0.2, textShadowColor: 'rgba(0,0,0,0.55)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 3 },
-    logoutButton: {
-        width: 42,
-        height: 42,
-        borderRadius: 21,
-        backgroundColor: 'rgba(255,255,255,0.14)',
-        alignItems: 'center',
-        justifyContent: 'center',
-        borderWidth: 1,
-        borderColor: dashboardTheme.colors.border,
-    },
+    logoutButton: { width: 42, height: 42, borderRadius: 21, backgroundColor: 'rgba(255,255,255,0.14)', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: dashboardTheme.colors.border },
     logoutText: { color: dashboardTheme.colors.goldSoft, fontSize: 18, fontWeight: '900' },
+    chipRow: { flex: 1, flexDirection: 'row', justifyContent: 'center', gap: 8, flexWrap: 'wrap' },
+    roleChip: { borderRadius: 999, paddingHorizontal: 10, paddingVertical: 7, backgroundColor: 'rgba(248,223,155,0.18)', borderWidth: 1, borderColor: 'rgba(248,223,155,0.36)' },
+    roleChipText: { color: dashboardTheme.colors.goldSoft, fontSize: 11, fontWeight: '900', letterSpacing: 0.5 },
+    schoolChip: { borderRadius: 999, paddingHorizontal: 10, paddingVertical: 7, backgroundColor: 'rgba(255,255,255,0.1)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.18)' },
+    schoolChipText: { color: 'rgba(255,255,255,0.86)', fontSize: 11, fontWeight: '800' },
+    titleBlock: { alignItems: 'center', paddingHorizontal: 8 },
+    schoolName: { color: '#fff7df', fontSize: 27, fontWeight: '900', textAlign: 'center', letterSpacing: -0.6, textShadowColor: 'rgba(0,0,0,0.55)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 4 },
+    workspace: { marginTop: 6, color: dashboardTheme.colors.goldSoft, fontSize: 15, fontWeight: '900', textAlign: 'center', letterSpacing: 0.1 },
 });

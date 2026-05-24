@@ -1,3 +1,4 @@
+import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
     ActivityIndicator,
@@ -8,9 +9,8 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
-import { router, useLocalSearchParams } from 'expo-router';
-import { colors, shadows, spacing } from '../src/theme';
 import { getDefaultAcademicRules, validateAcademicRules } from '../src/services/timetableApi';
+import { colors, shadows, spacing } from '../src/theme';
 import { AcademicRule, AcademicRulesSummary } from '../src/types/timetable';
 
 const subjectTypeOrder = ['THEORY', 'LAB', 'SPORTS', 'ACTIVITY'];
@@ -61,7 +61,7 @@ export default function AcademicRulesEngineScreen() {
                 <View style={styles.headerRow}>
                     <TouchableOpacity style={styles.circleButton} onPress={() => router.back()}><Text style={styles.backText}>‹</Text></TouchableOpacity>
                     <View style={styles.headerTextWrap}>
-                        <Text style={styles.eyebrow}>DAY 14 • SMART ACADEMIC RULES</Text>
+                        <Text style={styles.eyebrow}>SMART ACADEMIC RULES</Text>
                         <Text style={styles.title}>Academic Rules Engine</Text>
                     </View>
                     <TouchableOpacity style={styles.circleButton} onPress={() => router.replace(homePath as any)}><Text style={styles.homeIcon}>⌂</Text></TouchableOpacity>

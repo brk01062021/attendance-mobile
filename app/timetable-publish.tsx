@@ -1,8 +1,8 @@
+import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, ImageBackground, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { router, useLocalSearchParams } from 'expo-router';
-import { colors, shadows, spacing } from '../src/theme';
 import { exportGeneratedTimetable, getTimetablePublishHistory, publishGeneratedTimetable } from '../src/services/timetableApi';
+import { colors, shadows, spacing } from '../src/theme';
 import { TimetableExportResponse, TimetablePublishAudit, TimetablePublishResponse } from '../src/types/timetable';
 
 export default function TimetablePublishScreen() {
@@ -20,7 +20,7 @@ export default function TimetablePublishScreen() {
     const publishNow = () => { setLoading(true); publishGeneratedTimetable(generatedBatchId).then(data => { setPublishResult(data); setStatus(data.message); return loadHistory(); }).catch(() => setStatus('Publish API unavailable.')).finally(() => setLoading(false)); };
     const exportNow = (format: 'PDF' | 'EXCEL') => { setLoading(true); exportGeneratedTimetable(generatedBatchId, format).then(data => { setExportResult(data); setStatus(`${format} export preview ready: ${data.fileName}`); }).catch(() => setStatus('Export API unavailable.')).finally(() => setLoading(false)); };
     return <ImageBackground source={require('../assets/branding/splash-gold.png')} style={styles.bg} resizeMode="cover"><ScrollView contentContainerStyle={styles.container}>
-        <Header title="Publish Timetable" eyebrow="DAY 15 • PUBLISH WORKFLOW" homePath={backHome} />
+        <Header title="Publish Timetable" eyebrow="PUBLISH WORKFLOW" homePath={backHome} />
         <Text style={styles.status}>{status}</Text><Text style={styles.batch}>Batch: {generatedBatchId}</Text>{loading ? <ActivityIndicator color={colors.primaryNavy} style={{ marginVertical: 10 }} /> : null}
         <View style={styles.card}><Text style={styles.cardTitle}>Publish Status</Text><Text style={styles.big}>{publishResult?.status || (history[0]?.status ?? 'NOT PUBLISHED')}</Text><Text style={styles.text}>Published entries: {publishResult?.publishedEntries ?? history[0]?.publishedEntries ?? 0}</Text><Text style={styles.text}>Remaining conflicts: {publishResult?.remainingConflicts ?? history[0]?.remainingConflicts ?? '-'}</Text><Text style={styles.text}>Approved by: {publishResult?.approvedBy || history[0]?.approvedBy || '-'}</Text><Text style={styles.text}>Published at: {publishResult?.publishedAt || history[0]?.publishedAt || '-'}</Text>{publishResult?.notificationMessage ? <Text style={styles.notice}>{publishResult.notificationMessage}</Text> : null}</View>
         <View style={styles.row}><TouchableOpacity style={styles.secondaryButton} onPress={() => exportNow('EXCEL')}><Text style={styles.secondaryText}>Excel Export</Text></TouchableOpacity><TouchableOpacity style={styles.secondaryButton} onPress={() => exportNow('PDF')}><Text style={styles.secondaryText}>PDF Export</Text></TouchableOpacity></View>

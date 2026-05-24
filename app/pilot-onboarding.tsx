@@ -33,7 +33,7 @@ export default function PilotOnboardingScreen() {
             <View style={styles.headerRow}>
                 <TouchableOpacity style={styles.circleButton} onPress={() => router.back()}><Text style={styles.backText}>‹</Text></TouchableOpacity>
                 <View style={styles.headerTextWrap}>
-                    <Text style={styles.eyebrow}>DAY 26 • PILOT SCHOOL</Text>
+                    <Text style={styles.eyebrow}>PILOT SCHOOL</Text>
                     <Text style={styles.title}>Pilot Onboarding</Text>
                 </View>
                 <TouchableOpacity style={styles.circleButton} onPress={() => router.replace(backHome as any)}><Text style={styles.homeIcon}>⌂</Text></TouchableOpacity>
@@ -48,7 +48,7 @@ export default function PilotOnboardingScreen() {
             <View style={styles.grid}>
                 <Metric title="Students" value={String(summary.targetStudents)} />
                 <Metric title="Teachers" value={String(summary.targetTeachers)} />
-                <Metric title="Readiness" value={summary.readinessStatus.replaceAll('_', ' ')} />
+                <Metric title="Readiness" value={summary.readinessStatus.replace(/_/g, ' ')} />
                 <Metric title="School ID" value={String(summary.schoolId)} />
             </View>
 
@@ -58,7 +58,7 @@ export default function PilotOnboardingScreen() {
                 <Text style={styles.cardTitle}>Onboarding Gates</Text>
                 {summary.steps.map((step) => <View key={step.key} style={styles.stepCard}>
                     <View style={styles.stepTop}><Text style={styles.stepTitle}>{step.title}</Text><Text style={styles.priority}>{step.priority}</Text></View>
-                    <Text style={styles.stepMeta}>{step.owner} • {step.status.replaceAll('_', ' ')}</Text>
+                    <Text style={styles.stepMeta}>{step.owner} • {step.status.replace(/_/g, ' ')}</Text>
                     <Text style={styles.stepDetail}>{step.detail}</Text>
                 </View>)}
             </View>

@@ -1,9 +1,9 @@
+import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, ImageBackground, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { router, useLocalSearchParams } from 'expo-router';
+import { exportTimetableBinary, getTimetableArchives, getTimetableNotifications, getTimetableOperationsStatus, getTimetableVersions, publishLockTimetable, rollbackTimetableVersion } from '../src/services/timetableOperationsApi';
 import { colors, shadows, spacing } from '../src/theme';
-import { exportTimetableBinary, getTimetableOperationsStatus, getTimetableArchives, getTimetableNotifications, getTimetableVersions, publishLockTimetable, rollbackTimetableVersion } from '../src/services/timetableOperationsApi';
-import { TimetableArchiveSummary, TimetableOperationsStatus, TimetableNotification, TimetableVersion } from '../src/types/timetable';
+import { TimetableArchiveSummary, TimetableNotification, TimetableOperationsStatus, TimetableVersion } from '../src/types/timetable';
 
 export default function TimetableOperationsScreen() {
     const params = useLocalSearchParams();
@@ -94,7 +94,7 @@ export default function TimetableOperationsScreen() {
         <ScrollView contentContainerStyle={styles.container}>
             <View style={styles.headerRow}>
                 <TouchableOpacity style={styles.circleButton} onPress={() => router.back()}><Text style={styles.backText}>‹</Text></TouchableOpacity>
-                <View style={styles.headerTextWrap}><Text style={styles.eyebrow}>DAY 20 • TIMETABLE OPERATIONS</Text><Text style={styles.title}>Timetable Operations</Text></View>
+                <View style={styles.headerTextWrap}><Text style={styles.eyebrow}>TIMETABLE OPERATIONS</Text><Text style={styles.title}>Timetable Operations</Text></View>
                 <TouchableOpacity style={styles.circleButton} onPress={() => router.replace(backHome as any)}><Text style={styles.homeIcon}>⌂</Text></TouchableOpacity>
             </View>
 

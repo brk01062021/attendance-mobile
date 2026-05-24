@@ -1,8 +1,8 @@
+import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, ImageBackground, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { router, useLocalSearchParams } from 'expo-router';
-import { colors, shadows, spacing } from '../src/theme';
 import { getTimetableRolloutReadiness, publishLockTimetable } from '../src/services/timetableOperationsApi';
+import { colors, shadows, spacing } from '../src/theme';
 import { TimetableRolloutReadiness } from '../src/types/timetable';
 
 export default function TimetableRolloutReadinessScreen() {
@@ -58,7 +58,7 @@ export default function TimetableRolloutReadinessScreen() {
             <View style={styles.headerRow}>
                 <TouchableOpacity style={styles.circleButton} onPress={() => router.back()}><Text style={styles.backText}>‹</Text></TouchableOpacity>
                 <View style={styles.headerTextWrap}>
-                    <Text style={styles.eyebrow}>DAY 20 • FINAL TIMETABLE GATE</Text>
+                    <Text style={styles.eyebrow}>FINAL TIMETABLE GATE</Text>
                     <Text style={styles.title}>Rollout Readiness</Text>
                 </View>
                 <TouchableOpacity style={styles.circleButton} onPress={() => router.replace(backHome as any)}><Text style={styles.homeIcon}>⌂</Text></TouchableOpacity>

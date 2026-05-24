@@ -1,8 +1,8 @@
+import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, ImageBackground, RefreshControl, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { router, useLocalSearchParams } from 'expo-router';
-import { colors, shadows, spacing } from '../src/theme';
 import { getLatestPublishedTimetable, getTimetableBatches } from '../src/services/timetableApi';
+import { colors, shadows, spacing } from '../src/theme';
 import { TimetableBatchSummary, TimetablePublishAudit } from '../src/types/timetable';
 
 export default function TimetableBatchCenterScreen() {
@@ -56,7 +56,7 @@ export default function TimetableBatchCenterScreen() {
                 contentContainerStyle={styles.container}
                 refreshControl={<RefreshControl refreshing={loading} onRefresh={load} />}
             >
-                <Header title="Timetable Batch Center" eyebrow="DAY 17 • BATCH CONTROL" homePath={backHome} />
+                <Header title="Timetable Batch Center" eyebrow="BATCH CONTROL" homePath={backHome} />
 
                 <View style={styles.heroCard}>
                     <Text style={styles.heroTitle}>Use Generated Batch in Mobile</Text>

@@ -1,3 +1,4 @@
+import { router, useLocalSearchParams } from 'expo-router';
 import React, { useMemo, useState } from 'react';
 import {
     ActivityIndicator,
@@ -9,20 +10,19 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
-import { router, useLocalSearchParams } from 'expo-router';
-import { colors, shadows, spacing } from '../src/theme';
+import { CLASS_OPTIONS, DEFAULT_CLASS_TEACHER_POOLS, EXCEL_POOL_TABS } from '../src/data/timetableDefaults';
 import { generateTimetable, getDefaultAcademicRules, validateAcademicRules } from '../src/services/timetableApi';
+import { saveTimetableReviewSnapshot } from '../src/state/timetableReviewStore';
+import { colors, shadows, spacing } from '../src/theme';
 import {
+    AcademicRule,
+    AcademicRulesSummary,
     ClassTeacherPool,
     TeacherPoolSource,
     TimetableGenerationMode,
     TimetableGenerationRequest,
     TimetableGenerationResponse,
-    AcademicRule,
-    AcademicRulesSummary,
 } from '../src/types/timetable';
-import { CLASS_OPTIONS, DEFAULT_CLASS_TEACHER_POOLS, EXCEL_POOL_TABS } from '../src/data/timetableDefaults';
-import { saveTimetableReviewSnapshot } from '../src/state/timetableReviewStore';
 
 const modes: TimetableGenerationMode[] = ['ANNUAL', 'QUARTERLY', 'MONTHLY', 'CUSTOM'];
 const DEFAULT_DAY14_RULES: AcademicRule[] = ['1', '2'].flatMap(className => [
@@ -172,7 +172,7 @@ export default function GenerateTimetableScreen() {
     return (
         <ImageBackground source={require('../assets/branding/splash-gold.png')} style={styles.bg} resizeMode="cover">
             <ScrollView contentContainerStyle={styles.container}>
-                <PageHeader title="Generate Timetable" eyebrow="DAY 14 • SMART ACADEMIC RULES ENGINE" homePath={backHome} />
+                <PageHeader title="Generate Timetable" eyebrow="SMART ACADEMIC RULES ENGINE" homePath={backHome} />
 
                 <View style={styles.card}>
                     <Text style={styles.cardTitle}>Generation Setup</Text>
