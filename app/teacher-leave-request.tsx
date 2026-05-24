@@ -4,6 +4,7 @@ import { ActivityIndicator, Alert, ImageBackground, RefreshControl, ScrollView, 
 import { Calendar } from 'react-native-calendars';
 import { images } from '../src/constants/images';
 import { getTeacherLeaveEnquiryHistory, submitTeacherLeaveEnquiry } from '../src/services/day4AutomationApi';
+import { getSession } from '../src/services/sessionService';
 
 const today = () => new Date().toISOString().split('T')[0];
 
@@ -38,8 +39,10 @@ const statusStyle = (status: string) => {
 
 export default function TeacherLeaveRequestScreen() {
     const params = useLocalSearchParams();
-    const teacherId = Number(params.teacherId || params.userId || 1);
-    const teacherName = String(params.teacherName || params.name || 'Teacher');
+    const session = getSession();
+    const teacherId = Number(params.teacherId || session?.teacherId || params.userId || session?.userId || 0);
+    const rawTeacherName = String(params.teacherName || session?.displayName || params.name || 'Teacher');
+    const teacherName = /admin/i.test(rawTeacherName) ? 'Teacher' : rawTeacherName;
 
     const [fromDate, setFromDate] = useState(today());
     const [toDate, setToDate] = useState(today());

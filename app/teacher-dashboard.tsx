@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import DashboardIntelligencePanel from '../components/dashboard/DashboardIntelligencePanel';
 import { API_BASE_URL, DEV_DEFAULTS } from '../src/services/api';
+import { getSession, normalizeSchoolId } from '../src/services/sessionService';
 import { colors, shadows, spacing } from '../src/theme';
 
 
@@ -51,13 +52,15 @@ const defaultStats: TeacherDashboardStats = {
 export default function TeacherDashboard() {
     const params = useLocalSearchParams();
 
-    const teacherId = params.teacherId;
-    const teacherName = params.teacherName;
-    const role = params.role || 'TEACHER';
+    const session = getSession();
+    const teacherId = params.teacherId || session?.teacherId || session?.userId;
+    const teacherName = params.teacherName || session?.displayName;
+    const role = 'TEACHER';
+    const schoolId = normalizeSchoolId(String(params.schoolId || session?.schoolId || ''));
 
     const displayTeacherName = useMemo(() => {
         const name = String(teacherName || '').trim();
-        return name.length > 0 ? name : 'Teacher';
+        return name.length > 0 && !/admin/i.test(name) ? name : 'Teacher';
     }, [teacherName]);
 
     const [menuVisible, setMenuVisible] = useState(false);
@@ -84,7 +87,8 @@ export default function TeacherDashboard() {
                 const response = await fetch(
                     `${API_BASE_URL}/attendance/dashboard/teacher?teacherId=${encodeURIComponent(
                         safeTeacherId
-                    )}&date=${todayDate}`
+                    )}&date=${todayDate}&schoolId=${encodeURIComponent(schoolId)}`,
+                    { headers: { 'X-School-Id': schoolId } }
                 );
 
                 if (!response.ok) {
@@ -111,7 +115,7 @@ export default function TeacherDashboard() {
         };
 
         loadTeacherDashboard();
-    }, [teacherId, todayDate]);
+    }, [teacherId, todayDate, schoolId]);
 
     const todayStats = useMemo(() => {
         const totalMarked =
@@ -132,8 +136,9 @@ export default function TeacherDashboard() {
             pathname: '/home',
             params: {
                 teacherId,
-                teacherName,
+                teacherName: displayTeacherName,
                 role,
+                schoolId,
             },
         } as any);
     };
@@ -302,14 +307,14 @@ export default function TeacherDashboard() {
                                 title="Date Summary"
                                 onPress={() => {
                                     setMenuVisible(false);
-                                    router.push({ pathname: '/date-summary', params: { teacherId, teacherName, role } } as any);
+                                    router.push({ pathname: '/date-summary', params: { teacherId, teacherName: displayTeacherName, role, schoolId } } as any);
                                 }}
                             />
                             <MenuItem
                                 title="Reports"
                                 onPress={() => {
                                     setMenuVisible(false);
-                                    router.push({ pathname: '/attendance-report', params: { teacherId, teacherName, role } } as any);
+                                    router.push({ pathname: '/attendance-report', params: { teacherId, teacherName: displayTeacherName, role, sourceRole: 'teacher', schoolId } } as any);
                                 }}
                             />
 
@@ -318,14 +323,14 @@ export default function TeacherDashboard() {
                                 title="Request Leave / Leave Enquiry"
                                 onPress={() => {
                                     setMenuVisible(false);
-                                    router.push({ pathname: '/teacher-leave-request', params: { teacherId, teacherName, role: 'TEACHER', sourceRole: 'teacher' } } as any);
+                                    router.push({ pathname: '/teacher-leave-request', params: { teacherId, teacherName: displayTeacherName, role: 'TEACHER', sourceRole: 'teacher', schoolId } } as any);
                                 }}
                             />
                             <MenuItem
                                 title="Assigned Replacements"
                                 onPress={() => {
                                     setMenuVisible(false);
-                                    router.push({ pathname: '/teacher-replacements', params: { teacherId, teacherName, role } } as any);
+                                    router.push({ pathname: '/teacher-replacements', params: { teacherId, teacherName: displayTeacherName, role, schoolId } } as any);
                                 }}
                             />
 
@@ -520,7 +525,7 @@ const styles = StyleSheet.create({
     },
 
     classesCard: {
-        backgroundColor: 'rgba(255,255,255,0.96)',
+        backgroundColor: 'rgba(255,255,255,0.92)',
         borderRadius: 34,
         borderWidth: 1.5,
         borderColor: colors.cardGoldBorder,
@@ -555,8 +560,11 @@ const styles = StyleSheet.create({
 
     scheduleSubject: {
         fontSize: 16,
+        lineHeight: 20,
         fontWeight: '900',
         color: colors.primaryNavy,
+        flexShrink: 1,
+        flexWrap: 'wrap',
     },
 
     scheduleClass: {
@@ -568,6 +576,7 @@ const styles = StyleSheet.create({
 
     scheduleStatus: {
         backgroundColor: '#FFF0D1',
+        maxWidth: 112,
         paddingHorizontal: spacing.md,
         paddingVertical: spacing.sm,
         borderRadius: 16,

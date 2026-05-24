@@ -1,4 +1,5 @@
-import React from 'react';
+import { router, useLocalSearchParams } from 'expo-router';
+import React, { useMemo, useState } from 'react';
 import {
     Alert,
     ImageBackground,
@@ -8,24 +9,53 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
-import { router, useLocalSearchParams } from 'expo-router';
-import { colors, shadows, spacing } from '../src/theme';
 import { images } from '../src/constants/images';
+import { API_ENDPOINTS } from '../src/services/api';
+import { getSession, normalizeSchoolId } from '../src/services/sessionService';
+import { colors, shadows, spacing } from '../src/theme';
 
 export default function DateSummaryScreen() {
-    const { teacherId, teacherName, role } = useLocalSearchParams();
+    const { teacherId, teacherName, role, schoolId: routeSchoolId } = useLocalSearchParams();
+    const session = getSession();
+    const safeTeacherId = String(teacherId || session?.teacherId || session?.userId || '').trim();
+    const safeTeacherName = String(teacherName || session?.displayName || 'Teacher');
+    const safeSchoolId = normalizeSchoolId(String(routeSchoolId || session?.schoolId || ''));
+    const today = useMemo(() => new Date().toISOString().slice(0, 10), []);
+    const [summary, setSummary] = useState({ totalStudents: 0, present: 0, absent: 0, late: 0, attendancePercentage: 0 });
+    const [loading, setLoading] = useState(false);
 
-    const handleLoadSummary = () => {
-        Alert.alert('Info', 'Date summary API will be connected next');
+    const handleLoadSummary = async () => {
+        if (!safeTeacherId) {
+            Alert.alert('Teacher profile missing', 'Please login again as teacher.');
+            return;
+        }
+        try {
+            setLoading(true);
+            const response = await fetch(`${API_ENDPOINTS.teacherDashboard}?teacherId=${encodeURIComponent(safeTeacherId)}&date=${today}&schoolId=${encodeURIComponent(safeSchoolId)}`, { headers: { 'X-School-Id': safeSchoolId } });
+            if (!response.ok) throw new Error('Unable to load date summary');
+            const data = await response.json();
+            setSummary({
+                totalStudents: Number(data.totalStudents || 0),
+                present: Number(data.present || 0),
+                absent: Number(data.absent || 0),
+                late: Number(data.late || 0),
+                attendancePercentage: Number(data.attendancePercentage || 0),
+            });
+        } catch (error) {
+            Alert.alert('Date Summary', 'Live summary unavailable. Please confirm backend is running.');
+        } finally {
+            setLoading(false);
+        }
     };
 
     const goBackToTeacherDashboard = () => {
         router.replace({
             pathname: '/teacher-dashboard',
             params: {
-                teacherId,
-                teacherName,
+                teacherId: safeTeacherId,
+                teacherName: safeTeacherName,
                 role: role || 'TEACHER',
+                schoolId: safeSchoolId,
             },
         } as any);
     };
@@ -63,22 +93,22 @@ export default function DateSummaryScreen() {
 
                         <View style={styles.summaryRow}>
                             <Text style={styles.label}>Date</Text>
-                            <Text style={styles.value}>Today</Text>
+                            <Text style={styles.value}>{today}</Text>
                         </View>
 
                         <View style={styles.summaryRow}>
                             <Text style={styles.label}>Total Students</Text>
-                            <Text style={styles.value}>5</Text>
+                            <Text style={styles.value}>{summary.totalStudents}</Text>
                         </View>
 
                         <View style={styles.summaryRow}>
                             <Text style={styles.label}>Present</Text>
-                            <Text style={styles.present}>0</Text>
+                            <Text style={styles.present}>{summary.present}</Text>
                         </View>
 
                         <View style={styles.summaryRow}>
                             <Text style={styles.label}>Absent</Text>
-                            <Text style={styles.absent}>0</Text>
+                            <Text style={styles.absent}>{summary.absent}</Text>
                         </View>
                     </View>
 
@@ -87,7 +117,7 @@ export default function DateSummaryScreen() {
                         onPress={handleLoadSummary}
                         activeOpacity={0.9}
                     >
-                        <Text style={styles.buttonText}>Load Date Summary</Text>
+                        <Text style={styles.buttonText}>{loading ? 'Loading...' : 'Load Date Summary'}</Text>
                     </TouchableOpacity>
                 </ScrollView>
             </View>
@@ -103,7 +133,7 @@ const styles = StyleSheet.create({
 
     overlay: {
         flex: 1,
-        backgroundColor: 'rgba(255, 248, 225, 0.18)',
+        backgroundColor: 'rgba(255, 248, 225, 0.10)',
     },
 
     container: {
@@ -123,7 +153,7 @@ const styles = StyleSheet.create({
         width: 48,
         height: 48,
         borderRadius: 24,
-        backgroundColor: 'rgba(255, 248, 225, 0.18)',
+        backgroundColor: 'rgba(255, 255, 255, 0.90)',
         borderWidth: 1,
         borderColor: 'rgba(255,255,255,0.65)',
         alignItems: 'center',

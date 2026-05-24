@@ -7,13 +7,15 @@ export type VidyaSetuSession = {
   schoolId: string;
   schoolName: string;
   token?: string;
+  teacherId?: string | number | null;
+  studentId?: string | number | null;
 };
 
 let activeSession: VidyaSetuSession | null = null;
 
 export function normalizeSchoolId(value?: string) {
-  const schoolId = (value || 'DEMO').trim().toUpperCase();
-  return /^[A-Z0-9]{4}$/.test(schoolId) ? schoolId : 'DEMO';
+  const schoolId = (value || '').trim().toUpperCase();
+  return /^[A-Z0-9]{4}$/.test(schoolId) ? schoolId : 'BRK1';
 }
 
 export function saveSession(session: VidyaSetuSession) {
@@ -26,6 +28,6 @@ export function getSession() { return activeSession; }
 export function clearSession() { activeSession = null; }
 
 export function getRoleGreeting(role: VidyaSetuRole, displayName?: string) {
-  const fallback = role === 'ADMIN' ? 'Admin' : role === 'PRINCIPAL' ? 'Principal' : displayName || 'User';
+  const fallback = role === 'ADMIN' ? 'Admin' : role === 'PRINCIPAL' ? 'Principal' : role === 'TEACHER' ? 'Teacher' : role === 'STUDENT' ? 'Student' : displayName || 'User';
   return displayName?.trim() || fallback;
 }

@@ -20,7 +20,7 @@ export default function LoginScreen() {
     const [selectedRole, setSelectedRole] = useState<LoginRole>('TEACHER');
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
-    const [schoolId, setSchoolId] = useState('DEMO');
+    const [schoolId, setSchoolId] = useState('BRK1');
 
     const roles: LoginRole[] = ['ADMIN', 'PRINCIPAL', 'TEACHER', 'PARENT', 'STUDENT'];
 
@@ -33,7 +33,9 @@ export default function LoginScreen() {
             return;
         }
 
-        saveSession({ role: selectedRole, userId: '1', displayName: cleanUsername, schoolId: cleanSchoolId, schoolName: 'VidyaSetu Demo School' });
+        const boundTeacherId = selectedRole === 'TEACHER' ? '1' : undefined;
+        const boundStudentId = selectedRole === 'STUDENT' ? '1' : undefined;
+        saveSession({ role: selectedRole, userId: '1', displayName: cleanUsername, schoolId: cleanSchoolId, schoolName: 'VidyaSetu Demo School', teacherId: boundTeacherId, studentId: boundStudentId });
 
         if (selectedRole === 'ADMIN') {
             router.replace({
@@ -173,7 +175,7 @@ export default function LoginScreen() {
                         <Text style={styles.label}>School ID</Text>
                         <TextInput
                             style={styles.input}
-                            placeholder="4-char school ID, e.g. DEMO"
+                            placeholder="4-char school ID, e.g. BRK1"
                             placeholderTextColor={colors.mutedText}
                             value={schoolId}
                             onChangeText={(value) => setSchoolId(value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 4))}

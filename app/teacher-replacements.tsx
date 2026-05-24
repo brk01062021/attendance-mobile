@@ -1,3 +1,5 @@
+import { API_ENDPOINTS } from '@/src/services/api';
+import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
     ActivityIndicator,
@@ -11,9 +13,8 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
-import { router, useLocalSearchParams } from 'expo-router';
-import { API_ENDPOINTS } from '@/src/services/api';
 import { images } from '../src/constants/images';
+import { getSession, normalizeSchoolId } from '../src/services/sessionService';
 
 type TeacherSchedule = {
     id: number;
@@ -84,10 +85,13 @@ const getRangeText = (item: TeacherSchedule) => {
 };
 
 export default function TeacherReplacementsScreen() {
-    const { teacherId, teacherName, role } = useLocalSearchParams();
+    const { teacherId, teacherName, role, schoolId } = useLocalSearchParams();
+    const session = getSession();
 
-    const numericTeacherId = Number(teacherId || 0);
-    const displayTeacherName = String(teacherName || 'Teacher');
+    const numericTeacherId = Number(teacherId || session?.teacherId || session?.userId || 0);
+    const rawTeacherName = String(teacherName || session?.displayName || 'Teacher');
+    const displayTeacherName = /admin/i.test(rawTeacherName) ? 'Teacher' : rawTeacherName;
+    const safeSchoolId = normalizeSchoolId(String(schoolId || session?.schoolId || ''));
     const today = formatLocalDate(new Date());
 
     const [activeTab, setActiveTab] = useState<ReplacementTab>('TODAY');
@@ -98,7 +102,7 @@ export default function TeacherReplacementsScreen() {
 
     useEffect(() => {
         loadReplacements();
-    }, [teacherId]);
+    }, [numericTeacherId, safeSchoolId]);
 
     const loadReplacements = async (refreshOnly = false) => {
         if (!numericTeacherId) {
@@ -117,7 +121,8 @@ export default function TeacherReplacementsScreen() {
             const toDate = formatLocalDate(addDays(new Date(), 90));
 
             const response = await fetch(
-                `${API_ENDPOINTS.teacherSchedules}/replacements?teacherId=${numericTeacherId}&fromDate=${fromDate}&toDate=${toDate}`,
+                `${API_ENDPOINTS.teacherSchedules}/replacements?teacherId=${numericTeacherId}&fromDate=${fromDate}&toDate=${toDate}&schoolId=${safeSchoolId}`,
+                { headers: { 'X-School-Id': safeSchoolId } }
             );
 
             if (!response.ok) {
