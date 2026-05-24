@@ -52,3 +52,13 @@ export async function rejectTeacherLeaveEnquiry(enquiryId: number, adminRemarks?
     const response = await api.post(`/teacher-leave/admin/enquiries/${enquiryId}/reject`, null, { params: { adminRemarks } });
     return response.data;
 }
+
+export async function getTeacherLeaveEnquiryHistory(teacherId: number) {
+    const response = await api.get(`/teacher-leave/enquiry/history/${teacherId}`);
+    return response.data;
+}
+
+export async function getUnreadNotificationCount(userId: number, role: string) {
+    const response = await api.get('/notifications/unread-count', { params: { userId, role } });
+    return response.data;
+}

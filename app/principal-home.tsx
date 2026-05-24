@@ -94,6 +94,7 @@ export default function PrincipalHomeScreen() {
         userId: String(params.userId || '1'),
         name: principalName,
         principalName,
+        sourceRole: 'principal',
     };
 
     const openRoute = (path: string, extraParams: Record<string, string> = {}) => {
@@ -300,7 +301,7 @@ export default function PrincipalHomeScreen() {
                             title="Teacher Leave Planning"
                             subtitle="Leave and replacements"
                             onPress={() =>
-                                openRoute('/admin-leave-approvals')
+                                openRoute('/admin-leave-approvals', { sourceRole: 'principal', role: 'PRINCIPAL' })
                             }
                         />
 
@@ -385,7 +386,7 @@ export default function PrincipalHomeScreen() {
                             <MenuItem
                                 title="Teacher Leave Planning"
                                 onPress={() =>
-                                    openRoute('/admin-leave-approvals')
+                                    openRoute('/admin-leave-approvals', { sourceRole: 'principal', role: 'PRINCIPAL' })
                                 }
                             />
 
