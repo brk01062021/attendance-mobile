@@ -9,13 +9,15 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
+import MobileWorkflowHeader from '../components/layout/MobileWorkflowHeader';
 import { images } from '../src/constants/images';
+import { getDashboardPath, goRoleHome } from '../src/navigation/roleNavigation';
 import { API_ENDPOINTS } from '../src/services/api';
 import { getSession, normalizeSchoolId } from '../src/services/sessionService';
 import { colors, shadows, spacing } from '../src/theme';
 
 export default function DateSummaryScreen() {
-    const { teacherId, teacherName, role, schoolId: routeSchoolId } = useLocalSearchParams();
+    const { teacherId, teacherName, role, sourceRole, originRole, returnTo, schoolId: routeSchoolId } = useLocalSearchParams();
     const session = getSession();
     const safeTeacherId = String(teacherId || session?.teacherId || session?.userId || '').trim();
     const safeTeacherName = String(teacherName || session?.displayName || 'Teacher');
@@ -48,13 +50,16 @@ export default function DateSummaryScreen() {
         }
     };
 
-    const goBackToTeacherDashboard = () => {
+    const resolvedSourceRole = String(sourceRole || originRole || role || 'teacher').toLowerCase();
+    const goBackToRoleDashboard = () => {
         router.replace({
-            pathname: '/teacher-dashboard',
+            pathname: String(returnTo || getDashboardPath(resolvedSourceRole)) as any,
             params: {
                 teacherId: safeTeacherId,
                 teacherName: safeTeacherName,
                 role: role || 'TEACHER',
+                sourceRole: resolvedSourceRole,
+                originRole: resolvedSourceRole,
                 schoolId: safeSchoolId,
             },
         } as any);
@@ -71,19 +76,13 @@ export default function DateSummaryScreen() {
                     contentContainerStyle={styles.container}
                     showsVerticalScrollIndicator={false}
                 >
-                    <View style={styles.headerRow}>
-                        <TouchableOpacity
-                            style={styles.backButton}
-                            onPress={goBackToTeacherDashboard}
-                            activeOpacity={0.85}
-                        >
-                            <Text style={styles.backButtonText}>‹</Text>
-                        </TouchableOpacity>
-
-                        <Text style={styles.title}>Date Summary</Text>
-
-                        <View style={styles.headerSpacer} />
-                    </View>
+                    <MobileWorkflowHeader
+                        title="Date Summary"
+                        eyebrow="Attendance"
+                        sourceRole={resolvedSourceRole}
+                        onBackPress={goBackToRoleDashboard}
+                        onHomePress={() => goRoleHome(resolvedSourceRole, { teacherId: safeTeacherId, teacherName: safeTeacherName, role: role || 'TEACHER', schoolId: safeSchoolId })}
+                    />
 
                     <View style={styles.card}>
                         <Text style={styles.cardTitle}>Daily Attendance Summary</Text>

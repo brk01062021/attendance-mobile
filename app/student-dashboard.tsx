@@ -11,6 +11,7 @@ import {
     View,
 } from 'react-native';
 import DashboardHeader from '../components/dashboard/DashboardHeader';
+import MobileWorkflowHeader from '../components/layout/MobileWorkflowHeader';
 import { getSession, normalizeSchoolId } from '../src/services/sessionService';
 import { colors, shadows, spacing } from '../src/theme';
 import { resolveSchoolName } from '../src/utils/schoolUtils';
@@ -152,17 +153,42 @@ export default function StudentDashboard() {
         setMenuOpen(false);
     }, []);
 
+
+    const handleWorkflowBack = useCallback(() => {
+        if (selectedAttendance) {
+            setSelectedAttendance(null);
+            return;
+        }
+
+        if (examDetail) {
+            setExamDetail(null);
+            return;
+        }
+
+        goHome();
+    }, [examDetail, goHome, selectedAttendance]);
+
     return (
         <ImageBackground source={backgroundSource} style={styles.background} resizeMode="cover">
             <ScrollView contentContainerStyle={styles.container}>
-                <DashboardHeader
-                    schoolName={schoolName}
-                    workspaceTitle="Student Academic Workspace"
-                    roleLabel="STUDENT"
-                    schoolId={schoolId}
-                    onMenuPress={() => setMenuOpen(true)}
-                    onLogoutPress={goLogin}
-                />
+                {isHomePage ? (
+                    <DashboardHeader
+                        schoolName={schoolName}
+                        workspaceTitle="Student Academic Workspace"
+                        roleLabel="STUDENT"
+                        schoolId={schoolId}
+                        onMenuPress={() => setMenuOpen(true)}
+                        onLogoutPress={goLogin}
+                    />
+                ) : (
+                    <MobileWorkflowHeader
+                        title={topCenterTitle}
+                        eyebrow="STUDENT"
+                        subtitle={`${schoolName} • ${schoolId}`}
+                        onBackPress={handleWorkflowBack}
+                        onHomePress={goHome}
+                    />
+                )}
 
                 {selectedAttendance ? (
                     contentReady ? (
@@ -312,10 +338,6 @@ const AttendanceDetail = memo(function AttendanceDetail({
                     </Text>
                 </View>
             ))}
-
-            <TouchableOpacity style={styles.backButton} onPress={onBack} activeOpacity={0.9}>
-                <Text style={styles.backButtonText}>Back</Text>
-            </TouchableOpacity>
         </>
     );
 });
@@ -343,10 +365,6 @@ const ExamResultsScreen = memo(function ExamResultsScreen({
                 <Text style={styles.cardText}>Unit Test 2: 82%</Text>
                 <Text style={styles.cardText}>Unit Test 1: 79%</Text>
                 <Text style={styles.cardHint}>Tap to view past result details</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.backButton} onPress={onBack} activeOpacity={0.9}>
-                <Text style={styles.backButtonText}>Back</Text>
             </TouchableOpacity>
         </>
     );
@@ -385,10 +403,6 @@ const ExamDetailScreen = memo(function ExamDetailScreen({
                     </View>
                 </View>
             ))}
-
-            <TouchableOpacity style={styles.backButton} onPress={onBack} activeOpacity={0.9}>
-                <Text style={styles.backButtonText}>Back to Exam Results</Text>
-            </TouchableOpacity>
         </>
     );
 });
@@ -399,10 +413,6 @@ const SchoolNoticesScreen = memo(function SchoolNoticesScreen({ onBack }: { onBa
             <NoticeCard title="Holiday Alert" text="School holiday on Friday for local festival." />
             <NoticeCard title="Fee Notice" text="Term fee payment reminder due this month." />
             <NoticeCard title="Exam Alert" text="Half-yearly exam schedule starts next Monday." />
-
-            <TouchableOpacity style={styles.backButton} onPress={onBack} activeOpacity={0.9}>
-                <Text style={styles.backButtonText}>Back</Text>
-            </TouchableOpacity>
         </>
     );
 });

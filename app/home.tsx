@@ -27,10 +27,38 @@ type AdminStudentAttendance = {
 };
 
 export default function HomeScreen() {
-    const { teacherId, teacherName, role } = useLocalSearchParams();
+    const { teacherId, teacherName, role, sourceRole, originRole, returnTo, schoolId, name } = useLocalSearchParams();
 
     const userRole = String(role || 'TEACHER').toUpperCase();
+    const originRoleValue = String(sourceRole || originRole || role || 'teacher').toLowerCase();
     const isAdmin = userRole === 'ADMIN';
+
+    const getOriginDashboardPath = () => {
+        if (returnTo) return String(returnTo);
+        if (originRoleValue === 'principal' || userRole === 'PRINCIPAL') return '/principal-home';
+        if (originRoleValue === 'admin' || userRole === 'ADMIN') return '/admin-dashboard';
+        if (originRoleValue === 'student' || userRole === 'STUDENT') return '/student-dashboard';
+        if (originRoleValue === 'parent' || userRole === 'PARENT') return '/parent-dashboard';
+        return '/teacher-dashboard';
+    };
+
+    const getRoleSafeParams = () => ({
+        teacherId,
+        teacherName,
+        role: userRole,
+        sourceRole: originRoleValue,
+        originRole: originRoleValue,
+        returnTo: getOriginDashboardPath(),
+        schoolId,
+        name,
+    });
+
+    const goOriginHome = () => {
+        router.replace({
+            pathname: getOriginDashboardPath() as any,
+            params: getRoleSafeParams(),
+        } as any);
+    };
 
     const [subject, setSubject] = useState('');
     const [className, setClassName] = useState('');
@@ -375,6 +403,7 @@ export default function HomeScreen() {
         router.push({
             pathname: '/attendance',
             params: {
+                ...getRoleSafeParams(),
                 teacherId,
                 teacherName,
                 subject,
@@ -390,11 +419,7 @@ export default function HomeScreen() {
 
         router.replace({
             pathname: '/teacher-dashboard',
-            params: {
-                teacherId,
-                teacherName,
-                role: userRole,
-            },
+            params: getRoleSafeParams(),
         } as any);
     };
 
@@ -403,11 +428,7 @@ export default function HomeScreen() {
 
         router.push({
             pathname: '/date-summary',
-            params: {
-                teacherId,
-                teacherName,
-                role: userRole,
-            },
+            params: getRoleSafeParams(),
         } as any);
     };
 
@@ -416,11 +437,7 @@ export default function HomeScreen() {
 
         router.push({
             pathname: '/attendance-report',
-            params: {
-                teacherId,
-                teacherName,
-                role: userRole,
-            },
+            params: getRoleSafeParams(),
         } as any);
     };
 
@@ -499,29 +516,7 @@ export default function HomeScreen() {
                             <View style={styles.heroTopRow}>
                                 <TouchableOpacity
                                     style={styles.backButton}
-                                    onPress={() => {
-                                        if (isAdmin) {
-                                            router.replace({
-                                                pathname: '/admin-dashboard',
-                                                params: {
-                                                    role: 'ADMIN',
-                                                    userId: '1',
-                                                    name: 'Admin',
-                                                },
-                                            } as any);
-
-                                            return;
-                                        }
-
-                                        router.replace({
-                                            pathname: '/teacher-dashboard',
-                                            params: {
-                                                role: userRole,
-                                                teacherId,
-                                                teacherName,
-                                            },
-                                        } as any);
-                                    }}
+                                    onPress={goOriginHome}
                                 >
                                     <Text style={styles.backButtonText}>‹</Text>
                                 </TouchableOpacity>
@@ -535,7 +530,7 @@ export default function HomeScreen() {
                             </View>
 
                             <Text style={styles.heroSmallText}>
-                                {isAdmin ? 'Admin Workspace' : 'Teacher Workspace'}
+                                {userRole === 'ADMIN' ? 'Admin Workspace' : userRole === 'PRINCIPAL' ? 'Principal Attendance Support' : 'Teacher Workspace'}
                             </Text>
 
                             <Text style={styles.heroTitle}>

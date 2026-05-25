@@ -11,6 +11,7 @@ import {
     View,
 } from 'react-native';
 import DashboardHeader from '../components/dashboard/DashboardHeader';
+import MobileWorkflowHeader from '../components/layout/MobileWorkflowHeader';
 import { getSession, normalizeSchoolId } from '../src/services/sessionService';
 import { colors, shadows, spacing } from '../src/theme';
 import { resolveSchoolName } from '../src/utils/schoolUtils';
@@ -200,6 +201,21 @@ export default function ParentDashboard() {
         setExamDetail(null);
     }, []);
 
+
+    const handleWorkflowBack = useCallback(() => {
+        if (selectedAttendance) {
+            setSelectedAttendance(null);
+            return;
+        }
+
+        if (examDetail) {
+            setExamDetail(null);
+            return;
+        }
+
+        goHome();
+    }, [examDetail, goHome, selectedAttendance]);
+
     return (
         <ImageBackground
             source={backgroundSource}
@@ -207,14 +223,24 @@ export default function ParentDashboard() {
             resizeMode="cover"
         >
             <ScrollView contentContainerStyle={styles.container}>
-                <DashboardHeader
-                    schoolName={schoolName}
-                    workspaceTitle="Parent Student View"
-                    roleLabel="PARENT"
-                    schoolId={schoolId}
-                    onMenuPress={() => setMenuOpen(true)}
-                    onLogoutPress={goLogin}
-                />
+                {isHomePage ? (
+                    <DashboardHeader
+                        schoolName={schoolName}
+                        workspaceTitle="Parent Student View"
+                        roleLabel="PARENT"
+                        schoolId={schoolId}
+                        onMenuPress={() => setMenuOpen(true)}
+                        onLogoutPress={goLogin}
+                    />
+                ) : (
+                    <MobileWorkflowHeader
+                        title={topCenterTitle}
+                        eyebrow="PARENT"
+                        subtitle={`${schoolName} • ${schoolId}`}
+                        onBackPress={handleWorkflowBack}
+                        onHomePress={goHome}
+                    />
+                )}
 
                 {selectedAttendance ? (
                     contentReady ? (

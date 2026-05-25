@@ -12,7 +12,9 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
+import MobileHeaderActionButton from '../components/layout/MobileHeaderActionButton';
 import { images } from '../src/constants/images';
+import { getDashboardPath, goRoleHome } from '../src/navigation/roleNavigation';
 
 type NotificationItem = {
     id: number;
@@ -139,9 +141,13 @@ export default function NotificationsScreen() {
         studentName,
         name,
         role,
+        sourceRole,
+        originRole,
+        returnTo,
     } = useLocalSearchParams();
 
-    const effectiveRole = String(role || 'TEACHER').toUpperCase();
+    const resolvedSourceRole = String(sourceRole || originRole || role || 'TEACHER').toLowerCase();
+    const effectiveRole = String(role || resolvedSourceRole || 'TEACHER').toUpperCase();
 
     const effectiveUserId = Number(
         userId ||
@@ -281,32 +287,26 @@ export default function NotificationsScreen() {
     };
 
     const goBack = () => {
-        if (effectiveRole === 'TEACHER') {
-            router.replace({
-                pathname: '/teacher-dashboard',
-                params: {
-                    teacherId: String(effectiveUserId),
-                    teacherName: displayName,
-                    role: effectiveRole,
-                },
-            } as any);
-            return;
-        }
-
-        router.back();
+        router.replace({
+            pathname: String(returnTo || getDashboardPath(resolvedSourceRole)) as any,
+            params: {
+                userId: String(effectiveUserId),
+                teacherId: String(effectiveUserId),
+                teacherName: displayName,
+                name: displayName,
+                role: effectiveRole,
+                sourceRole: resolvedSourceRole,
+                originRole: resolvedSourceRole,
+            },
+        } as any);
     };
 
     return (
         <ImageBackground source={images.splashGold} style={styles.screen} resizeMode="cover">
             <View style={styles.overlay}>
                 <View style={styles.topBar}>
-                    <TouchableOpacity style={styles.circleButton} onPress={goBack} activeOpacity={0.85}>
-                        <Text style={styles.backButtonText}>‹</Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity style={styles.circleButton} onPress={() => loadNotifications(true)} activeOpacity={0.85}>
-                        <Text style={styles.refreshButtonText}>↻</Text>
-                    </TouchableOpacity>
+                    <MobileHeaderActionButton icon="back" onPress={goBack} accessibilityLabel="Go back" />
+                    <MobileHeaderActionButton icon="home" onPress={() => goRoleHome(resolvedSourceRole, { role: effectiveRole, userId: String(effectiveUserId), name: displayName })} accessibilityLabel="Go home" />
                 </View>
 
                 <ScrollView

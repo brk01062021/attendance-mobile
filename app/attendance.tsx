@@ -31,8 +31,45 @@ const formatLocalDate = (date: Date) => {
 };
 
 export default function AttendanceScreen() {
-    const { teacherId, teacherName, subject, className, section } =
+    const { teacherId, teacherName, subject, className, section, role, sourceRole, originRole, returnTo, schoolId, name } =
         useLocalSearchParams();
+
+    const userRole = String(role || 'TEACHER').toUpperCase();
+    const originRoleValue = String(sourceRole || originRole || role || 'teacher').toLowerCase();
+
+    const getOriginDashboardPath = () => {
+        if (returnTo) return String(returnTo);
+        if (originRoleValue === 'principal' || userRole === 'PRINCIPAL') return '/principal-home';
+        if (originRoleValue === 'admin' || userRole === 'ADMIN') return '/admin-dashboard';
+        if (originRoleValue === 'student' || userRole === 'STUDENT') return '/student-dashboard';
+        if (originRoleValue === 'parent' || userRole === 'PARENT') return '/parent-dashboard';
+        return '/teacher-dashboard';
+    };
+
+    const getRoleSafeParams = () => ({
+        teacherId,
+        teacherName,
+        role: userRole,
+        sourceRole: originRoleValue,
+        originRole: originRoleValue,
+        returnTo: getOriginDashboardPath(),
+        schoolId,
+        name,
+    });
+
+    const goOriginHome = () => {
+        router.replace({
+            pathname: getOriginDashboardPath() as any,
+            params: getRoleSafeParams(),
+        } as any);
+    };
+
+    const goLoadStudents = () => {
+        router.replace({
+            pathname: '/home',
+            params: getRoleSafeParams(),
+        } as any);
+    };
 
     const todayDate = new Date();
     const today = formatLocalDate(todayDate);
@@ -131,15 +168,7 @@ export default function AttendanceScreen() {
             Alert.alert('Success', 'Attendance submitted', [
                 {
                     text: 'OK',
-                    onPress: () =>
-                        router.replace({
-                            pathname: '/teacher-dashboard',
-                            params: {
-                                teacherId,
-                                teacherName,
-                                role: 'TEACHER',
-                            },
-                        } as any),
+                    onPress: goOriginHome,
                 },
             ]);
         } catch {
@@ -206,16 +235,7 @@ export default function AttendanceScreen() {
                     <View style={styles.headerRow}>
                         <TouchableOpacity
                             style={styles.backButton}
-                            onPress={() =>
-                                router.replace({
-                                    pathname: '/home',
-                                    params: {
-                                        teacherId,
-                                        teacherName,
-                                        role: 'TEACHER',
-                                    },
-                                } as any)
-                            }
+                            onPress={goLoadStudents}
                             activeOpacity={0.85}
                         >
                             <Text style={styles.backButtonText}>‹</Text>
@@ -223,7 +243,9 @@ export default function AttendanceScreen() {
 
                         <Text style={styles.title}>Students Attendance</Text>
 
-                        <View style={styles.headerSpacer} />
+                        <TouchableOpacity style={styles.homeButton} onPress={goOriginHome} activeOpacity={0.85}>
+                            <Text style={styles.homeButtonText}>⌂</Text>
+                        </TouchableOpacity>
                     </View>
 
                     <Text style={styles.info}>Teacher: {teacherName}</Text>
@@ -403,8 +425,20 @@ const styles = StyleSheet.create({
         color: '#041226',
     },
 
-    headerSpacer: {
+    homeButton: {
         width: 46,
+        height: 46,
+        borderRadius: 23,
+        backgroundColor: 'rgba(255,255,255,0.35)',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+
+    homeButtonText: {
+        fontSize: 24,
+        lineHeight: 28,
+        fontWeight: '900',
+        color: '#041226',
     },
 
     title: {

@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { colors } from '../src/theme';
 
-type UserRole = 'ADMIN' | 'TEACHER' | 'PARENT' | 'STUDENT';
+type UserRole = 'ADMIN' | 'PRINCIPAL' | 'TEACHER' | 'PARENT' | 'STUDENT';
 
 type AdminDashboard = {
     attendanceDate: string;
@@ -25,10 +25,12 @@ type AdminDashboard = {
 };
 
 export default function HomeV2Screen() {
-    const { role, teacherId, teacherName } = useLocalSearchParams();
+    const { role, sourceRole, originRole, returnTo, teacherId, teacherName } = useLocalSearchParams();
 
-    const userRole = String(role || 'TEACHER').toUpperCase() as UserRole;
+    const effectiveRole = String(sourceRole || originRole || role || 'TEACHER').toUpperCase() as UserRole;
+    const userRole = effectiveRole;
     const isAdmin = userRole === 'ADMIN';
+    const isPrincipal = userRole === 'PRINCIPAL';
     const isTeacher = userRole === 'TEACHER';
     const isParent = userRole === 'PARENT';
     const isStudent = userRole === 'STUDENT';
@@ -46,18 +48,37 @@ export default function HomeV2Screen() {
     });
 
     const displayName = useMemo(() => {
-        if (isAdmin) return 'Principal';
+        if (isAdmin) return 'Admin';
+        if (isPrincipal) return 'Principal';
         if (isTeacher) return String(teacherName || 'Teacher');
         if (isParent) return 'Parent';
         if (isStudent) return 'Student';
         return 'User';
-    }, [isAdmin, isTeacher, isParent, isStudent, teacherName]);
+    }, [isAdmin, isPrincipal, isTeacher, isParent, isStudent, teacherName]);
+
+    const workspaceTitle =
+        isPrincipal
+            ? 'Principal Workspace'
+            : isAdmin
+            ? 'Admin Workspace'
+            : 'Teacher Workspace';
+
+    const teacherWorkspaceVisible = isTeacher || isPrincipal || isAdmin;
+
+    const returnParams = {
+        role: userRole,
+        sourceRole: userRole,
+        originRole: userRole,
+        returnTo: String(returnTo || ''),
+        teacherId,
+        teacherName,
+    };
 
     useEffect(() => {
-        if (isAdmin) {
+        if (isAdmin || isPrincipal) {
             loadAdminDashboard();
         }
-    }, [isAdmin]);
+    }, [isAdmin, isPrincipal]);
 
     const loadAdminDashboard = async () => {
         try {
@@ -100,9 +121,10 @@ export default function HomeV2Screen() {
         router.push({
             pathname: '/home',
             params: {
-                role: 'TEACHER',
-                teacherId,
-                teacherName,
+                ...returnParams,
+                role: userRole,
+                sourceRole: userRole,
+                originRole: userRole,
             },
         } as any);
     };
@@ -111,9 +133,7 @@ export default function HomeV2Screen() {
         router.push({
             pathname: '/teacher-dashboard',
             params: {
-                role: userRole,
-                teacherId,
-                teacherName,
+                ...returnParams,
             },
         } as any);
     };
@@ -122,9 +142,7 @@ export default function HomeV2Screen() {
         router.push({
             pathname: '/date-summary',
             params: {
-                role: userRole,
-                teacherId,
-                teacherName,
+                ...returnParams,
             },
         } as any);
     };
@@ -133,9 +151,7 @@ export default function HomeV2Screen() {
         router.push({
             pathname: '/attendance-report',
             params: {
-                role: userRole,
-                teacherId,
-                teacherName,
+                ...returnParams,
             },
         } as any);
     };
@@ -249,7 +265,7 @@ export default function HomeV2Screen() {
         },
     ];
 
-    const tiles = isAdmin ? adminTiles : isTeacher ? teacherTiles : readonlyTiles;
+    const tiles = isAdmin || isPrincipal ? adminTiles : isTeacher ? teacherTiles : readonlyTiles;
 
     return (
         <ImageBackground
@@ -286,7 +302,7 @@ export default function HomeV2Screen() {
                         </View>
                     ) : (
                         <>
-                            {isAdmin && (
+                            {(isAdmin || isPrincipal) && (
                                 <View style={styles.overviewCard}>
                                     <Text style={styles.sectionTitle}>Today&apos;s Overview</Text>
 
@@ -306,9 +322,9 @@ export default function HomeV2Screen() {
                                 </View>
                             )}
 
-                            {isTeacher && (
+                            {teacherWorkspaceVisible && (
                                 <View style={styles.overviewCard}>
-                                    <Text style={styles.sectionTitle}>Teacher Workspace</Text>
+                                    <Text style={styles.sectionTitle}>{workspaceTitle}</Text>
 
                                     <View style={styles.statsGrid}>
                                         <StatCard icon="📚" label="Classes" value="4" />

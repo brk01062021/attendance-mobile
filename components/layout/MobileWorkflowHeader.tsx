@@ -1,6 +1,7 @@
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import { getDashboardPath, getRoleNavigationParams, goRoleHome } from '../../src/navigation/roleNavigation';
 import { colors } from '../../src/theme';
 import MobileHeaderActionButton from './MobileHeaderActionButton';
 
@@ -9,6 +10,7 @@ type Props = {
   eyebrow?: string;
   subtitle?: string;
   homePath?: string;
+  sourceRole?: string;
   onBackPress?: () => void;
   onHomePress?: () => void;
   rightAction?: 'home' | 'refresh' | 'logout' | 'none';
@@ -20,20 +22,31 @@ export default function MobileWorkflowHeader({
   eyebrow,
   subtitle,
   homePath,
+  sourceRole,
   onBackPress,
   onHomePress,
   rightAction = 'home',
   onRightPress,
 }: Props) {
+  const params = useLocalSearchParams();
+  const resolvedSourceRole = sourceRole || String(params.sourceRole || params.originRole || params.role || '');
+  const resolvedHomePath = homePath || getDashboardPath(resolvedSourceRole);
+
+  const handleBack = () => {
+    if (onBackPress) return onBackPress();
+    if (params.returnTo) return router.replace({ pathname: String(params.returnTo) as any, params: getRoleNavigationParams(params as any, resolvedSourceRole) });
+    return router.back();
+  };
+
   const handleHome = () => {
     if (onHomePress) return onHomePress();
     if (onRightPress) return onRightPress();
-    if (homePath) return router.replace(homePath as any);
+    if (resolvedHomePath) return goRoleHome(resolvedSourceRole, params as any);
   };
 
   return (
     <View style={styles.headerRow}>
-      <MobileHeaderActionButton icon="back" onPress={onBackPress || (() => router.back())} accessibilityLabel="Go back" />
+      <MobileHeaderActionButton icon="back" onPress={handleBack} accessibilityLabel="Go back" />
       <View style={styles.headerTextWrap}>
         {eyebrow ? <Text style={styles.eyebrow}>{eyebrow}</Text> : null}
         <Text style={styles.title} numberOfLines={2}>{title}</Text>
