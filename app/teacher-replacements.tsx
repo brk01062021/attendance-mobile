@@ -369,7 +369,7 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(255, 248, 225, 0.18)',
     },
     topBar: {
-        paddingTop: 58,
+        paddingTop: 72,
         paddingHorizontal: 24,
         flexDirection: 'row',
         alignItems: 'center',
@@ -391,7 +391,7 @@ const styles = StyleSheet.create({
         elevation: 4,
     },
     backButtonText: {
-        fontSize: 40,
+        fontSize: 28,
         color: '#09213F',
         fontWeight: '900',
         marginTop: -6,

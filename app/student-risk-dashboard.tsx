@@ -1,6 +1,6 @@
+import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, ImageBackground, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { router } from 'expo-router';
 import { images } from '../src/constants/images';
 import { getStudentAttendanceRisk } from '../src/services/day4AutomationApi';
 import type { StudentRisk } from '../src/types/day4Automation';
@@ -59,7 +59,7 @@ export default function StudentRiskDashboardScreen() {
 
 const styles = StyleSheet.create({
     background: { flex: 1 },
-    container: { padding: 20, paddingTop: 54, paddingBottom: 44 },
+    container: { padding: 20, paddingTop: 72, paddingBottom: 44 },
     backButton: { alignSelf: 'flex-start', backgroundColor: 'rgba(255,255,255,0.8)', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 18, marginBottom: 14 },
     backText: { color: '#3b2a05', fontWeight: '800' },
     title: { fontSize: 28, fontWeight: '900', color: '#2f2106' },

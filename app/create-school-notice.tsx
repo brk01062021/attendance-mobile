@@ -1,20 +1,20 @@
+import { createSchoolNotice } from "@/src/services/schoolNoticeApi";
+import { router } from "expo-router";
 import React, { useState } from "react";
 import {
-    View,
+    ActivityIndicator,
+    Alert,
+    ImageBackground,
+    KeyboardAvoidingView,
+    Modal,
+    Platform,
+    ScrollView,
+    StyleSheet,
     Text,
     TextInput,
     TouchableOpacity,
-    StyleSheet,
-    Alert,
-    ActivityIndicator,
-    Modal,
-    ScrollView,
-    ImageBackground,
-    KeyboardAvoidingView,
-    Platform,
+    View,
 } from "react-native";
-import { router } from "expo-router";
-import { createSchoolNotice } from "@/src/services/schoolNoticeApi";
 
 const NOTICE_TYPES = ["GENERAL", "HOLIDAY", "EXAM", "EVENT", "EMERGENCY"];
 
@@ -222,7 +222,7 @@ const styles = StyleSheet.create({
     },
     scrollContent: {
         padding: 22,
-        paddingTop: 60,
+        paddingTop: 72,
         paddingBottom: 60,
     },
     headerRow: {
@@ -241,7 +241,7 @@ const styles = StyleSheet.create({
     },
     backButtonText: {
         color: "#fff",
-        fontSize: 40,
+        fontSize: 28,
         lineHeight: 42,
         fontWeight: "bold",
     },

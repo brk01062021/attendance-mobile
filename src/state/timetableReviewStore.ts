@@ -1,5 +1,5 @@
-import { TimetableEntry, TimetableGenerationRequest, TimetableGenerationResponse } from '../types/timetable';
 import { CLASS_OPTIONS, DEFAULT_CLASS_TEACHER_POOLS } from '../data/timetableDefaults';
+import { TimetableEntry, TimetableGenerationRequest, TimetableGenerationResponse } from '../types/timetable';
 
 export type TimetableClassSection = {
     className: string;
@@ -98,7 +98,7 @@ export function createFallbackTimetableSnapshot(): TimetableReviewSnapshot {
     return {
         request,
         response: {
-            generatedBatchId: 'DAY11-FALLBACK',
+            generatedBatchId: 'TT-FALLBACK',
             completionPercentage: 94,
             totalClassesScheduled: classSections.length,
             totalEntries: entries.length,

@@ -1635,7 +1635,7 @@ const styles = StyleSheet.create({
     },
     scrollContent: {
         paddingHorizontal: 24,
-        paddingTop: 58,
+        paddingTop: 72,
         paddingBottom: 150,
     },
     topBar: {
@@ -1699,7 +1699,7 @@ const styles = StyleSheet.create({
     },
     filterCard: {
         backgroundColor: "#FFFFFF",
-        borderRadius: 26,
+        borderRadius: 20,
         borderWidth: 1,
         borderColor: "#F0D58A",
         padding: 24,
@@ -1905,7 +1905,7 @@ const styles = StyleSheet.create({
         marginBottom: 18,
     },
     teacherName: {
-        fontSize: 22,
+        fontSize: 20,
         fontWeight: "bold",
         color: "#041226",
         marginBottom: 10,

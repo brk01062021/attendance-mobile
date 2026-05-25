@@ -111,7 +111,7 @@ function Metric({ label, value }: { label: string; value: string }) {
 const styles = StyleSheet.create({
     background: { flex: 1, backgroundColor: '#F5BE38' },
     container: { paddingHorizontal: spacing.screenPadding, paddingTop: 70, paddingBottom: 120 },
-    backButton: { width: 52, height: 52, borderRadius: 26, backgroundColor: 'rgba(255,255,255,0.45)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.65)', alignItems: 'center', justifyContent: 'center', marginBottom: spacing.xl },
+    backButton: { width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.45)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.65)', alignItems: 'center', justifyContent: 'center', marginBottom: spacing.xl },
     backButtonText: { fontSize: 38, lineHeight: 40, fontWeight: '900', color: colors.primaryNavy },
     heroCard: { backgroundColor: 'rgba(255,255,255,0.20)', borderRadius: 34, borderWidth: 1, borderColor: 'rgba(255,255,255,0.45)', padding: spacing.xl, marginBottom: spacing.xl },
     heroEyebrow: { fontSize: 14, fontWeight: '900', color: colors.primaryNavy, letterSpacing: 1.1, textTransform: 'uppercase' },
@@ -129,7 +129,7 @@ const styles = StyleSheet.create({
     previewSummary: { fontSize: 14, lineHeight: 21, fontWeight: '800', color: colors.slateText, marginTop: spacing.xs },
     metricRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: spacing.md },
     metricCard: { width: '47%', backgroundColor: '#FFFFFF', borderRadius: 18, padding: 14, borderWidth: 1, borderColor: colors.cardGoldBorder },
-    metricValue: { fontSize: 22, fontWeight: '900', color: colors.primaryNavy },
+    metricValue: { fontSize: 20, fontWeight: '900', color: colors.primaryNavy },
     metricLabel: { fontSize: 12, fontWeight: '900', color: colors.slateText, marginTop: 2, textTransform: 'uppercase' },
     subTitle: { fontSize: 17, fontWeight: '900', color: colors.primaryNavy, marginTop: spacing.lg, marginBottom: spacing.sm },
     sheetRow: { backgroundColor: '#FFFFFF', borderRadius: 16, padding: 12, marginBottom: 8, borderWidth: 1, borderColor: colors.cardGoldBorder },

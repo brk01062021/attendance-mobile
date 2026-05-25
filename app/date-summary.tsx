@@ -138,7 +138,7 @@ const styles = StyleSheet.create({
 
     container: {
         paddingHorizontal: spacing.screenPadding,
-        paddingTop: 64,
+        paddingTop: 72,
         paddingBottom: 100,
     },
 
@@ -170,7 +170,7 @@ const styles = StyleSheet.create({
     title: {
         flex: 1,
         textAlign: 'center',
-        fontSize: 30,
+        fontSize: 21,
         fontWeight: '900',
         color: colors.primaryNavy,
         paddingHorizontal: spacing.sm,

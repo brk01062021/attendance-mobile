@@ -1,3 +1,4 @@
+import { router } from 'expo-router';
 import React from 'react';
 import {
     ImageBackground,
@@ -7,7 +8,6 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
-import { router } from 'expo-router';
 import { colors, shadows, spacing } from '../src/theme';
 
 export default function RegisterStudentScreen() {
@@ -34,7 +34,7 @@ export default function RegisterStudentScreen() {
                     <Text style={styles.bodyText}>This route is now connected from Register Here and ready for full student onboarding form implementation.</Text>
 
                     <View style={styles.infoBox}>
-                        <Text style={styles.infoTitle}>Next build</Text>
+                        <Text style={styles.infoTitle}>Production workflow</Text>
                         <Text style={styles.infoText}>Add admission number, DOB, class/section, parent linking and backend save API.</Text>
                     </View>
                 </View>
@@ -56,9 +56,9 @@ const styles = StyleSheet.create({
     },
 
     backButton: {
-        width: 52,
-        height: 52,
-        borderRadius: 26,
+        width: 40,
+        height: 40,
+        borderRadius: 20,
         backgroundColor: 'rgba(255,255,255,0.45)',
         borderWidth: 1,
         borderColor: 'rgba(255,255,255,0.65)',

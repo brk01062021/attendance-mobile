@@ -1,3 +1,4 @@
+import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
     ActivityIndicator,
@@ -8,9 +9,8 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
-import { router, useLocalSearchParams } from 'expo-router';
-import { colors, shadows, spacing } from '../src/theme';
 import { API_BASE_URL, DEV_DEFAULTS } from '../src/services/api';
+import { colors, shadows, spacing } from '../src/theme';
 
 const DEFAULT_TEST_DATE = DEV_DEFAULTS.dashboardDate;
 
@@ -241,9 +241,9 @@ const styles = StyleSheet.create({
     },
 
     circleButton: {
-        width: 52,
-        height: 52,
-        borderRadius: 26,
+        width: 40,
+        height: 40,
+        borderRadius: 20,
         backgroundColor: 'rgba(255,255,255,0.72)',
         borderWidth: 1,
         borderColor: colors.cardGoldBorder,
@@ -252,8 +252,8 @@ const styles = StyleSheet.create({
     },
 
     circleButtonPlaceholder: {
-        width: 52,
-        height: 52,
+        width: 40,
+        height: 40,
     },
 
     circleButtonText: {
@@ -385,7 +385,7 @@ const styles = StyleSheet.create({
     statCard: {
         width: '48%',
         backgroundColor: colors.white,
-        borderRadius: 26,
+        borderRadius: 20,
         borderWidth: 1.4,
         borderColor: colors.cardGoldBorder,
         alignItems: 'center',
@@ -394,12 +394,12 @@ const styles = StyleSheet.create({
     },
 
     statEmoji: {
-        fontSize: 30,
+        fontSize: 21,
         marginBottom: spacing.sm,
     },
 
     statValue: {
-        fontSize: 30,
+        fontSize: 21,
         fontWeight: '900',
         color: colors.primaryNavy,
     },

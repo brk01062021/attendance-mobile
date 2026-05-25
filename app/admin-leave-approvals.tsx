@@ -116,7 +116,7 @@ export default function AdminLeaveApprovalsScreen() {
 
 const styles = StyleSheet.create({
     background: { flex: 1 },
-    container: { padding: 20, paddingTop: 54, paddingBottom: 44 },
+    container: { padding: 20, paddingTop: 72, paddingBottom: 44 },
     backButton: { alignSelf: 'flex-start', backgroundColor: 'rgba(255,255,255,0.8)', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 18, marginBottom: 14 },
     backText: { color: '#3b2a05', fontWeight: '800' },
     eyebrow: { color: '#7a5200', fontWeight: '900', letterSpacing: 1, textTransform: 'uppercase' },

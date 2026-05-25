@@ -1,19 +1,19 @@
+import { API_ENDPOINTS } from '@/src/services/api';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
-    View,
-    Text,
-    TouchableOpacity,
-    StyleSheet,
-    ScrollView,
-    Alert,
     ActivityIndicator,
-    Modal,
+    Alert,
     ImageBackground,
+    Modal,
+    ScrollView,
+    StyleSheet,
+    Text,
     TextInput,
+    TouchableOpacity,
+    View,
 } from 'react-native';
-import { router, useLocalSearchParams } from 'expo-router';
-import DateTimePicker from '@react-native-community/datetimepicker';
-import { API_ENDPOINTS } from '@/src/services/api';
 import { images } from '../src/constants/images';
 
 type AttendanceStatus = 'Present' | 'Absent' | 'Late';
@@ -376,7 +376,7 @@ const styles = StyleSheet.create({
 
     container: {
         paddingHorizontal: 20,
-        paddingTop: 64,
+        paddingTop: 72,
         paddingBottom: 100,
     },
 

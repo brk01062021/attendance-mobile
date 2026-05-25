@@ -12,14 +12,14 @@ export default function TimetableRolloutReadinessScreen() {
     const backHome = sourceRole === 'principal' ? '/principal-home' : '/admin-dashboard';
     const [batchId, setBatchId] = useState(String(params.batchId || params.generatedBatchId || ''));
     const [loading, setLoading] = useState(false);
-    const [message, setMessage] = useState('Load Day 20 rollout readiness before sharing timetable visibility with teachers, students, and parents.');
+    const [message, setMessage] = useState('Load rollout readiness before publishing timetable visibility to teachers, students, and parents.');
     const [readiness, setReadiness] = useState<TimetableRolloutReadiness | null>(null);
 
     const cleanBatchId = batchId.trim().toUpperCase();
 
     const load = async () => {
         if (!cleanBatchId) {
-            setMessage('Enter a generated batch ID first, for example TT-99266EBB.');
+            setMessage('Enter a timetable batch ID first, for example TT-99266EBB.');
             return;
         }
         setLoading(true);
@@ -118,13 +118,13 @@ function Section({ title, items, empty, urgent }: { title: string; items: string
 const styles = StyleSheet.create({
     bg: { flex: 1 },
     container: { paddingHorizontal: spacing.lg, paddingTop: 72, paddingBottom: 34 },
-    headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, gap: 7 },
-    circleButton: { width: 52, height: 52, borderRadius: 26, borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.78)', backgroundColor: 'rgba(255,255,255,0.12)', alignItems: 'center', justifyContent: 'center' },
-    backText: { color: colors.primaryNavy, fontSize: 40, fontWeight: '900', marginTop: -7 },
-    homeIcon: { color: colors.primaryNavy, fontSize: 30, fontWeight: '900', marginTop: -3 },
+    headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14, gap: 8 },
+    circleButton: { width: 40, height: 40, borderRadius: 20, borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.78)', backgroundColor: 'rgba(255,255,255,0.12)', alignItems: 'center', justifyContent: 'center' },
+    backText: { color: colors.primaryNavy, fontSize: 28, fontWeight: '900', marginTop: -2 },
+    homeIcon: { color: colors.primaryNavy, fontSize: 21, fontWeight: '900', marginTop: 0 },
     headerTextWrap: { flex: 1, alignItems: 'center' },
     eyebrow: { color: colors.deepGold, fontWeight: '900', fontSize: 9, letterSpacing: 1.5, textAlign: 'center' },
-    title: { color: colors.primaryNavy, fontSize: 22, fontWeight: '900', textAlign: 'center' },
+    title: { color: colors.primaryNavy, fontSize: 20, fontWeight: '900', textAlign: 'center' },
     heroCard: { backgroundColor: 'rgba(13, 33, 57, 0.94)', borderRadius: 24, padding: 18, marginBottom: 12, borderWidth: 1, borderColor: 'rgba(212,175,55,0.42)', ...shadows.medium },
     heroTitle: { color: colors.white, fontSize: 21, fontWeight: '900', marginBottom: 6 },
     heroText: { color: 'rgba(255,255,255,0.82)', fontWeight: '800', lineHeight: 20 },

@@ -10,6 +10,7 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
+import MobileWorkflowHeader from '../components/layout/MobileWorkflowHeader';
 import { CLASS_OPTIONS, DEFAULT_CLASS_TEACHER_POOLS, EXCEL_POOL_TABS } from '../src/data/timetableDefaults';
 import { generateTimetable, getDefaultAcademicRules, validateAcademicRules } from '../src/services/timetableApi';
 import { saveTimetableReviewSnapshot } from '../src/state/timetableReviewStore';
@@ -142,7 +143,7 @@ export default function GenerateTimetableScreen() {
             setMessage(data.conflictsDetected === 0 ? 'Smart conflict-free timetable generated successfully. No teacher double-booking found.' : 'Timetable generated. Please review remaining alerts in Conflict Center.');
         } catch {
             const demo: TimetableGenerationResponse = {
-                generatedBatchId: `DAY10-DEMO-${Date.now()}`,
+                generatedBatchId: `TT-DEMO-${Date.now()}`,
                 completionPercentage: 94,
                 totalClassesScheduled: request.classNames.length * request.sections.length,
                 totalEntries: request.classNames.length * request.sections.length * 6 * 6,
@@ -314,7 +315,7 @@ export default function GenerateTimetableScreen() {
 }
 
 function PageHeader({ title, eyebrow, homePath }: { title: string; eyebrow: string; homePath: string }) {
-    return <View style={styles.headerRow}><TouchableOpacity style={styles.circleButton} onPress={() => router.back()}><Text style={styles.backText}>‹</Text></TouchableOpacity><View style={styles.headerTextWrap}><Text style={styles.eyebrow}>{eyebrow}</Text><Text style={styles.title}>{title}</Text></View><TouchableOpacity style={styles.circleButton} onPress={() => router.replace(homePath as any)}><Text style={styles.homeIcon}>⌂</Text></TouchableOpacity></View>;
+    return <MobileWorkflowHeader title={title} eyebrow={eyebrow} homePath={homePath} />;
 }
 function Field({ label, value, onChangeText, placeholder }: { label: string; value: string; onChangeText: (v: string) => void; placeholder?: string }) {
     return <View style={styles.field}><Text style={styles.label}>{label}</Text><TextInput style={styles.input} value={value} onChangeText={onChangeText} placeholder={placeholder} placeholderTextColor="#8A610D" /></View>;
@@ -326,13 +327,13 @@ function Kpi({ label, value }: { label: string; value: string }) {
 const styles = StyleSheet.create({
     bg: { flex: 1 },
     container: { paddingHorizontal: spacing.lg, paddingTop: 72, paddingBottom: 30 },
-    headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18, gap: 7 },
-    circleButton: { width: 52, height: 52, borderRadius: 26, borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.78)', backgroundColor: 'rgba(255,255,255,0.12)', alignItems: 'center', justifyContent: 'center' },
-    backText: { color: colors.primaryNavy, fontSize: 40, fontWeight: '900', marginTop: -7 },
-    homeIcon: { color: colors.primaryNavy, fontSize: 30, fontWeight: '900', marginTop: -3 },
+    headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14, gap: 8 },
+    circleButton: { width: 40, height: 40, borderRadius: 20, borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.78)', backgroundColor: 'rgba(255,255,255,0.12)', alignItems: 'center', justifyContent: 'center' },
+    backText: { color: colors.primaryNavy, fontSize: 28, fontWeight: '900', marginTop: -2 },
+    homeIcon: { color: colors.primaryNavy, fontSize: 21, fontWeight: '900', marginTop: 0 },
     headerTextWrap: { flex: 1, alignItems: 'center' },
     eyebrow: { color: colors.deepGold, fontWeight: '900', fontSize: 9, letterSpacing: 1.5, textAlign: 'center' },
-    title: { color: colors.primaryNavy, fontSize: 22, fontWeight: '900', textAlign: 'center' },
+    title: { color: colors.primaryNavy, fontSize: 20, fontWeight: '900', textAlign: 'center' },
     card: { backgroundColor: 'rgba(255,253,247,0.96)', borderRadius: 20, padding: 11, marginBottom: 9, borderWidth: 1, borderColor: colors.cardGoldBorder, ...shadows.medium },
     cardTitle: { color: colors.primaryNavy, fontSize: 13, fontWeight: '900', marginBottom: 9 },
     field: { marginBottom: 9 },

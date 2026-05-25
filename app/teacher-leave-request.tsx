@@ -219,13 +219,13 @@ function TypePill({ title, active, onPress }: { title: string; active: boolean; 
 
 const styles = StyleSheet.create({
     background: { flex: 1 },
-    container: { padding: 20, paddingTop: 54, paddingBottom: 44 },
+    container: { padding: 20, paddingTop: 72, paddingBottom: 44 },
     backButton: { alignSelf: 'flex-start', backgroundColor: 'rgba(255,255,255,0.82)', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 18, marginBottom: 16 },
     backText: { color: '#3b2a05', fontWeight: '900' },
     eyebrow: { color: '#7a5200', fontWeight: '900', letterSpacing: 1, textTransform: 'uppercase' },
     title: { fontSize: 28, fontWeight: '900', color: '#2f2106', marginTop: 6 },
     subtitle: { color: '#5b4515', marginTop: 8, marginBottom: 18, lineHeight: 20, fontWeight: '700' },
-    card: { backgroundColor: 'rgba(255,255,255,0.94)', borderRadius: 26, padding: 16, borderWidth: 1, borderColor: 'rgba(116,83,15,0.2)' },
+    card: { backgroundColor: 'rgba(255,255,255,0.94)', borderRadius: 20, padding: 16, borderWidth: 1, borderColor: 'rgba(116,83,15,0.2)' },
     label: { color: '#6b551f', fontWeight: '900', marginTop: 14, marginBottom: 8 },
     teacherName: { color: '#2f2106', fontSize: 18, fontWeight: '900' },
     typeRow: { flexDirection: 'row', gap: 10 },

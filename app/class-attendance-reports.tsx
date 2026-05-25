@@ -1,3 +1,4 @@
+import { router, useLocalSearchParams } from 'expo-router';
 import React, { useMemo, useState } from 'react';
 import {
     ActivityIndicator,
@@ -11,9 +12,8 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
-import { router, useLocalSearchParams } from 'expo-router';
-import { colors, spacing, shadows } from '../src/theme';
 import { API_BASE_URL } from '../src/services/api';
+import { colors, shadows, spacing } from '../src/theme';
 
 const BASE_URL = API_BASE_URL;
 
@@ -398,13 +398,13 @@ function StatBox({ title, value, color = colors.primaryNavy }: { title: string; 
 
 const styles = StyleSheet.create({
     background: { flex: 1, backgroundColor: '#F6E7B0' },
-    container: { paddingHorizontal: spacing.screenPadding, paddingTop: 64, paddingBottom: spacing.xxxl },
+    container: { paddingHorizontal: spacing.screenPadding, paddingTop: 72, paddingBottom: spacing.xxxl },
     headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.xl },
     backButton: { width: 48, height: 48, borderRadius: 24, backgroundColor: 'rgba(255, 248, 225, 0.18)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.65)', alignItems: 'center', justifyContent: 'center' },
     backButtonText: { fontSize: 38, lineHeight: 40, fontWeight: '900', color: colors.primaryNavy },
     title: { flex: 1, fontSize: 28, fontWeight: '900', color: colors.primaryNavy, textAlign: 'center', paddingHorizontal: spacing.sm },
     headerSpacer: { width: 48, height: 48 },
-    heroCard: { backgroundColor: 'rgba(255, 248, 225, 0.52)', borderRadius: 26, borderWidth: 1.5, borderColor: colors.cardGoldBorder, padding: spacing.xl, marginBottom: spacing.xl, ...shadows.medium },
+    heroCard: { backgroundColor: 'rgba(255, 248, 225, 0.52)', borderRadius: 20, borderWidth: 1.5, borderColor: colors.cardGoldBorder, padding: spacing.xl, marginBottom: spacing.xl, ...shadows.medium },
     heroEyebrow: { fontSize: 13, fontWeight: '900', color: colors.premiumGold, textTransform: 'uppercase', letterSpacing: 1.2, marginBottom: spacing.xs },
     heroTitle: { fontSize: 25, fontWeight: '900', color: colors.primaryNavy, lineHeight: 31, marginBottom: spacing.sm },
     heroText: { fontSize: 15, fontWeight: '800', color: colors.slateText, lineHeight: 23 },
@@ -441,7 +441,7 @@ const styles = StyleSheet.create({
     cardTitleBox: { flex: 1, paddingRight: spacing.md },
     cardTitle: { fontSize: 20, fontWeight: '900', color: colors.primaryNavy },
     cardSubtitle: { fontSize: 13, fontWeight: '800', color: colors.slateText, marginTop: spacing.xs },
-    attendancePercent: { fontSize: 22, fontWeight: '900', color: colors.successGreen },
+    attendancePercent: { fontSize: 20, fontWeight: '900', color: colors.successGreen },
     statusRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.md },
     statusLabel: { fontSize: 14, fontWeight: '900', color: colors.slateText },
     statusBadge: { overflow: 'hidden', borderRadius: 14, paddingHorizontal: spacing.md, paddingVertical: spacing.xs, fontSize: 12, fontWeight: '900' },
@@ -450,13 +450,13 @@ const styles = StyleSheet.create({
     progressBackground: { height: 12, backgroundColor: '#E5E7EB', borderRadius: 20, overflow: 'hidden' },
     progressFill: { height: '100%', backgroundColor: colors.successGreen, borderRadius: 20 },
     noDataCard: { backgroundColor: '#FFF8E1', borderRadius: 22, borderWidth: 1.2, borderColor: colors.cardGoldBorder, padding: spacing.xl, alignItems: 'center', marginBottom: spacing.xl, ...shadows.soft },
-    noDataTitle: { fontSize: 22, fontWeight: '900', color: '#92400E', marginBottom: spacing.sm },
+    noDataTitle: { fontSize: 20, fontWeight: '900', color: '#92400E', marginBottom: spacing.sm },
     noDataText: { fontSize: 15, fontWeight: '700', textAlign: 'center', color: '#92400E', lineHeight: 22 },
     modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', padding: spacing.xl },
     modalBox: { backgroundColor: colors.white, borderRadius: 24, padding: spacing.xl, borderWidth: 1.5, borderColor: colors.cardGoldBorder },
     modalTitle: { fontSize: 24, fontWeight: '900', color: colors.primaryNavy, marginBottom: spacing.lg, textAlign: 'center' },
     optionButton: { paddingVertical: spacing.md, borderBottomWidth: 1, borderBottomColor: '#E5E7EB' },
     optionText: { fontSize: 16, fontWeight: '800', color: colors.primaryNavy },
-    closeButton: { marginTop: spacing.xl, backgroundColor: colors.primaryNavy, height: 52, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
+    closeButton: { marginTop: spacing.xl, backgroundColor: colors.primaryNavy, height: 40, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
     closeButtonText: { fontSize: 16, fontWeight: '900', color: colors.white },
 });

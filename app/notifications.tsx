@@ -1,3 +1,5 @@
+import { API_ENDPOINTS } from '@/src/services/api';
+import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
     ActivityIndicator,
@@ -10,8 +12,6 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
-import { router, useLocalSearchParams } from 'expo-router';
-import { API_ENDPOINTS } from '@/src/services/api';
 import { images } from '../src/constants/images';
 
 type NotificationItem = {
@@ -445,7 +445,7 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(255, 248, 225, 0.18)',
     },
     topBar: {
-        paddingTop: 58,
+        paddingTop: 72,
         paddingHorizontal: 24,
         flexDirection: 'row',
         alignItems: 'center',
@@ -467,7 +467,7 @@ const styles = StyleSheet.create({
         elevation: 4,
     },
     backButtonText: {
-        fontSize: 40,
+        fontSize: 28,
         color: '#09213F',
         fontWeight: '900',
         marginTop: -6,
@@ -680,7 +680,7 @@ const styles = StyleSheet.create({
         borderColor: '#E3C36F',
     },
     iconText: {
-        fontSize: 22,
+        fontSize: 20,
     },
     notificationTextBlock: {
         flex: 1,

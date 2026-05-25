@@ -1,3 +1,4 @@
+import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
     ActivityIndicator,
@@ -12,20 +13,19 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
-import { LineChart, BarChart } from 'react-native-chart-kit';
+import { BarChart, LineChart } from 'react-native-chart-kit';
 import AnalyticsChartCard from '../components/admin/AnalyticsChartCard';
 import AnalyticsKpiCard from '../components/admin/AnalyticsKpiCard';
-import { router, useLocalSearchParams } from 'expo-router';
-import { colors, spacing, shadows } from '../src/theme';
-import { API_BASE_URL } from '../src/services/api';
 import {
-    fetchAnalyticsSummary,
-    fetchAttendanceTrend,
-    fetchClassAttendanceTrend,
     AnalyticsSummary,
     AttendanceTrendItem,
     ClassAttendanceTrendItem,
+    fetchAnalyticsSummary,
+    fetchAttendanceTrend,
+    fetchClassAttendanceTrend,
 } from '../src/services/analyticsApi';
+import { API_BASE_URL } from '../src/services/api';
+import { colors, shadows, spacing } from '../src/theme';
 
 const BASE_URL = API_BASE_URL;
 
@@ -3547,7 +3547,7 @@ const styles = StyleSheet.create({
     },
     container: {
         paddingHorizontal: spacing.screenPadding,
-        paddingTop: 64,
+        paddingTop: 72,
         paddingBottom: spacing.xxxl,
     },
     headerRow: {
@@ -3597,7 +3597,7 @@ const styles = StyleSheet.create({
     },
     heroCard: {
         backgroundColor: 'rgba(255, 248, 225, 0.52)',
-        borderRadius: 26,
+        borderRadius: 20,
         borderWidth: 1.5,
         borderColor: colors.cardGoldBorder,
         padding: spacing.xl,
@@ -3687,7 +3687,7 @@ const styles = StyleSheet.create({
         borderColor: colors.premiumGold,
     },
     quickNavEmoji: {
-        fontSize: 22,
+        fontSize: 20,
         marginBottom: 6,
     },
     quickNavText: {
@@ -3853,7 +3853,7 @@ const styles = StyleSheet.create({
     },
 
     sectionAnalyticsValue: {
-        fontSize: 22,
+        fontSize: 20,
         fontWeight: '900',
         color: '#C99700',
     },
@@ -4004,7 +4004,7 @@ const styles = StyleSheet.create({
         ...shadows.soft,
     },
     noDataTitle: {
-        fontSize: 22,
+        fontSize: 20,
         fontWeight: '900',
         color: '#92400E',
         marginBottom: spacing.sm,
@@ -4078,7 +4078,7 @@ const styles = StyleSheet.create({
         marginTop: spacing.xs,
     },
     attendancePercent: {
-        fontSize: 22,
+        fontSize: 20,
         fontWeight: '900',
         color: colors.successGreen,
     },
@@ -4169,7 +4169,7 @@ const styles = StyleSheet.create({
     },
     calendarBox: {
         backgroundColor: colors.white,
-        borderRadius: 26,
+        borderRadius: 20,
         padding: spacing.xl,
         borderWidth: 1.5,
         borderColor: colors.cardGoldBorder,
@@ -4248,7 +4248,7 @@ const styles = StyleSheet.create({
         borderColor: colors.cardGoldBorder,
     },
     calendarArrowText: {
-        fontSize: 30,
+        fontSize: 21,
         lineHeight: 32,
         fontWeight: '900',
         color: colors.premiumGold,
@@ -4298,14 +4298,14 @@ const styles = StyleSheet.create({
     },
     assignModalBox: {
         backgroundColor: colors.white,
-        borderRadius: 26,
+        borderRadius: 20,
         padding: spacing.xl,
         borderWidth: 1.5,
         borderColor: colors.cardGoldBorder,
         maxHeight: '90%',
     },
     assignModalTitle: {
-        fontSize: 30,
+        fontSize: 21,
         fontWeight: '900',
         color: colors.primaryNavy,
         marginBottom: spacing.lg,
@@ -4494,7 +4494,7 @@ const styles = StyleSheet.create({
         color: colors.primaryNavy,
     },
     assignButton: {
-        height: 52,
+        height: 40,
         borderRadius: 16,
         backgroundColor: colors.premiumGold,
         alignItems: 'center',
@@ -4624,7 +4624,7 @@ const styles = StyleSheet.create({
     closeButton: {
         marginTop: spacing.xl,
         backgroundColor: colors.primaryNavy,
-        height: 52,
+        height: 40,
         borderRadius: 16,
         alignItems: 'center',
         justifyContent: 'center',

@@ -12,7 +12,7 @@ export default function TimetableOperationsScreen() {
     const backHome = sourceRole === 'principal' ? '/principal-home' : '/admin-dashboard';
     const [batchId, setBatchId] = useState(String(params.generatedBatchId || params.batchId || ''));
     const [loading, setLoading] = useState(false);
-    const [message, setMessage] = useState('Paste/select a batch ID, then validate publish lock, exports, live role visibility, rollout readiness, versions, notifications, and archive history.');
+    const [message, setMessage] = useState('Enter or select a batch ID to manage publish lock, exports, live visibility, readiness, versions, notifications, and archive history.');
     const [status, setStatus] = useState<TimetableOperationsStatus | null>(null);
     const [versions, setVersions] = useState<TimetableVersion[]>([]);
     const [notifications, setNotifications] = useState<TimetableNotification[]>([]);
@@ -22,7 +22,7 @@ export default function TimetableOperationsScreen() {
 
     const load = async () => {
         if (!cleanBatchId) {
-            setMessage('Enter a generated batch ID first, for example TT-99266EBB.');
+            setMessage('Enter a timetable batch ID first, for example TT-99266EBB.');
             return;
         }
         setLoading(true);
@@ -121,7 +121,7 @@ export default function TimetableOperationsScreen() {
                 <Action title="PDF Export" subtitle="Real PDF payload" onPress={() => runExport('PDF')} />
                 <Action title="Excel Export" subtitle="Excel .xls payload" onPress={() => runExport('EXCEL')} />
                 <Action title="Live Timetable" subtitle="Teacher/student/parent view" onPress={() => router.push({ pathname: '/timetable-live' as any, params: { batchId: cleanBatchId, role, sourceRole } })} />
-                <Action title="Rollout Readiness" subtitle="Day 20 final gate" onPress={() => router.push({ pathname: '/timetable-rollout-readiness' as any, params: { batchId: cleanBatchId, sourceRole } })} />
+                <Action title="Rollout Readiness" subtitle="Final readiness check" onPress={() => router.push({ pathname: '/timetable-rollout-readiness' as any, params: { batchId: cleanBatchId, sourceRole } })} />
                 <Action title="Rollback" subtitle="Unlock to review mode" onPress={runRollback} />
                 <Action title="Intelligence" subtitle="Principal analytics" onPress={() => router.push({ pathname: '/principal-timetable-intelligence' as any, params: { generatedBatchId: cleanBatchId, sourceRole } })} />
             </View>
@@ -148,13 +148,13 @@ function Section({ title, items }: { title: string; items: string[] }) {
 const styles = StyleSheet.create({
     bg: { flex: 1 },
     container: { paddingHorizontal: spacing.lg, paddingTop: 72, paddingBottom: 34 },
-    headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, gap: 7 },
-    circleButton: { width: 52, height: 52, borderRadius: 26, borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.78)', backgroundColor: 'rgba(255,255,255,0.12)', alignItems: 'center', justifyContent: 'center' },
-    backText: { color: colors.primaryNavy, fontSize: 40, fontWeight: '900', marginTop: -7 },
-    homeIcon: { color: colors.primaryNavy, fontSize: 30, fontWeight: '900', marginTop: -3 },
+    headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14, gap: 8 },
+    circleButton: { width: 40, height: 40, borderRadius: 20, borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.78)', backgroundColor: 'rgba(255,255,255,0.12)', alignItems: 'center', justifyContent: 'center' },
+    backText: { color: colors.primaryNavy, fontSize: 28, fontWeight: '900', marginTop: -2 },
+    homeIcon: { color: colors.primaryNavy, fontSize: 21, fontWeight: '900', marginTop: 0 },
     headerTextWrap: { flex: 1, alignItems: 'center' },
     eyebrow: { color: colors.deepGold, fontWeight: '900', fontSize: 9, letterSpacing: 1.5, textAlign: 'center' },
-    title: { color: colors.primaryNavy, fontSize: 22, fontWeight: '900', textAlign: 'center' },
+    title: { color: colors.primaryNavy, fontSize: 20, fontWeight: '900', textAlign: 'center' },
     heroCard: { backgroundColor: 'rgba(13, 33, 57, 0.94)', borderRadius: 24, padding: 18, marginBottom: 12, borderWidth: 1, borderColor: 'rgba(212,175,55,0.42)', ...shadows.medium },
     heroTitle: { color: colors.white, fontSize: 21, fontWeight: '900', marginBottom: 6 },
     heroText: { color: 'rgba(255,255,255,0.82)', fontWeight: '800', lineHeight: 20 },

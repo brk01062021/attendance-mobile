@@ -13,7 +13,7 @@ export default function TimetableBatchCenterScreen() {
     const [batches, setBatches] = useState<TimetableBatchSummary[]>([]);
     const [latest, setLatest] = useState<TimetablePublishAudit | null>(null);
     const [loading, setLoading] = useState(false);
-    const [message, setMessage] = useState('Use a generated batch ID like TT-CEB9E72D to review, repair, publish, export, or open principal intelligence.');
+    const [message, setMessage] = useState('Enter or select a timetable batch ID to review, repair, publish, export, or open principal intelligence.');
 
     const selectedBatchId = useMemo(() => batchInput.trim().toUpperCase(), [batchInput]);
 
@@ -39,7 +39,7 @@ export default function TimetableBatchCenterScreen() {
 
     const openPath = (pathname: string) => {
         if (!selectedBatchId) {
-            setMessage('Please enter or select a generated batch ID first.');
+            setMessage('Please enter or select a timetable batch ID first.');
             return;
         }
         router.push({ pathname: pathname as any, params: { generatedBatchId: selectedBatchId, sourceRole } });
@@ -128,13 +128,13 @@ function Action({ title, subtitle, onPress }: { title: string; subtitle: string;
 const styles = StyleSheet.create({
     bg: { flex: 1 },
     container: { paddingHorizontal: spacing.lg, paddingTop: 72, paddingBottom: 34 },
-    headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, gap: 7 },
-    circleButton: { width: 52, height: 52, borderRadius: 26, borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.78)', backgroundColor: 'rgba(255,255,255,0.12)', alignItems: 'center', justifyContent: 'center' },
-    backText: { color: colors.primaryNavy, fontSize: 40, fontWeight: '900', marginTop: -7 },
-    homeIcon: { color: colors.primaryNavy, fontSize: 30, fontWeight: '900', marginTop: -3 },
+    headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14, gap: 8 },
+    circleButton: { width: 40, height: 40, borderRadius: 20, borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.78)', backgroundColor: 'rgba(255,255,255,0.12)', alignItems: 'center', justifyContent: 'center' },
+    backText: { color: colors.primaryNavy, fontSize: 28, fontWeight: '900', marginTop: -2 },
+    homeIcon: { color: colors.primaryNavy, fontSize: 21, fontWeight: '900', marginTop: 0 },
     headerTextWrap: { flex: 1, alignItems: 'center' },
     eyebrow: { color: colors.deepGold, fontWeight: '900', fontSize: 9, letterSpacing: 1.5, textAlign: 'center' },
-    title: { color: colors.primaryNavy, fontSize: 22, fontWeight: '900', textAlign: 'center' },
+    title: { color: colors.primaryNavy, fontSize: 20, fontWeight: '900', textAlign: 'center' },
     heroCard: { backgroundColor: 'rgba(13, 33, 57, 0.94)', borderRadius: 24, padding: 18, marginBottom: 12, borderWidth: 1, borderColor: 'rgba(212,175,55,0.42)', ...shadows.medium },
     heroTitle: { color: colors.white, fontSize: 21, fontWeight: '900', marginBottom: 6 },
     heroText: { color: 'rgba(255,255,255,0.82)', fontWeight: '800', lineHeight: 20 },
