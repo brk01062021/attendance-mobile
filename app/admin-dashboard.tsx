@@ -14,6 +14,7 @@ import DashboardHeader from '../components/dashboard/DashboardHeader';
 import { API_BASE_URL, DEV_DEFAULTS } from '../src/services/api';
 import { getRoleGreeting, getSession } from '../src/services/sessionService';
 import { colors, shadows, spacing } from '../src/theme';
+import { resolveSchoolName } from '../src/utils/schoolUtils';
 
 const DASHBOARD_TEST_DATE = DEV_DEFAULTS.dashboardDate;
 const SHOW_ADVANCED_ANALYTICS = false;
@@ -79,7 +80,7 @@ export default function AdminDashboardScreen() {
     const params = useLocalSearchParams<{ adminName?: string; schoolId?: string }>();
     const session = getSession();
     const schoolId = String(params.schoolId || session?.schoolId || 'BRK1').toUpperCase();
-    const schoolName = String(session?.schoolName || `${schoolId} School`);
+    const schoolName = resolveSchoolName(schoolId, session?.schoolName);
 
     const adminName = useMemo(() => getRoleGreeting('ADMIN', params.adminName || session?.displayName || 'Admin'), [params.adminName, session?.displayName]);
 
@@ -1232,7 +1233,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#FFFDF7',
         borderTopRightRadius: 28,
         borderBottomRightRadius: 28,
-        paddingTop: 54,
+        paddingTop: 88,
         paddingHorizontal: 18,
         ...shadows.medium,
     },

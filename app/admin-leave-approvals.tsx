@@ -1,6 +1,7 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, ImageBackground, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import MobileWorkflowHeader from '../components/layout/MobileWorkflowHeader';
 import { images } from '../src/constants/images';
 import { approveTeacherLeaveEnquiry, getPendingLeaveEnquiries, rejectTeacherLeaveEnquiry } from '../src/services/day4AutomationApi';
 
@@ -74,12 +75,14 @@ export default function AdminLeaveApprovalsScreen() {
     return (
         <ImageBackground source={images.splashGold} style={styles.background} resizeMode="cover">
             <ScrollView contentContainerStyle={styles.container}>
-                <TouchableOpacity style={styles.backButton} onPress={() => router.replace(backPath as any)}>
-                    <Text style={styles.backText}>Back</Text>
-                </TouchableOpacity>
-                <Text style={styles.eyebrow}>Admin / Principal Workflow</Text>
-                <Text style={styles.title}>Leave Approvals</Text>
-                <Text style={styles.subtitle}>Approve or reject teacher leave enquiries. Approved enquiries mark the teacher schedule as leave and then replacement planning can start.</Text>
+                <MobileWorkflowHeader
+                    title="Leave Approvals"
+                    eyebrow="ADMIN / PRINCIPAL WORKFLOW"
+                    subtitle="Approve or reject teacher leave enquiries."
+                    homePath={backPath}
+                    onBackPress={() => router.replace(backPath as any)}
+                />
+                <Text style={styles.subtitle}>Approved enquiries mark the teacher schedule as leave and then replacement planning can start.</Text>
 
                 {loading ? <ActivityIndicator size="large" /> : null}
 

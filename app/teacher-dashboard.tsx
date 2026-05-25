@@ -14,6 +14,7 @@ import DashboardHeader from '../components/dashboard/DashboardHeader';
 import { API_BASE_URL, DEV_DEFAULTS } from '../src/services/api';
 import { getSession, normalizeSchoolId } from '../src/services/sessionService';
 import { colors, shadows, spacing } from '../src/theme';
+import { resolveSchoolName } from '../src/utils/schoolUtils';
 
 
 
@@ -57,7 +58,7 @@ export default function TeacherDashboard() {
     const teacherName = params.teacherName || session?.displayName;
     const role = 'TEACHER';
     const schoolId = normalizeSchoolId(String(params.schoolId || session?.schoolId || ''));
-    const schoolName = String(session?.schoolName || `${schoolId} School`);
+    const schoolName = resolveSchoolName(schoolId, session?.schoolName);
 
     const displayTeacherName = useMemo(() => {
         const name = String(teacherName || '').trim();
@@ -767,7 +768,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#FFFDF7',
         borderTopRightRadius: 28,
         borderBottomRightRadius: 28,
-        paddingTop: 54,
+        paddingTop: 88,
         paddingHorizontal: 18,
         ...shadows.medium,
     },

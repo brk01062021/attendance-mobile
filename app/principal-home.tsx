@@ -14,6 +14,7 @@ import DashboardHeader from '../components/dashboard/DashboardHeader';
 import { API_BASE_URL, DEV_DEFAULTS } from '../src/services/api';
 import { getSession, normalizeSchoolId } from '../src/services/sessionService';
 import { colors, shadows, spacing } from '../src/theme';
+import { resolveSchoolName } from '../src/utils/schoolUtils';
 
 type PrincipalStats = {
     attendanceDate: string;
@@ -39,7 +40,7 @@ export default function PrincipalHomeScreen() {
     const params = useLocalSearchParams();
     const session = getSession();
     const schoolId = normalizeSchoolId(String(params.schoolId || session?.schoolId || ''));
-    const schoolName = String(session?.schoolName || `${schoolId} School`);
+    const schoolName = resolveSchoolName(schoolId, session?.schoolName);
     const principalName = String(params.principalName || params.name || session?.displayName || 'Principal');
 
     const [menuVisible, setMenuVisible] = useState(false);

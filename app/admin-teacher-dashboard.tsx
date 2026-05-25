@@ -1,19 +1,19 @@
+import { API_ENDPOINTS } from '@/src/services/api';
+import { router } from 'expo-router';
 import React, { useMemo, useState } from 'react';
 import {
-    View,
-    Text,
-    TouchableOpacity,
-    StyleSheet,
+    ActivityIndicator,
     Alert,
+    ImageBackground,
     Modal,
     ScrollView,
-    ActivityIndicator,
-    ImageBackground,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 import { Calendar } from 'react-native-calendars';
-import { API_ENDPOINTS } from '@/src/services/api';
 import { images } from '../src/constants/images';
-import { router } from 'expo-router';
 
 type TeacherSchedule = {
     id: number;

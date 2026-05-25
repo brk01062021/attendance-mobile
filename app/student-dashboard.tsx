@@ -13,6 +13,7 @@ import {
 import DashboardHeader from '../components/dashboard/DashboardHeader';
 import { getSession, normalizeSchoolId } from '../src/services/sessionService';
 import { colors, shadows, spacing } from '../src/theme';
+import { resolveSchoolName } from '../src/utils/schoolUtils';
 
 type AttendanceView = 'TODAY' | 'WEEKLY' | 'MONTHLY';
 type MenuView = 'HOME' | 'EXAM_RESULTS' | 'SCHOOL_NOTICES';
@@ -76,7 +77,7 @@ export default function StudentDashboard() {
     const params = useLocalSearchParams();
     const session = getSession();
     const schoolId = normalizeSchoolId(String(params.schoolId || session?.schoolId || ''));
-    const schoolName = String(session?.schoolName || `${schoolId} School`);
+    const schoolName = resolveSchoolName(schoolId, session?.schoolName);
     const studentName = String(params.studentName || 'Student');
     const studentId = String(params.studentId || params.userId || '1');
 
@@ -313,7 +314,7 @@ const AttendanceDetail = memo(function AttendanceDetail({
             ))}
 
             <TouchableOpacity style={styles.backButton} onPress={onBack} activeOpacity={0.9}>
-                <Text style={styles.backButtonText}>Back to Student Dashboard</Text>
+                <Text style={styles.backButtonText}>Back</Text>
             </TouchableOpacity>
         </>
     );
@@ -345,7 +346,7 @@ const ExamResultsScreen = memo(function ExamResultsScreen({
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.backButton} onPress={onBack} activeOpacity={0.9}>
-                <Text style={styles.backButtonText}>Back to Student Dashboard</Text>
+                <Text style={styles.backButtonText}>Back</Text>
             </TouchableOpacity>
         </>
     );
@@ -400,7 +401,7 @@ const SchoolNoticesScreen = memo(function SchoolNoticesScreen({ onBack }: { onBa
             <NoticeCard title="Exam Alert" text="Half-yearly exam schedule starts next Monday." />
 
             <TouchableOpacity style={styles.backButton} onPress={onBack} activeOpacity={0.9}>
-                <Text style={styles.backButtonText}>Back to Student Dashboard</Text>
+                <Text style={styles.backButtonText}>Back</Text>
             </TouchableOpacity>
         </>
     );
@@ -907,7 +908,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#FFFDF7',
         borderTopRightRadius: 28,
         borderBottomRightRadius: 28,
-        paddingTop: 54,
+        paddingTop: 88,
         paddingHorizontal: 18,
         ...shadows.medium,
     },

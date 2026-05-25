@@ -834,7 +834,7 @@ const styles = StyleSheet.create({
     },
     container: {
         paddingHorizontal: 18,
-        paddingTop: 34,
+        paddingTop: 72,
         paddingBottom: 44,
     },
     topHeader: {
@@ -844,19 +844,21 @@ const styles = StyleSheet.create({
         marginBottom: 16,
     },
     circleButton: {
-        width: 44,
-        height: 44,
-        borderRadius: 22,
+        width: 40,
+        height: 40,
+        borderRadius: 20,
         backgroundColor: 'rgba(255,255,255,0.16)',
         alignItems: 'center',
         justifyContent: 'center',
-        borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.32)',
+        borderWidth: 1.5,
+        borderColor: 'rgba(255,255,255,0.78)',
     },
     circleButtonText: {
         color: '#FFFFFF',
-        fontSize: 25,
-        fontWeight: '800',
+        fontSize: 28,
+        lineHeight: 30,
+        marginTop: -2,
+        fontWeight: '900',
     },
     headerTextBox: {
         flex: 1,

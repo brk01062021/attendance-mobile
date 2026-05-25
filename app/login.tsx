@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { normalizeSchoolId, saveSession } from '../src/services/sessionService';
 import { colors, shadows, spacing, typography } from '../src/theme';
+import { resolveSchoolName } from '../src/utils/schoolUtils';
 
 type LoginRole = 'ADMIN' | 'PRINCIPAL' | 'TEACHER' | 'PARENT' | 'STUDENT';
 
@@ -35,7 +36,7 @@ export default function LoginScreen() {
 
         const boundTeacherId = selectedRole === 'TEACHER' ? '1' : undefined;
         const boundStudentId = selectedRole === 'STUDENT' ? '1' : undefined;
-        saveSession({ role: selectedRole, userId: '1', displayName: cleanUsername, schoolId: cleanSchoolId, schoolName: 'VidyaSetu Demo School', teacherId: boundTeacherId, studentId: boundStudentId });
+        saveSession({ role: selectedRole, userId: '1', displayName: cleanUsername, schoolId: cleanSchoolId, schoolName: resolveSchoolName(cleanSchoolId), teacherId: boundTeacherId, studentId: boundStudentId });
 
         if (selectedRole === 'ADMIN') {
             router.replace({

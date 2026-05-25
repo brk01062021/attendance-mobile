@@ -13,6 +13,7 @@ import {
 import DashboardHeader from '../components/dashboard/DashboardHeader';
 import { getSession, normalizeSchoolId } from '../src/services/sessionService';
 import { colors, shadows, spacing } from '../src/theme';
+import { resolveSchoolName } from '../src/utils/schoolUtils';
 
 type AttendanceView = 'TODAY' | 'WEEKLY' | 'MONTHLY';
 type MenuView = 'HOME' | 'EXAM_RESULTS' | 'SCHOOL_NOTICES';
@@ -76,7 +77,7 @@ export default function ParentDashboard() {
     const params = useLocalSearchParams();
     const session = getSession();
     const schoolId = normalizeSchoolId(String(params.schoolId || session?.schoolId || ''));
-    const schoolName = String(session?.schoolName || `${schoolId} School`);
+    const schoolName = resolveSchoolName(schoolId, session?.schoolName);
 
     const parentName = String(params.parentName || 'Parent');
     const studentName = String(params.studentName || 'Demo Student');
@@ -327,7 +328,7 @@ const HomeScreen = memo(function HomeScreen({
                 <Text style={styles.heroText}>Today Attendance: Present</Text>
             </View>
 
-            <Text style={styles.sectionTitle}>Attendance</Text>
+            <Text style={[styles.sectionTitle, { marginTop: 18 }]}>Attendance</Text>
 
             <View style={styles.grid}>
                 <AttendanceCard
@@ -447,13 +448,7 @@ const AttendanceDetail = memo(function AttendanceDetail({
                 </View>
             ))}
 
-            <TouchableOpacity
-                style={styles.backButton}
-                onPress={onBack}
-                activeOpacity={0.9}
-            >
-                <Text style={styles.backButtonText}>Back to Parent Dashboard</Text>
-            </TouchableOpacity>
+            
         </>
     );
 });
@@ -491,13 +486,7 @@ const ExamResultsScreen = memo(function ExamResultsScreen({
                 <Text style={styles.cardHint}>Tap to view past result details</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity
-                style={styles.backButton}
-                onPress={onBack}
-                activeOpacity={0.9}
-            >
-                <Text style={styles.backButtonText}>Back to Parent Dashboard</Text>
-            </TouchableOpacity>
+            
         </>
     );
 });
@@ -538,13 +527,7 @@ const ExamDetailScreen = memo(function ExamDetailScreen({
                 </View>
             ))}
 
-            <TouchableOpacity
-                style={styles.backButton}
-                onPress={onBack}
-                activeOpacity={0.9}
-            >
-                <Text style={styles.backButtonText}>Back to Exam Results</Text>
-            </TouchableOpacity>
+            
         </>
     );
 });
@@ -571,13 +554,7 @@ const SchoolNoticesScreen = memo(function SchoolNoticesScreen({
                 text="Half-yearly exam schedule starts next Monday."
             />
 
-            <TouchableOpacity
-                style={styles.backButton}
-                onPress={onBack}
-                activeOpacity={0.9}
-            >
-                <Text style={styles.backButtonText}>Back to Parent Dashboard</Text>
-            </TouchableOpacity>
+            
         </>
     );
 });
@@ -1088,7 +1065,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#FFFDF7',
         borderTopRightRadius: 28,
         borderBottomRightRadius: 28,
-        paddingTop: 54,
+        paddingTop: 88,
         paddingHorizontal: 18,
         ...shadows.medium,
     },
