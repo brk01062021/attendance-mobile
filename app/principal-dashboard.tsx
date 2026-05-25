@@ -1,3 +1,4 @@
+import { router } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
     ActivityIndicator,
@@ -9,7 +10,6 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
-import { router } from 'expo-router';
 import { BarChart, LineChart } from 'react-native-chart-kit';
 
 import AnalyticsChartCard from '../components/admin/AnalyticsChartCard';
@@ -23,9 +23,9 @@ import {
     fetchExecutiveAlerts,
     fetchExecutiveOverview,
     fetchPrincipalSummary,
+    fetchTeacherFatigueAlerts,
     fetchTeacherWorkload,
     fetchTeacherWorkloadSummary,
-    fetchTeacherFatigueAlerts,
 } from '../src/services/principalApi';
 
 import type {
@@ -33,9 +33,9 @@ import type {
     ExecutiveOverview,
     PrincipalSummary,
     RiskAlert,
+    TeacherFatigueAlert,
     TeacherWorkload,
     TeacherWorkloadInsight,
-    TeacherFatigueAlert,
     TrendPoint,
 } from '../src/types/principal';
 
@@ -290,10 +290,10 @@ export default function PrincipalDashboardScreen() {
                 </View>
 
                 <View style={styles.heroCard}>
-                    <Text style={styles.heroEyebrow}>Day 5 School Intelligence</Text>
-                    <Text style={styles.heroTitle}>School health, risks and teacher load in one decision screen.</Text>
+                    <Text style={styles.heroEyebrow}>School Intelligence</Text>
+                    <Text style={styles.heroTitle}>School health, attendance risk and teacher workload in one operational screen.</Text>
                     <Text style={styles.heroSubtitle}>
-                        Built for Admin and Principal review: school health score, operational alerts, workload pressure and action-ready drilldowns.
+                        Use this screen for daily Principal review: attendance, workload, risk alerts and drilldown decisions.
                     </Text>
                 </View>
 
@@ -834,14 +834,14 @@ const styles = StyleSheet.create({
     },
     container: {
         paddingHorizontal: 18,
-        paddingTop: 54,
-        paddingBottom: 36,
+        paddingTop: 34,
+        paddingBottom: 44,
     },
     topHeader: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        marginBottom: 20,
+        marginBottom: 16,
     },
     circleButton: {
         width: 44,
@@ -876,32 +876,37 @@ const styles = StyleSheet.create({
         textAlign: 'center',
     },
     heroCard: {
-        backgroundColor: 'rgba(255,255,255,0.14)',
+        backgroundColor: 'rgba(255,248,225,0.94)',
         borderRadius: 28,
         padding: 20,
-        borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.24)',
+        borderWidth: 1.4,
+        borderColor: 'rgba(216, 181, 72, 0.55)',
         marginBottom: 16,
+        shadowColor: '#000000',
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.16,
+        shadowRadius: 14,
+        elevation: 5,
     },
     heroEyebrow: {
-        color: '#F7D782',
+        color: '#A06F00',
         fontSize: 12,
         fontWeight: '900',
-        letterSpacing: 0.8,
+        letterSpacing: 1.2,
         textTransform: 'uppercase',
         marginBottom: 8,
     },
     heroTitle: {
-        color: '#FFFFFF',
+        color: '#061B33',
         fontSize: 23,
         fontWeight: '900',
-        lineHeight: 30,
+        lineHeight: 29,
     },
     heroSubtitle: {
-        color: 'rgba(255,255,255,0.82)',
+        color: 'rgba(6,27,51,0.70)',
         fontSize: 14,
-        fontWeight: '600',
-        lineHeight: 20,
+        fontWeight: '700',
+        lineHeight: 21,
         marginTop: 10,
     },
     monthCard: {

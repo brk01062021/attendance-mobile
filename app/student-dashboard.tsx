@@ -11,7 +11,6 @@ import {
     View,
 } from 'react-native';
 import DashboardHeader from '../components/dashboard/DashboardHeader';
-import DashboardIntelligencePanel from '../components/dashboard/DashboardIntelligencePanel';
 import { getSession, normalizeSchoolId } from '../src/services/sessionService';
 import { colors, shadows, spacing } from '../src/theme';
 
@@ -230,8 +229,7 @@ const HomeScreen = memo(function HomeScreen({
     return (
         <>
             <View style={styles.greetingBlock}>
-                <Text style={styles.homeGreeting}>Good Morning 👋</Text>
-                <Text style={styles.homeName}>{studentName}</Text>
+                <Text style={styles.homeGreetingLine} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75}>Good Morning 🌞 {studentName}</Text>
             </View>
 
             <View style={styles.heroCard}>
@@ -283,8 +281,6 @@ const AttendanceDetail = memo(function AttendanceDetail({
                         <Text style={styles.legendText}>Absent</Text>
                     </View>
                 </View>
-                <DashboardIntelligencePanel role="STUDENT" />
-
                 <View style={styles.barChartArea}>
                     {data.map((item) => {
                         const presentHeight = Math.max(item.present === 0 ? 0 : 14, (item.present / maxValue) * 150);
@@ -492,7 +488,8 @@ const styles = StyleSheet.create({
         backgroundColor: colors.primaryNavy,
     },
     container: {
-        padding: spacing.screenPadding,
+        paddingHorizontal: spacing.screenPadding,
+        paddingTop: 72,
         paddingBottom: spacing.xxxl,
     },
     topRow: {
@@ -550,34 +547,47 @@ const styles = StyleSheet.create({
         fontSize: 22,
     },
     greetingBlock: {
-        marginTop: spacing.md,
-        marginBottom: spacing.lg,
-        alignSelf: 'flex-start',
+        marginTop: spacing.sm,
+        marginBottom: 10,
+        alignSelf: 'center',
+        maxWidth: '100%',
+        backgroundColor: 'rgba(255,248,225,0.94)',
+        borderRadius: 999,
+        borderWidth: 1.2,
+        borderColor: colors.cardGoldBorder,
+        paddingVertical: 6,
+        paddingHorizontal: 14,
+        ...shadows.medium,
     },
-    homeGreeting: {
-        fontSize: 23,
+    homeGreetingLine: {
+        fontSize: 14,
+        lineHeight: 18,
         fontWeight: '900',
-        color: colors.premiumGold,
-        textShadowColor: 'rgba(0,0,0,0.45)',
-        textShadowOffset: { width: 1, height: 1 },
-        textShadowRadius: 3,
+        color: colors.primaryNavy,
+        textAlign: 'center',
+    },
+
+    homeGreeting: {
+        fontSize: 15,
+        lineHeight: 19,
+        fontWeight: '900',
+        letterSpacing: 1.2,
+        color: '#A06F00',
     },
     homeName: {
-        fontSize: 42,
-        lineHeight: 48,
+        fontSize: 31,
+        lineHeight: 37,
         fontWeight: '900',
-        color: colors.white,
-        textShadowColor: 'rgba(0,0,0,0.55)',
-        textShadowOffset: { width: 1, height: 1 },
-        textShadowRadius: 4,
+        color: colors.primaryNavy,
+        marginTop: spacing.md,
     },
     heroCard: {
-        backgroundColor: colors.premiumGold,
-        borderRadius: 22,
-        borderWidth: 1.6,
-        borderColor: colors.white,
+        backgroundColor: 'rgba(255,248,225,0.94)',
+        borderRadius: 24,
+        borderWidth: 1.4,
+        borderColor: colors.cardGoldBorder,
         padding: spacing.lg,
-        marginBottom: spacing.xl,
+        marginBottom: spacing.lg,
         ...shadows.medium,
     },
     sectionLabel: {
@@ -656,7 +666,7 @@ const styles = StyleSheet.create({
         color: colors.primaryNavy,
     },
     loadingCard: {
-        backgroundColor: colors.white,
+        backgroundColor: '#FFFDF3',
         borderRadius: 22,
         borderWidth: 1.2,
         borderColor: colors.cardGoldBorder,
@@ -671,12 +681,12 @@ const styles = StyleSheet.create({
         textAlign: 'center',
     },
     chartCard: {
-        backgroundColor: colors.white,
-        borderRadius: 24,
+        backgroundColor: '#FFFDF3',
+        borderRadius: 22,
         borderWidth: 1.5,
         borderColor: colors.cardGoldBorder,
         padding: spacing.lg,
-        marginBottom: spacing.xl,
+        marginBottom: spacing.lg,
         ...shadows.medium,
     },
     legendRow: {
@@ -774,7 +784,7 @@ const styles = StyleSheet.create({
         color: '#DC2626',
     },
     card: {
-        backgroundColor: colors.white,
+        backgroundColor: '#FFFDF3',
         borderRadius: 22,
         borderWidth: 1.2,
         borderColor: colors.cardGoldBorder,
@@ -807,7 +817,7 @@ const styles = StyleSheet.create({
         marginTop: spacing.md,
     },
     resultSummaryCard: {
-        backgroundColor: colors.white,
+        backgroundColor: '#FFFDF3',
         borderRadius: 22,
         borderWidth: 1.2,
         borderColor: colors.cardGoldBorder,
@@ -851,7 +861,7 @@ const styles = StyleSheet.create({
     },
     noticeCard: {
         backgroundColor: '#FFF9E8',
-        borderRadius: 22,
+        borderRadius: 24,
         borderWidth: 1.2,
         borderColor: colors.cardGoldBorder,
         padding: spacing.xl,
@@ -923,7 +933,7 @@ const styles = StyleSheet.create({
     },
 
     menuItem: {
-        backgroundColor: '#FFFFFF',
+        backgroundColor: '#FFFDF3',
         borderRadius: 16,
         paddingVertical: 15,
         paddingHorizontal: 14,

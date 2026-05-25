@@ -11,7 +11,6 @@ import {
     View,
 } from 'react-native';
 import DashboardHeader from '../components/dashboard/DashboardHeader';
-import DashboardIntelligencePanel from '../components/dashboard/DashboardIntelligencePanel';
 import { API_BASE_URL, DEV_DEFAULTS } from '../src/services/api';
 import { getSession, normalizeSchoolId } from '../src/services/sessionService';
 import { colors, shadows, spacing } from '../src/theme';
@@ -165,13 +164,7 @@ export default function TeacherDashboard() {
                 />
 
                 <View style={styles.heroCard}>
-                    <Text style={styles.heroSmallText}>Good morning</Text>
-
-                    <Text style={styles.heroName}>{displayTeacherName}</Text>
-
-                    <Text style={styles.heroSubText}>
-                        Manage today&apos;s classes, attendance, reports and replacement updates.
-                    </Text>
+                    <Text style={styles.heroGreetingLine} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75}>Good Morning 🌞 {displayTeacherName}</Text>
                 </View>
 
                 <View style={styles.classesCard}>
@@ -216,8 +209,6 @@ export default function TeacherDashboard() {
 
                     <Text style={styles.primaryActionArrow}>›</Text>
                 </TouchableOpacity>
-
-                <DashboardIntelligencePanel role="TEACHER" />
 
                 <View style={styles.overviewCard}>
                     <View style={styles.sectionHeaderRow}>
@@ -485,33 +476,47 @@ const styles = StyleSheet.create({
     },
 
     heroCard: {
-        backgroundColor: 'rgba(255,255,255,0.12)',
-        borderRadius: 34,
+        alignSelf: 'center',
+        maxWidth: '100%',
+        backgroundColor: 'rgba(255,248,225,0.94)',
+        borderRadius: 999,
         borderWidth: 1.2,
-        borderColor: 'rgba(255,255,255,0.25)',
-        padding: spacing.xl,
-        marginBottom: spacing.xl,
+        borderColor: colors.cardGoldBorder,
+        paddingVertical: 6,
+        paddingHorizontal: 14,
+        marginBottom: 10,
+        ...shadows.medium,
+    },
+
+    heroGreetingLine: {
+        fontSize: 14,
+        lineHeight: 18,
+        fontWeight: '900',
+        color: colors.primaryNavy,
+        textAlign: 'center',
     },
 
     heroSmallText: {
-        fontSize: 18,
-        fontWeight: '800',
-        color: colors.premiumGold,
+        fontSize: 15,
+        lineHeight: 19,
+        fontWeight: '900',
+        letterSpacing: 1.2,
+        color: '#A06F00',
     },
 
     heroName: {
-        fontSize: 38,
-        lineHeight: 44,
+        fontSize: 31,
+        lineHeight: 37,
         fontWeight: '900',
-        color: colors.white,
-        marginTop: spacing.sm,
+        color: colors.primaryNavy,
+        marginTop: spacing.md,
     },
 
     heroSubText: {
-        fontSize: 16,
-        lineHeight: 24,
+        fontSize: 17,
+        lineHeight: 27,
         fontWeight: '700',
-        color: 'rgba(255,255,255,0.82)',
+        color: 'rgba(6,27,51,0.70)',
         marginTop: spacing.md,
     },
 
@@ -625,7 +630,7 @@ const styles = StyleSheet.create({
     },
 
     overviewCard: {
-        backgroundColor: 'rgba(255,255,255,0.96)',
+        backgroundColor: 'rgba(255,248,231,0.97)',
         borderRadius: 34,
         borderWidth: 1.5,
         borderColor: colors.cardGoldBorder,
@@ -697,17 +702,18 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         flexWrap: 'wrap',
         justifyContent: 'space-between',
+        rowGap: spacing.md,
     },
 
     statCard: {
         width: '48%',
-        backgroundColor: colors.white,
-        borderRadius: 26,
-        borderWidth: 1.4,
+        backgroundColor: '#FFFDF3',
+        borderRadius: 22,
+        borderWidth: 1.2,
         borderColor: colors.cardGoldBorder,
         alignItems: 'center',
-        paddingVertical: spacing.lg,
-        marginBottom: spacing.lg,
+        paddingVertical: spacing.md,
+        marginBottom: spacing.sm,
     },
 
     statEmoji: {
@@ -788,7 +794,7 @@ const styles = StyleSheet.create({
     },
 
     menuItem: {
-        backgroundColor: '#FFFFFF',
+        backgroundColor: '#FFFDF3',
         borderRadius: 16,
         paddingVertical: 15,
         paddingHorizontal: 14,

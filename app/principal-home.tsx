@@ -11,7 +11,6 @@ import {
     View,
 } from 'react-native';
 import DashboardHeader from '../components/dashboard/DashboardHeader';
-import DashboardIntelligencePanel from '../components/dashboard/DashboardIntelligencePanel';
 import { API_BASE_URL, DEV_DEFAULTS } from '../src/services/api';
 import { getSession, normalizeSchoolId } from '../src/services/sessionService';
 import { colors, shadows, spacing } from '../src/theme';
@@ -150,17 +149,8 @@ export default function PrincipalHomeScreen() {
                 />
 
                 <View style={styles.heroCard}>
-                    <Text style={styles.heroSmallText}>Good morning</Text>
-
-                    <Text style={styles.heroName}>{principalName}</Text>
-
-                    <Text style={styles.heroSubText}>
-                        Monitor school operations, attendance, reports, teacher
-                        workload, replacements and notices.
-                    </Text>
+                    <Text style={styles.heroGreetingLine} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75}>Good Morning 🌞 Principal 👨🏻‍💼</Text>
                 </View>
-
-                <DashboardIntelligencePanel role="PRINCIPAL" />
 
                 <View style={styles.overviewCard}>
                     <View style={styles.sectionHeaderRow}>
@@ -736,42 +726,58 @@ const styles = StyleSheet.create({
     },
 
     heroCard: {
-        backgroundColor: 'rgba(255,255,255,0.13)',
-        borderRadius: 28,
-        padding: 22,
-        borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.18)',
-        marginBottom: 18,
+        alignSelf: 'center',
+        maxWidth: '100%',
+        backgroundColor: 'rgba(255,248,225,0.94)',
+        borderRadius: 999,
+        borderWidth: 1.2,
+        borderColor: colors.cardGoldBorder,
+        paddingVertical: 6,
+        paddingHorizontal: 14,
+        marginBottom: 10,
+        ...shadows.medium,
+    },
+
+    heroGreetingLine: {
+        fontSize: 14,
+        lineHeight: 18,
+        fontWeight: '900',
+        color: colors.primaryNavy,
+        textAlign: 'center',
     },
 
     heroSmallText: {
-        color: '#D8E6F7',
-        fontSize: 14,
-        fontWeight: '700',
-        marginBottom: 6,
+        color: '#A06F00',
+        fontSize: 13,
+        lineHeight: 17,
+        fontWeight: '900',
+        letterSpacing: 1.2,
+        marginBottom: 8,
     },
 
     heroName: {
-        color: colors.premiumGold,
-        fontSize: 34,
-        lineHeight: 39,
+        color: colors.primaryNavy,
+        fontSize: 31,
+        lineHeight: 37,
         fontWeight: '900',
         marginBottom: 10,
     },
 
     heroSubText: {
-        color: '#F7FAFF',
-        fontSize: 15,
-        lineHeight: 22,
-        fontWeight: '600',
+        color: 'rgba(6,27,51,0.70)',
+        fontSize: 16,
+        lineHeight: 25,
+        fontWeight: '700',
     },
 
     overviewCard: {
-        backgroundColor: 'rgba(255,253,247,0.97)',
-        borderRadius: 28,
-        padding: 18,
-        marginBottom: 16,
-        ...shadows.medium,
+        backgroundColor: 'rgba(255,248,231,0.97)',
+        borderRadius: 26,
+        borderWidth: 1.2,
+        borderColor: colors.cardGoldBorder,
+        padding: 14,
+        marginBottom: 14,
+        ...shadows.soft,
     },
 
     sectionHeaderRow: {
@@ -843,11 +849,11 @@ const styles = StyleSheet.create({
 
     statCard: {
         width: '47%',
-        backgroundColor: '#FFFFFF',
-        borderRadius: 20,
-        padding: 14,
+        backgroundColor: '#FFFDF3',
+        borderRadius: 18,
+        padding: 11,
         borderWidth: 1,
-        borderColor: '#F0E4C8',
+        borderColor: '#E8D488',
     },
 
     statEmoji: {
@@ -1028,7 +1034,7 @@ const styles = StyleSheet.create({
     },
 
     menuItem: {
-        backgroundColor: '#FFFFFF',
+        backgroundColor: '#FFFDF3',
         borderRadius: 16,
         paddingVertical: 15,
         paddingHorizontal: 14,
