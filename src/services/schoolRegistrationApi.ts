@@ -1,0 +1,63 @@
+import { api } from './api';
+
+export type SchoolIdAvailabilityResponse = {
+    schoolId: string;
+    available: boolean;
+    status: string;
+    message: string;
+};
+
+export type SchoolRegistrationPayload = {
+    schoolName: string;
+    requestedSchoolId: string;
+    contactPerson: string;
+    contactPhone: string;
+    contactEmail?: string;
+    city?: string;
+    state?: string;
+    expectedStudents?: number | null;
+    expectedTeachers?: number | null;
+    notes?: string;
+};
+
+export type PilotDemoPayload = {
+    schoolName: string;
+    contactPerson: string;
+    contactPhone: string;
+    contactEmail?: string;
+    preferredRole?: string;
+    city?: string;
+    state?: string;
+    expectedStudents?: number | null;
+    notes?: string;
+};
+
+export type RegistrationResponse = {
+    referenceId: string;
+    schoolId?: string | null;
+    schoolName: string;
+    status: string;
+    message: string;
+    nextStep: string;
+};
+
+export function normalizeRequestedSchoolId(value: string) {
+    return value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 4);
+}
+
+export async function checkSchoolId(schoolId: string) {
+    const response = await api.get<SchoolIdAvailabilityResponse>('/school-registration/school-id/check', {
+        params: { schoolId },
+    });
+    return response.data;
+}
+
+export async function registerSchool(payload: SchoolRegistrationPayload) {
+    const response = await api.post<RegistrationResponse>('/school-registration/register', payload);
+    return response.data;
+}
+
+export async function requestPilotDemo(payload: PilotDemoPayload) {
+    const response = await api.post<RegistrationResponse>('/school-registration/pilot-demo/request', payload);
+    return response.data;
+}

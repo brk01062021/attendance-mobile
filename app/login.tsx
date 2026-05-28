@@ -204,6 +204,23 @@ export default function LoginScreen() {
                             </Text>
                         </TouchableOpacity>
 
+                        <View style={styles.onboardingActions}>
+                            <TouchableOpacity
+                                style={styles.onboardingButton}
+                                onPress={() => router.push('/register-school')}
+                                activeOpacity={0.88}
+                            >
+                                <Text style={styles.onboardingButtonText}>Register School</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={styles.onboardingButton}
+                                onPress={() => router.push('/request-pilot-demo')}
+                                activeOpacity={0.88}
+                            >
+                                <Text style={styles.onboardingButtonText}>Request Pilot Demo</Text>
+                            </TouchableOpacity>
+                        </View>
+
                         <View style={styles.linksRow}>
                             <TouchableOpacity>
                                 <Text style={styles.link}>Forgot Username?</Text>
@@ -347,6 +364,28 @@ const styles = StyleSheet.create({
         color: colors.primaryNavy,
         fontWeight: '900',
         fontSize: 18,
+    },
+    onboardingActions: {
+        flexDirection: 'row',
+        gap: 10,
+        marginBottom: spacing.lg,
+    },
+    onboardingButton: {
+        flex: 1,
+        minHeight: 50,
+        borderRadius: 15,
+        borderWidth: 1.5,
+        borderColor: colors.cardGoldBorder,
+        backgroundColor: colors.white,
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingHorizontal: spacing.sm,
+    },
+    onboardingButtonText: {
+        color: colors.primaryNavy,
+        fontSize: 13,
+        fontWeight: '900',
+        textAlign: 'center',
     },
     linksRow: {
         flexDirection: 'row',
