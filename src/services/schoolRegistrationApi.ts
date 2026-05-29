@@ -90,7 +90,14 @@ export type OnboardingReviewItem = {
     expectedTeachers?: number | null;
     city?: string | null;
     state?: string | null;
+    submittedAt?: string | null;
     updatedAt?: string | null;
+    approvedAt?: string | null;
+    pilotActivatedAt?: string | null;
+    activatedAt?: string | null;
+    rejectedAt?: string | null;
+    reviewNotes?: string | null;
+    statusHistory?: string | null;
 };
 
 export function onboardingStatusLabel(status: string) {
@@ -107,7 +114,16 @@ export async function getOnboardingReviewQueue() {
     return response.data;
 }
 
+export function normalizeOnboardingText(value?: string | null) {
+    return (value || '').replace(/\\n/g, '\n');
+}
+
 export async function updateOnboardingStatus(referenceId: string, status: OnboardingStatus, reviewNotes?: string) {
     const response = await api.post<OnboardingStatusResponse>(`/school-registration/review/${referenceId}/status`, { status, reviewNotes });
+    return response.data;
+}
+
+export async function runOnboardingAction(referenceId: string, action: 'approve' | 'reject' | 'mark-pilot' | 'activate', reviewNotes?: string) {
+    const response = await api.post<OnboardingStatusResponse>(`/school-registration/review/${referenceId}/${action}`, { reviewNotes });
     return response.data;
 }

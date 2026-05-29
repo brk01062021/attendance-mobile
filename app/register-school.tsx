@@ -1,7 +1,7 @@
 import { router } from 'expo-router';
 import React, { useMemo, useState } from 'react';
 import { Alert, ImageBackground, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { checkSchoolId, getOnboardingStatus, normalizeRequestedSchoolId, onboardingStatusLabel, OnboardingStatusResponse, registerSchool, RegistrationResponse, SchoolIdAvailabilityResponse } from '../src/services/schoolRegistrationApi';
+import { checkSchoolId, getOnboardingStatus, normalizeOnboardingText, normalizeRequestedSchoolId, onboardingStatusLabel, OnboardingStatusResponse, registerSchool, RegistrationResponse, SchoolIdAvailabilityResponse } from '../src/services/schoolRegistrationApi';
 import { colors, shadows, spacing, typography } from '../src/theme';
 
 export default function RegisterSchoolScreen() {
@@ -95,8 +95,8 @@ export default function RegisterSchoolScreen() {
                         <Field label="Notes" value={notes} onChangeText={setNotes} placeholder="Pilot notes" multiline />
 
                         <TouchableOpacity style={styles.primaryButton} onPress={onSubmit} disabled={loading}><Text style={styles.primaryButtonText}>{loading ? 'Saving...' : 'Submit Registration'}</Text></TouchableOpacity>
-                        {result ? <Text style={styles.success}>Reference {result.referenceId}\n{result.message}\nNext: {result.nextStep}</Text> : null}
-                        {statusDetails ? <Text style={styles.success}>Lifecycle: {onboardingStatusLabel(statusDetails.status)}\nLogin: {statusDetails.loginEnabled ? 'Enabled for pilot/active tenant' : 'Disabled until pilot or active'}\nExcel Import: Disabled\nNext: {statusDetails.nextStep}</Text> : null}
+                        {result ? <Text style={styles.success}>Reference {result.referenceId}\n{normalizeOnboardingText(result.message)}\nNext: {normalizeOnboardingText(result.nextStep)}</Text> : null}
+                        {statusDetails ? <Text style={styles.success}>Lifecycle: {onboardingStatusLabel(statusDetails.status)}\nLogin: {statusDetails.loginEnabled ? 'Enabled for active tenant' : 'Disabled until Active'}\nExcel Import: Disabled\nNext: {normalizeOnboardingText(statusDetails.nextStep)}</Text> : null}
                     </View>
                 </ScrollView>
             </KeyboardAvoidingView>

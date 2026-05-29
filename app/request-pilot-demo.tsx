@@ -1,7 +1,7 @@
 import { router } from 'expo-router';
 import React, { useState } from 'react';
 import { Alert, ImageBackground, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { getOnboardingStatus, onboardingStatusLabel, OnboardingStatusResponse, RegistrationResponse, requestPilotDemo } from '../src/services/schoolRegistrationApi';
+import { getOnboardingStatus, normalizeOnboardingText, onboardingStatusLabel, OnboardingStatusResponse, RegistrationResponse, requestPilotDemo } from '../src/services/schoolRegistrationApi';
 import { colors, shadows, spacing, typography } from '../src/theme';
 
 export default function RequestPilotDemoScreen() {
@@ -71,8 +71,8 @@ export default function RequestPilotDemoScreen() {
                         <Field label="Demo Notes" value={notes} onChangeText={setNotes} placeholder="Modules to show, best time to contact" multiline />
 
                         <TouchableOpacity style={styles.primaryButton} onPress={onSubmit} disabled={loading}><Text style={styles.primaryButtonText}>{loading ? 'Saving...' : 'Submit Pilot Demo Request'}</Text></TouchableOpacity>
-                        {result ? <Text style={styles.success}>Reference {result.referenceId}\n{result.message}\nNext: {result.nextStep}</Text> : null}
-                        {statusDetails ? <Text style={styles.success}>Lifecycle: {onboardingStatusLabel(statusDetails.status)}\nLogin: {statusDetails.loginEnabled ? 'Enabled for pilot/active tenant' : 'Disabled until pilot or active'}\nExcel Import: Disabled\nNext: {statusDetails.nextStep}</Text> : null}
+                        {result ? <Text style={styles.success}>Reference {result.referenceId}\n{normalizeOnboardingText(result.message)}\nNext: {normalizeOnboardingText(result.nextStep)}</Text> : null}
+                        {statusDetails ? <Text style={styles.success}>Lifecycle: {onboardingStatusLabel(statusDetails.status)}\nLogin: {statusDetails.loginEnabled ? 'Enabled for active tenant' : 'Disabled until Active'}\nExcel Import: Disabled\nNext: {normalizeOnboardingText(statusDetails.nextStep)}</Text> : null}
                     </View>
                 </ScrollView>
             </KeyboardAvoidingView>
