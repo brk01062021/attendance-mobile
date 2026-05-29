@@ -32,6 +32,8 @@ export type PilotDemoPayload = {
     notes?: string;
 };
 
+export type OnboardingStatus = 'RESERVED' | 'PENDING' | 'APPROVED' | 'PILOT' | 'ACTIVE' | 'REJECTED';
+
 export type RegistrationResponse = {
     referenceId: string;
     schoolId?: string | null;
@@ -59,5 +61,53 @@ export async function registerSchool(payload: SchoolRegistrationPayload) {
 
 export async function requestPilotDemo(payload: PilotDemoPayload) {
     const response = await api.post<RegistrationResponse>('/school-registration/pilot-demo/request', payload);
+    return response.data;
+}
+
+
+export type OnboardingStatusResponse = {
+    referenceId: string;
+    schoolId?: string | null;
+    schoolName: string;
+    requestType: string;
+    status: OnboardingStatus;
+    message: string;
+    nextStep: string;
+    loginEnabled: boolean;
+    importEnabled: boolean;
+};
+
+export type OnboardingReviewItem = {
+    referenceId: string;
+    schoolId?: string | null;
+    schoolName: string;
+    requestType: string;
+    status: OnboardingStatus;
+    contactPerson?: string | null;
+    contactPhone?: string | null;
+    contactEmail?: string | null;
+    expectedStudents?: number | null;
+    expectedTeachers?: number | null;
+    city?: string | null;
+    state?: string | null;
+    updatedAt?: string | null;
+};
+
+export function onboardingStatusLabel(status: string) {
+    return status.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, (value) => value.toUpperCase());
+}
+
+export async function getOnboardingStatus(referenceId: string) {
+    const response = await api.get<OnboardingStatusResponse>('/school-registration/status', { params: { referenceId } });
+    return response.data;
+}
+
+export async function getOnboardingReviewQueue() {
+    const response = await api.get<OnboardingReviewItem[]>('/school-registration/review-queue');
+    return response.data;
+}
+
+export async function updateOnboardingStatus(referenceId: string, status: OnboardingStatus, reviewNotes?: string) {
+    const response = await api.post<OnboardingStatusResponse>(`/school-registration/review/${referenceId}/status`, { status, reviewNotes });
     return response.data;
 }

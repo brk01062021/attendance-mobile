@@ -1,7 +1,7 @@
 import { router } from 'expo-router';
 import React, { useState } from 'react';
 import { Alert, ImageBackground, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { RegistrationResponse, requestPilotDemo } from '../src/services/schoolRegistrationApi';
+import { getOnboardingStatus, onboardingStatusLabel, OnboardingStatusResponse, RegistrationResponse, requestPilotDemo } from '../src/services/schoolRegistrationApi';
 import { colors, shadows, spacing, typography } from '../src/theme';
 
 export default function RequestPilotDemoScreen() {
@@ -15,6 +15,7 @@ export default function RequestPilotDemoScreen() {
     const [expectedStudents, setExpectedStudents] = useState('');
     const [notes, setNotes] = useState('');
     const [result, setResult] = useState<RegistrationResponse | null>(null);
+    const [statusDetails, setStatusDetails] = useState<OnboardingStatusResponse | null>(null);
     const [loading, setLoading] = useState(false);
 
     const onSubmit = async () => {
@@ -36,6 +37,8 @@ export default function RequestPilotDemoScreen() {
                 notes: notes.trim(),
             });
             setResult(response);
+            const status = await getOnboardingStatus(response.referenceId);
+            setStatusDetails(status);
         } catch (error: any) {
             Alert.alert('Pilot Demo', error?.response?.data?.message || error?.message || 'Pilot demo request could not be saved.');
         } finally {
@@ -69,6 +72,7 @@ export default function RequestPilotDemoScreen() {
 
                         <TouchableOpacity style={styles.primaryButton} onPress={onSubmit} disabled={loading}><Text style={styles.primaryButtonText}>{loading ? 'Saving...' : 'Submit Pilot Demo Request'}</Text></TouchableOpacity>
                         {result ? <Text style={styles.success}>Reference {result.referenceId}\n{result.message}\nNext: {result.nextStep}</Text> : null}
+                        {statusDetails ? <Text style={styles.success}>Lifecycle: {onboardingStatusLabel(statusDetails.status)}\nLogin: {statusDetails.loginEnabled ? 'Enabled for pilot/active tenant' : 'Disabled until pilot or active'}\nExcel Import: Disabled\nNext: {statusDetails.nextStep}</Text> : null}
                     </View>
                 </ScrollView>
             </KeyboardAvoidingView>

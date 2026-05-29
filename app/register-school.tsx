@@ -1,7 +1,7 @@
 import { router } from 'expo-router';
 import React, { useMemo, useState } from 'react';
 import { Alert, ImageBackground, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { checkSchoolId, normalizeRequestedSchoolId, registerSchool, RegistrationResponse, SchoolIdAvailabilityResponse } from '../src/services/schoolRegistrationApi';
+import { checkSchoolId, getOnboardingStatus, normalizeRequestedSchoolId, onboardingStatusLabel, OnboardingStatusResponse, registerSchool, RegistrationResponse, SchoolIdAvailabilityResponse } from '../src/services/schoolRegistrationApi';
 import { colors, shadows, spacing, typography } from '../src/theme';
 
 export default function RegisterSchoolScreen() {
@@ -17,6 +17,7 @@ export default function RegisterSchoolScreen() {
     const [notes, setNotes] = useState('');
     const [schoolIdCheck, setSchoolIdCheck] = useState<SchoolIdAvailabilityResponse | null>(null);
     const [result, setResult] = useState<RegistrationResponse | null>(null);
+    const [statusDetails, setStatusDetails] = useState<OnboardingStatusResponse | null>(null);
     const [loading, setLoading] = useState(false);
 
     const cleanSchoolId = useMemo(() => normalizeRequestedSchoolId(requestedSchoolId), [requestedSchoolId]);
@@ -30,6 +31,7 @@ export default function RegisterSchoolScreen() {
             const response = await checkSchoolId(cleanSchoolId);
             setSchoolIdCheck(response);
             setResult(null);
+            setStatusDetails(null);
         } catch (error: any) {
             Alert.alert('School ID Check', error?.response?.data?.message || error?.message || 'Unable to check school ID.');
         }
@@ -55,6 +57,8 @@ export default function RegisterSchoolScreen() {
                 notes: notes.trim(),
             });
             setResult(response);
+            const status = await getOnboardingStatus(response.referenceId);
+            setStatusDetails(status);
             setSchoolIdCheck(null);
         } catch (error: any) {
             Alert.alert('Register School', error?.response?.data?.message || error?.message || 'Registration could not be saved.');
@@ -92,6 +96,7 @@ export default function RegisterSchoolScreen() {
 
                         <TouchableOpacity style={styles.primaryButton} onPress={onSubmit} disabled={loading}><Text style={styles.primaryButtonText}>{loading ? 'Saving...' : 'Submit Registration'}</Text></TouchableOpacity>
                         {result ? <Text style={styles.success}>Reference {result.referenceId}\n{result.message}\nNext: {result.nextStep}</Text> : null}
+                        {statusDetails ? <Text style={styles.success}>Lifecycle: {onboardingStatusLabel(statusDetails.status)}\nLogin: {statusDetails.loginEnabled ? 'Enabled for pilot/active tenant' : 'Disabled until pilot or active'}\nExcel Import: Disabled\nNext: {statusDetails.nextStep}</Text> : null}
                     </View>
                 </ScrollView>
             </KeyboardAvoidingView>
