@@ -54,7 +54,7 @@ export default function OnboardingReviewScreen() {
     const changeStatus = async (item: OnboardingReviewItem, action: 'approve' | 'reject' | 'mark-pilot' | 'activate', label: string) => {
         setActiveReference(item.referenceId);
         try {
-            const response = await runOnboardingAction(item.referenceId, action, `${label} from mobile Admin/Principal onboarding review.`);
+            const response = await runOnboardingAction(item.referenceId, action, `${label} by VidyaSetu onboarding team.`);
             Alert.alert('Lifecycle Updated', `${response.schoolName} moved to ${onboardingStatusLabel(response.status)}.\n${normalizeOnboardingText(response.nextStep)}`);
             await loadQueue();
         } catch (error: any) {
@@ -75,8 +75,8 @@ export default function OnboardingReviewScreen() {
                 </View>
 
                 <Text style={styles.eyebrow}>TENANT ACTIVATION</Text>
-                <Text style={styles.title}>Admin / Principal Review Queue</Text>
-                <Text style={styles.subtitle}>Move schools through Pending → Approved → Pilot → Active. Login is enabled only after Active. Final Excel import remains disabled.</Text>
+                <Text style={styles.title}>VidyaSetu Review Queue</Text>
+                <Text style={styles.subtitle}>VidyaSetu onboarding team moves schools through Pending → Approved → Pilot → Active. Login and credentials are enabled only after Active.</Text>
 
                 <View style={styles.metricGrid}>{metrics.map((metric) => <View key={metric.label} style={styles.metricCard}><Text style={styles.metricValue}>{metric.value}</Text><Text style={styles.metricLabel}>{metric.label}</Text></View>)}</View>
                 <TouchableOpacity style={styles.refreshButton} onPress={loadQueue} disabled={loading}><Text style={styles.refreshButtonText}>{loading ? 'Loading...' : 'Refresh Queue'}</Text></TouchableOpacity>
@@ -93,7 +93,7 @@ export default function OnboardingReviewScreen() {
                         <Text style={styles.details}>Size: {item.expectedStudents ?? '—'} students / {item.expectedTeachers ?? '—'} teachers</Text>
                         <TouchableOpacity style={styles.detailButton} onPress={() => setSelected(item)}><Text style={styles.detailButtonText}>View Details & Audit</Text></TouchableOpacity>
                         <View style={styles.statusGrid}>
-                            {item.status === 'ACTIVE' ? <Text style={styles.activatedText}>Activated ✓</Text> : null}
+                            {item.status === 'ACTIVE' ? <TouchableOpacity style={styles.statusButton} onPress={() => router.push('/activation-package')}><Text style={styles.statusButtonText}>Manage Activation Package</Text></TouchableOpacity> : null}
                             {ACTIONS.filter((entry) => canRunAction(item.status, entry.status)).map((entry) => (
                                 <TouchableOpacity
                                     key={entry.action}
@@ -119,7 +119,16 @@ export default function OnboardingReviewScreen() {
                             <Text style={styles.details}>Reference: {selected?.referenceId}</Text>
                             <Text style={styles.details}>school_id: {selected?.schoolId || 'Pending'}</Text>
                             <Text style={styles.details}>Expected Size: {selected?.expectedStudents ?? '—'} students / {selected?.expectedTeachers ?? '—'} teachers</Text>
+                            <Text style={styles.details}>Submitted By: {selected?.submittedBy || 'School Registration Portal'}</Text>
                             <Text style={styles.details}>Submitted: {selected?.submittedAt || '—'}</Text>
+                            <Text style={styles.details}>Approved By: {selected?.approvedBy || '—'}</Text>
+                            <Text style={styles.details}>Approved Date: {selected?.approvedAt || '—'}</Text>
+                            <Text style={styles.details}>Pilot Enabled By: {selected?.pilotEnabledBy || '—'}</Text>
+                            <Text style={styles.details}>Pilot Date: {selected?.pilotActivatedAt || '—'}</Text>
+                            <Text style={styles.details}>Activated By: {selected?.activatedBy || '—'}</Text>
+                            <Text style={styles.details}>Activated Date: {selected?.activatedAt || '—'}</Text>
+                            <Text style={styles.details}>Credentials Issued By: {selected?.credentialsIssuedBy || '—'}</Text>
+                            <Text style={styles.details}>Credentials Issued Date: {selected?.credentialsIssuedAt || '—'}</Text>
                             <Text style={styles.details}>Updated: {selected?.updatedAt || '—'}</Text>
                             <Text style={styles.auditTitle}>Audit History</Text>
                             {historyLines(selected?.statusHistory).length ? historyLines(selected?.statusHistory).map((line) => <Text key={line} style={styles.auditLine}>• {line}</Text>) : <Text style={styles.details}>No audit history found yet.</Text>}

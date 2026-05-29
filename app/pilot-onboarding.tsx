@@ -14,12 +14,16 @@ import {
     View,
 } from 'react-native';
 import {
+    ActivationPackage,
+    generateActivationPackage,
+    getActivationPackage,
     getOnboardingReviewQueue,
     normalizeOnboardingText,
     OnboardingReviewItem,
     OnboardingStatus,
     onboardingStatusLabel,
     runOnboardingAction,
+    statusTimeline,
 } from '../src/services/schoolRegistrationApi';
 import { colors, shadows, spacing } from '../src/theme';
 
@@ -42,9 +46,21 @@ export default function PilotOnboardingScreen() {
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [selected, setSelected] = useState<OnboardingReviewItem | null>(null);
+    const [activationPackage, setActivationPackage] = useState<ActivationPackage | null>(null);
+    const [activationLoading, setActivationLoading] = useState(false);
     const [actionLoading, setActionLoading] = useState(false);
     const [reviewNotes, setReviewNotes] = useState('');
     const [message, setMessage] = useState('Loading onboarding review queue...');
+
+    const sortQueue = (items: OnboardingReviewItem[]) => {
+        return [...items].sort((a, b) => {
+            const statusDiff = (STATUS_ORDER[String(a.status || 'PENDING')] || 99) - (STATUS_ORDER[String(b.status || 'PENDING')] || 99);
+            if (statusDiff !== 0) return statusDiff;
+            const aDate = new Date(a.submittedAt || a.registrationDate || a.updatedAt || 0).getTime();
+            const bDate = new Date(b.submittedAt || b.registrationDate || b.updatedAt || 0).getTime();
+            return bDate - aDate;
+        });
+    };
 
     const loadQueue = async (showRefresh = false) => {
         if (showRefresh) setRefreshing(true);
@@ -52,13 +68,8 @@ export default function PilotOnboardingScreen() {
 
         try {
             const data = await getOnboardingReviewQueue();
-            const sorted = [...data].sort((a, b) => {
-                const aDate = new Date(a.submittedAt || a.updatedAt || 0).getTime();
-                const bDate = new Date(b.submittedAt || b.updatedAt || 0).getTime();
-                return bDate - aDate;
-            });
-            setRequests(sorted);
-            setMessage('Onboarding review queue connected.');
+            setRequests(sortQueue(data));
+            setMessage('Real onboarding review queue connected. VidyaSetu onboarding team can review, pilot, activate, and issue first-login credentials.');
         } catch (error) {
             setMessage('Unable to load onboarding review queue. Please verify backend is running.');
             Alert.alert('Review Queue Error', 'Unable to load onboarding requests. Please check backend API.');
@@ -90,12 +101,72 @@ export default function PilotOnboardingScreen() {
 
     const closeDetails = () => {
         setSelected(null);
+        setActivationPackage(null);
         setReviewNotes('');
+    };
+
+    const openDetails = async (item: OnboardingReviewItem) => {
+        setSelected(item);
+        setReviewNotes('');
+        setActivationPackage(null);
+
+        if (item.status === 'ACTIVE') {
+            await loadActivationPackage(item.referenceId, false);
+        }
     };
 
     const refreshSelectedFromList = (referenceId: string, list: OnboardingReviewItem[]) => {
         const updated = list.find((item) => item.referenceId === referenceId);
         if (updated) setSelected(updated);
+        return updated;
+    };
+
+    const reloadQueueAfterAction = async (referenceId: string) => {
+        const data = await getOnboardingReviewQueue();
+        const sorted = sortQueue(data);
+        setRequests(sorted);
+        return refreshSelectedFromList(referenceId, sorted);
+    };
+
+    const loadActivationPackage = async (referenceId: string, showAlert = true) => {
+        setActivationLoading(true);
+        try {
+            const data = await getActivationPackage(referenceId);
+            setActivationPackage(data);
+        } catch {
+            setActivationPackage(null);
+            if (showAlert) {
+                Alert.alert('Activation Package', 'No activation package found yet. Generate credentials after the tenant is ACTIVE.');
+            }
+        } finally {
+            setActivationLoading(false);
+        }
+    };
+
+    const handleGenerateActivationPackage = async (request: OnboardingReviewItem) => {
+        Alert.alert(
+            'Generate Activation Package',
+            `Generate first Admin and Principal credentials for ${request.schoolName}?`,
+            [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                    text: 'Generate',
+                    onPress: async () => {
+                        setActivationLoading(true);
+                        try {
+                            const data = await generateActivationPackage(request.referenceId);
+                            setActivationPackage(data);
+                            await reloadQueueAfterAction(request.referenceId);
+                            Alert.alert('Credentials Generated', 'First Admin and Principal credentials are ready to issue.');
+                        } catch {
+                            Alert.alert('Generation Failed', 'Unable to generate activation package. Please verify this tenant is ACTIVE.');
+                        } finally {
+                            setActivationLoading(false);
+                        }
+                    },
+                },
+            ]
+        );
     };
 
     const performAction = async (request: OnboardingReviewItem, action: ReviewAction) => {
@@ -113,15 +184,11 @@ export default function PilotOnboardingScreen() {
                         setActionLoading(true);
                         try {
                             await runOnboardingAction(request.referenceId, action, reviewNotes.trim() || undefined);
-                            const data = await getOnboardingReviewQueue();
-                            const sorted = [...data].sort((a, b) => {
-                                const aDate = new Date(a.submittedAt || a.updatedAt || 0).getTime();
-                                const bDate = new Date(b.submittedAt || b.updatedAt || 0).getTime();
-                                return bDate - aDate;
-                            });
-                            setRequests(sorted);
-                            refreshSelectedFromList(request.referenceId, sorted);
+                            const updated = await reloadQueueAfterAction(request.referenceId);
                             setReviewNotes('');
+                            if (action === 'activate' || updated?.status === 'ACTIVE') {
+                                await loadActivationPackage(request.referenceId, false);
+                            }
                             Alert.alert('Success', `${request.schoolName} updated successfully.`);
                         } catch {
                             Alert.alert('Action Failed', `Unable to ${label.toLowerCase()} this request.`);
@@ -146,8 +213,8 @@ export default function PilotOnboardingScreen() {
                     </TouchableOpacity>
 
                     <View style={styles.headerTextWrap}>
-                        <Text style={styles.eyebrow}>ADMIN / PRINCIPAL REVIEW</Text>
-                        <Text style={styles.title}>Onboarding Review</Text>
+                        <Text style={styles.eyebrow}>VIDYASETU ONBOARDING TEAM</Text>
+                        <Text style={styles.title}>Activation & Credentials</Text>
                     </View>
 
                     <TouchableOpacity style={styles.circleButton} onPress={() => router.replace(backHome as any)}>
@@ -156,10 +223,10 @@ export default function PilotOnboardingScreen() {
                 </View>
 
                 <View style={styles.heroCard}>
-                    <Text style={styles.heroTitle}>School Registration Queue</Text>
+                    <Text style={styles.heroTitle}>School Activation Queue</Text>
                     <Text style={styles.heroText}>{message}</Text>
                     <Text style={styles.heroText}>
-                        Newly registered schools cannot login until status becomes ACTIVE.
+                        Login remains disabled until the tenant is ACTIVE and the first Admin / Principal credentials are issued.
                     </Text>
                 </View>
 
@@ -189,10 +256,7 @@ export default function PilotOnboardingScreen() {
                             <RequestCard
                                 key={item.referenceId}
                                 item={item}
-                                onView={() => {
-                                    setSelected(item);
-                                    setReviewNotes('');
-                                }}
+                                onView={() => openDetails(item)}
                             />
                         ))
                     )}
@@ -207,7 +271,7 @@ export default function PilotOnboardingScreen() {
                                 <>
                                     <View style={styles.modalHeader}>
                                         <View style={{ flex: 1 }}>
-                                            <Text style={styles.modalEyebrow}>REQUEST DETAIL</Text>
+                                            <Text style={styles.modalEyebrow}>ACTIVATION DETAIL</Text>
                                             <Text style={styles.modalTitle}>{selected.schoolName}</Text>
                                         </View>
                                         <TouchableOpacity style={styles.closeButton} onPress={closeDetails}>
@@ -216,25 +280,41 @@ export default function PilotOnboardingScreen() {
                                     </View>
 
                                     <StatusBadge status={selected.status} />
+                                    <StatusMessage status={selected.status} loginEnabled={!!selected.loginEnabled} />
 
-                                    <InfoRow label="Reference ID" value={selected.referenceId} />
-                                    <InfoRow label="School ID" value={selected.schoolId || '-'} />
-                                    <InfoRow label="Request Type" value={selected.requestType || '-'} />
-                                    <InfoRow label="Contact Person" value={selected.contactPerson || '-'} />
-                                    <InfoRow label="Phone" value={selected.contactPhone || '-'} />
-                                    <InfoRow label="Email" value={selected.contactEmail || '-'} />
-                                    <InfoRow label="Location" value={[selected.city, selected.state].filter(Boolean).join(', ') || '-'} />
-                                    <InfoRow label="Expected Students" value={formatCount(selected.expectedStudents)} />
-                                    <InfoRow label="Expected Teachers" value={formatCount(selected.expectedTeachers)} />
-                                    <InfoRow label="Submitted" value={formatDate(selected.submittedAt)} />
-                                    <InfoRow label="Updated" value={formatDate(selected.updatedAt)} />
+                                    <View style={styles.timelineBox}>
+                                        <Text style={styles.auditTitle}>Status Timeline</Text>
+                                        <Timeline status={selected.status} />
+                                    </View>
+
+                                    <View style={styles.detailBlock}>
+                                        <Text style={styles.blockTitle}>Registration Details</Text>
+                                        <InfoRow label="School Name" value={selected.schoolName || '-'} />
+                                        <InfoRow label="Reference ID" value={selected.referenceId} />
+                                        <InfoRow label="School ID" value={selected.schoolId || '-'} />
+                                        <InfoRow label="Registration Date" value={formatDate(selected.registrationDate || selected.submittedAt)} />
+                                        <InfoRow label="Current Status" value={onboardingStatusLabel(selected.status || 'PENDING')} />
+                                        <InfoRow label="Login Access" value={selected.loginEnabled ? 'Enabled' : 'Disabled'} />
+                                        <InfoRow label="Next Step" value={statusNextStep(selected.status)} />
+                                    </View>
+
+                                    <View style={styles.detailBlock}>
+                                        <Text style={styles.blockTitle}>School Contact</Text>
+                                        <InfoRow label="Request Type" value={selected.requestType || '-'} />
+                                        <InfoRow label="Contact Person" value={selected.contactPerson || selected.submittedBy || '-'} />
+                                        <InfoRow label="Phone" value={selected.contactPhone || '-'} />
+                                        <InfoRow label="Email" value={selected.contactEmail || '-'} />
+                                        <InfoRow label="Location" value={[selected.city, selected.state].filter(Boolean).join(', ') || '-'} />
+                                        <InfoRow label="Expected Students" value={formatCount(selected.expectedStudents)} />
+                                        <InfoRow label="Expected Teachers" value={formatCount(selected.expectedTeachers)} />
+                                    </View>
 
                                     <View style={styles.notesBox}>
                                         <Text style={styles.notesLabel}>Review Notes</Text>
                                         <TextInput
                                             value={reviewNotes}
                                             onChangeText={setReviewNotes}
-                                            placeholder="Optional note for audit history"
+                                            placeholder="Optional note for VidyaSetu onboarding audit history"
                                             placeholderTextColor="rgba(15,31,53,0.45)"
                                             multiline
                                             style={styles.notesInput}
@@ -247,9 +327,19 @@ export default function PilotOnboardingScreen() {
                                         onAction={(action) => performAction(selected, action)}
                                     />
 
+                                    {selected.status === 'ACTIVE' && (
+                                        <ActivationPackageCard
+                                            item={selected}
+                                            activationPackage={activationPackage}
+                                            loading={activationLoading}
+                                            onGenerate={() => handleGenerateActivationPackage(selected)}
+                                            onRefresh={() => loadActivationPackage(selected.referenceId)}
+                                        />
+                                    )}
+
                                     <View style={styles.auditBox}>
-                                        <Text style={styles.auditTitle}>Audit History</Text>
-                                        <AuditHistory item={selected} />
+                                        <Text style={styles.auditTitle}>Audit Trail</Text>
+                                        <AuditTrail item={selected} />
                                     </View>
                                 </>
                             )}
@@ -274,18 +364,43 @@ function RequestCard({ item, onView }: { item: OnboardingReviewItem; onView: () 
                 <StatusBadge status={item.status} compact />
             </View>
 
+            <Text style={styles.requestSub}>{statusShortMessage(item.status)}</Text>
+
             <View style={styles.requestStats}>
                 <Text style={styles.requestStat}>Students: {formatCount(item.expectedStudents)}</Text>
                 <Text style={styles.requestStat}>Teachers: {formatCount(item.expectedTeachers)}</Text>
             </View>
 
-            <Text style={styles.requestSub}>
-                Submitted: {formatDate(item.submittedAt)}
-            </Text>
+            <Text style={styles.requestSub}>Registration Date: {formatDate(item.registrationDate || item.submittedAt)}</Text>
+            <Text style={styles.requestSub}>Login Access: {item.loginEnabled ? 'Enabled' : 'Disabled'}</Text>
 
             <TouchableOpacity style={styles.viewButton} onPress={onView}>
-                <Text style={styles.viewButtonText}>View Details</Text>
+                <Text style={styles.viewButtonText}>Open Activation Detail</Text>
             </TouchableOpacity>
+        </View>
+    );
+}
+
+function StatusMessage({ status, loginEnabled }: { status: OnboardingStatus | string; loginEnabled: boolean }) {
+    return (
+        <View style={styles.statusMessageBox}>
+            <Text style={styles.statusMessageTitle}>{onboardingStatusLabel(String(status || 'PENDING'))}</Text>
+            <Text style={styles.statusMessageText}>{statusFullMessage(status, loginEnabled)}</Text>
+        </View>
+    );
+}
+
+function Timeline({ status }: { status: OnboardingStatus | string }) {
+    return (
+        <View style={styles.timelineRow}>
+            {statusTimeline(String(status || 'PENDING')).map((item, index) => (
+                <View key={item.key} style={styles.timelineItem}>
+                    <View style={[styles.timelineDot, item.done && styles.timelineDotDone]}>
+                        <Text style={[styles.timelineDotText, item.done && styles.timelineDotTextDone]}>{index + 1}</Text>
+                    </View>
+                    <Text style={[styles.timelineLabel, item.done && styles.timelineLabelDone]}>{item.label}</Text>
+                </View>
+            ))}
         </View>
     );
 }
@@ -302,18 +417,18 @@ function ActionButtons({
     const status = item.status;
 
     if (status === 'ACTIVE') {
-        return <Text style={styles.finalState}>Activated ✓ Login enabled for this school.</Text>;
+        return <Text style={styles.finalState}>Tenant activated ✓ Continue below to generate or view first Admin and Principal credentials.</Text>;
     }
 
     if (status === 'REJECTED') {
-        return <Text style={styles.finalState}>Rejected. No login access enabled.</Text>;
+        return <Text style={styles.finalState}>Rejected. No ERP login access is enabled.</Text>;
     }
 
     if (status === 'PENDING') {
         return (
             <View style={styles.actionGrid}>
-                <ActionButton title="Approve" action="approve" loading={loading} onAction={onAction} />
-                <ActionButton title="Reject" action="reject" loading={loading} onAction={onAction} danger />
+                <ActionButton title="Approve Registration" action="approve" loading={loading} onAction={onAction} />
+                <ActionButton title="Reject Request" action="reject" loading={loading} onAction={onAction} danger />
             </View>
         );
     }
@@ -321,7 +436,7 @@ function ActionButtons({
     if (status === 'APPROVED') {
         return (
             <View style={styles.actionGrid}>
-                <ActionButton title="Mark Pilot" action="mark-pilot" loading={loading} onAction={onAction} />
+                <ActionButton title="Enable Pilot Stage" action="mark-pilot" loading={loading} onAction={onAction} />
             </View>
         );
     }
@@ -335,6 +450,66 @@ function ActionButtons({
     }
 
     return null;
+}
+
+function ActivationPackageCard({
+    item,
+    activationPackage,
+    loading,
+    onGenerate,
+    onRefresh,
+}: {
+    item: OnboardingReviewItem;
+    activationPackage: ActivationPackage | null;
+    loading: boolean;
+    onGenerate: () => void;
+    onRefresh: () => void;
+}) {
+    const issued = !!activationPackage?.credentials?.length;
+
+    return (
+        <View style={styles.activationBox}>
+            <Text style={styles.activationTitle}>Activation Package</Text>
+            <Text style={styles.activationText}>
+                ACTIVE Tenant → Generate First Admin Account → Generate Principal Account → Issue Credentials → ERP Login Enabled
+            </Text>
+
+            <InfoRow label="School" value={activationPackage?.schoolName || item.schoolName || '-'} />
+            <InfoRow label="School ID" value={activationPackage?.schoolId || item.schoolId || '-'} />
+            <InfoRow label="Login Access" value={activationPackage?.loginEnabled || item.loginEnabled ? 'Enabled' : 'Disabled'} />
+            <InfoRow label="Credentials Issued" value={formatDate(activationPackage?.credentialsIssuedAt || item.credentialsIssuedAt)} />
+
+            <View style={styles.activationButtons}>
+                <TouchableOpacity disabled={loading} style={[styles.actionButton, loading && { opacity: 0.6 }]} onPress={onGenerate}>
+                    {loading ? <ActivityIndicator color={colors.white} /> : <Text style={styles.actionText}>{issued ? 'Manage Credentials' : 'Generate Credentials'}</Text>}
+                </TouchableOpacity>
+                <TouchableOpacity disabled={loading} style={[styles.secondaryButton, loading && { opacity: 0.6 }]} onPress={onRefresh}>
+                    <Text style={styles.secondaryButtonText}>Refresh Package</Text>
+                </TouchableOpacity>
+            </View>
+
+            {activationPackage?.message ? <Text style={styles.activationNote}>{activationPackage.message}</Text> : null}
+            {activationPackage?.nextStep ? <Text style={styles.activationNote}>{activationPackage.nextStep}</Text> : null}
+
+            {issued ? (
+                <View style={styles.credentialsWrap}>
+                    {activationPackage.credentials.map((credential) => (
+                        <View key={`${credential.role}-${credential.username}`} style={styles.credentialCard}>
+                            <Text style={styles.credentialRole}>{credential.role}</Text>
+                            <InfoRow label="Display Name" value={credential.displayName || '-'} />
+                            <InfoRow label="Username" value={credential.username || '-'} />
+                            <InfoRow label="Initial Password" value={credential.initialPassword || '-'} />
+                            <Text style={styles.credentialNote}>
+                                Share these credentials only after VidyaSetu onboarding verification is complete. User should change password after first login.
+                            </Text>
+                        </View>
+                    ))}
+                </View>
+            ) : (
+                <Text style={styles.emptyText}>No credentials generated yet for this ACTIVE tenant.</Text>
+            )}
+        </View>
+    );
 }
 
 function ActionButton({
@@ -388,30 +563,54 @@ function InfoRow({ label, value }: { label: string; value: string }) {
     );
 }
 
-function AuditHistory({ item }: { item: OnboardingReviewItem }) {
-    const entries = buildAuditEntries(item);
-
-    if (entries.length === 0) {
-        return <Text style={styles.emptyText}>No audit history found yet.</Text>;
-    }
+function AuditTrail({ item }: { item: OnboardingReviewItem }) {
+    const structuredEntries = [
+        { label: 'Submitted By', value: item.submittedBy || 'School Registration Portal' },
+        { label: 'Submitted Date', value: formatDate(item.submittedAt || item.registrationDate) },
+        { label: 'Approved By', value: item.approvedBy || '-' },
+        { label: 'Approved Date', value: formatDate(item.approvedAt) },
+        { label: 'Pilot Enabled By', value: item.pilotEnabledBy || '-' },
+        { label: 'Pilot Date', value: formatDate(item.pilotActivatedAt) },
+        { label: 'Activated By', value: item.activatedBy || '-' },
+        { label: 'Activated Date', value: formatDate(item.activatedAt) },
+        { label: 'Credentials Issued By', value: item.credentialsIssuedBy || '-' },
+        { label: 'Credentials Issued Date', value: formatDate(item.credentialsIssuedAt) },
+    ];
+    const historyEntries = buildAuditEntries(item);
 
     return (
         <View>
-            {entries.map((entry, index) => (
-                <View key={`${entry.label}-${index}`} style={styles.auditItem}>
-                    <Text style={styles.auditDot}>●</Text>
-                    <View style={{ flex: 1 }}>
-                        <Text style={styles.auditStatus}>{entry.label}</Text>
-                        <Text style={styles.auditDate}>{entry.date}</Text>
+            <View style={styles.auditGrid}>
+                {structuredEntries.map((entry) => (
+                    <View key={entry.label} style={styles.auditGridItem}>
+                        <Text style={styles.auditGridLabel}>{entry.label}</Text>
+                        <Text style={styles.auditGridValue}>{entry.value}</Text>
                     </View>
-                </View>
-            ))}
+                ))}
+            </View>
+
+            <Text style={styles.auditSubTitle}>Status History</Text>
+            {historyEntries.length === 0 ? (
+                <Text style={styles.emptyText}>No status history found yet.</Text>
+            ) : (
+                historyEntries.map((entry, index) => (
+                    <View key={`${entry.label}-${index}`} style={styles.auditItem}>
+                        <Text style={styles.auditDot}>●</Text>
+                        <View style={{ flex: 1 }}>
+                            <Text style={styles.auditStatus}>{entry.label}</Text>
+                            <Text style={styles.auditDate}>{entry.date}</Text>
+                            {entry.by ? <Text style={styles.auditDate}>By: {entry.by}</Text> : null}
+                            {entry.note ? <Text style={styles.auditDate}>Note: {entry.note}</Text> : null}
+                        </View>
+                    </View>
+                ))
+            )}
         </View>
     );
 }
 
 function buildAuditEntries(item: OnboardingReviewItem) {
-    const entries: { label: string; date: string }[] = [];
+    const entries: { label: string; date: string; by?: string; note?: string }[] = [];
 
     if (item.statusHistory) {
         const raw = normalizeOnboardingText(item.statusHistory);
@@ -420,27 +619,54 @@ function buildAuditEntries(item: OnboardingReviewItem) {
             if (Array.isArray(parsed)) {
                 parsed.forEach((entry) => {
                     entries.push({
-                        label: String(entry.status || entry.action || 'STATUS UPDATE'),
+                        label: onboardingStatusLabel(String(entry.status || entry.action || 'STATUS UPDATE')),
                         date: formatDate(entry.timestamp || entry.updatedAt || entry.date),
+                        by: entry.by || entry.updatedBy || entry.actor,
+                        note: entry.note || entry.reviewNotes,
                     });
                 });
             }
         } catch {
             raw.split('\n').filter(Boolean).forEach((line) => {
-                entries.push({ label: line, date: '' });
+                entries.push(parseAuditHistoryLine(line));
             });
         }
     }
 
     if (entries.length === 0) {
-        if (item.submittedAt) entries.push({ label: 'PENDING / SUBMITTED', date: formatDate(item.submittedAt) });
-        if (item.approvedAt) entries.push({ label: 'APPROVED', date: formatDate(item.approvedAt) });
-        if (item.pilotActivatedAt) entries.push({ label: 'PILOT', date: formatDate(item.pilotActivatedAt) });
-        if (item.activatedAt) entries.push({ label: 'ACTIVE', date: formatDate(item.activatedAt) });
-        if (item.rejectedAt) entries.push({ label: 'REJECTED', date: formatDate(item.rejectedAt) });
+        if (item.submittedAt || item.registrationDate) entries.push({ label: 'Submitted', date: formatDate(item.submittedAt || item.registrationDate), by: item.submittedBy || item.contactPerson || undefined });
+        if (item.approvedAt) entries.push({ label: 'Approved', date: formatDate(item.approvedAt), by: item.approvedBy || undefined });
+        if (item.pilotActivatedAt) entries.push({ label: 'Pilot', date: formatDate(item.pilotActivatedAt), by: item.pilotEnabledBy || undefined });
+        if (item.activatedAt) entries.push({ label: 'Active', date: formatDate(item.activatedAt), by: item.activatedBy || undefined });
+        if (item.credentialsIssuedAt) entries.push({ label: 'Credentials Issued', date: formatDate(item.credentialsIssuedAt), by: item.credentialsIssuedBy || undefined });
+        if (item.rejectedAt) entries.push({ label: 'Rejected', date: formatDate(item.rejectedAt) });
     }
 
     return entries;
+}
+
+
+function parseAuditHistoryLine(line: string) {
+    const parts = line.split('|').map((part) => part.trim()).filter(Boolean);
+    if (parts.length >= 3) {
+        const date = formatDate(parts[0]);
+        const actor = parts[1];
+        const transition = parts[2];
+        const note = parts.slice(3).join(' • ');
+        const label = transition.includes('CREDENTIALS_ISSUED')
+            ? 'Credentials Issued'
+            : transition.includes('PILOT -> ACTIVE')
+                ? 'Activated'
+                : transition.includes('APPROVED -> PILOT')
+                    ? 'Pilot Enabled'
+                    : transition.includes('PENDING -> APPROVED')
+                        ? 'Approved'
+                        : transition.includes('NEW -> PENDING') || transition.includes('RESERVED -> PENDING')
+                            ? 'Submitted'
+                            : transition.replace(/_/g, ' ');
+        return { label, date, by: actor, note };
+    }
+    return { label: line, date: '' };
 }
 
 function actionLabel(action: ReviewAction) {
@@ -448,6 +674,34 @@ function actionLabel(action: ReviewAction) {
     if (action === 'reject') return 'Reject';
     if (action === 'mark-pilot') return 'Mark Pilot';
     return 'Activate Tenant';
+}
+
+function statusShortMessage(status?: string | null) {
+    if (status === 'ACTIVE') return 'ERP login can be enabled after credentials are issued.';
+    if (status === 'PILOT') return 'Pilot validation is ready. Activation can be completed next.';
+    if (status === 'APPROVED') return 'Registration is approved. Pilot stage can be enabled next.';
+    if (status === 'REJECTED') return 'Registration request was rejected. Login remains disabled.';
+    return 'VidyaSetu onboarding team will review this registration request.';
+}
+
+function statusFullMessage(status?: string | null, loginEnabled?: boolean) {
+    if (status === 'ACTIVE') {
+        return loginEnabled
+            ? 'The school tenant is active. Generate or view the first Admin and Principal credentials, then share them securely with the school.'
+            : 'The school tenant is active, but login access is waiting for credential provisioning.';
+    }
+    if (status === 'PILOT') return 'Pilot validation is enabled. VidyaSetu can now complete final activation after verification.';
+    if (status === 'APPROVED') return 'The registration is approved by the VidyaSetu onboarding team. Move it to Pilot when validation is ready.';
+    if (status === 'REJECTED') return 'This request is rejected. No ERP workspace login access is enabled.';
+    return 'The registration request is under review by the VidyaSetu onboarding team. ERP login is disabled until activation is complete.';
+}
+
+function statusNextStep(status?: string | null) {
+    if (status === 'ACTIVE') return 'Generate / issue first Admin and Principal credentials.';
+    if (status === 'PILOT') return 'Complete pilot verification and activate tenant.';
+    if (status === 'APPROVED') return 'Enable pilot stage for controlled validation.';
+    if (status === 'REJECTED') return 'No further action unless the request is reopened manually.';
+    return 'VidyaSetu onboarding team will review and approve the registration request.';
 }
 
 function formatCount(value?: number | null) {
@@ -545,7 +799,7 @@ const styles = StyleSheet.create({
     requestMeta: { color: colors.slateText, fontWeight: '800', fontSize: 11, marginTop: 3 },
     requestStats: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 9 },
     requestStat: { color: colors.primaryNavy, fontWeight: '900', fontSize: 12 },
-    requestSub: { color: colors.slateText, fontWeight: '700', marginTop: 8, fontSize: 11 },
+    requestSub: { color: colors.slateText, fontWeight: '700', marginTop: 8, fontSize: 11, lineHeight: 16 },
     viewButton: { marginTop: 10, backgroundColor: colors.primaryNavy, borderRadius: 12, paddingVertical: 10, alignItems: 'center' },
     viewButtonText: { color: colors.white, fontWeight: '900' },
 
@@ -567,7 +821,7 @@ const styles = StyleSheet.create({
 
     modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.55)', justifyContent: 'flex-end' },
     modalCard: {
-        maxHeight: '88%',
+        maxHeight: '90%',
         backgroundColor: 'rgba(255,253,247,0.99)',
         borderTopLeftRadius: 28,
         borderTopRightRadius: 28,
@@ -588,6 +842,55 @@ const styles = StyleSheet.create({
     },
     closeText: { color: colors.white, fontSize: 23, fontWeight: '900', marginTop: -2 },
 
+    statusMessageBox: {
+        backgroundColor: colors.cardCream,
+        borderRadius: 16,
+        padding: 12,
+        borderWidth: 1,
+        borderColor: colors.cardGoldBorder,
+        marginBottom: 12,
+    },
+    statusMessageTitle: { color: colors.primaryNavy, fontSize: 15, fontWeight: '900', marginBottom: 4 },
+    statusMessageText: { color: colors.slateText, fontWeight: '800', lineHeight: 19 },
+
+    timelineBox: {
+        backgroundColor: 'rgba(13,33,57,0.94)',
+        borderRadius: 18,
+        padding: 13,
+        marginBottom: 12,
+        borderWidth: 1,
+        borderColor: 'rgba(212,175,55,0.42)',
+    },
+    timelineRow: { flexDirection: 'row', justifyContent: 'space-between', gap: 6 },
+    timelineItem: { flex: 1, alignItems: 'center' },
+    timelineDot: {
+        width: 28,
+        height: 28,
+        borderRadius: 14,
+        backgroundColor: 'rgba(255,255,255,0.16)',
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.34)',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: 6,
+    },
+    timelineDotDone: { backgroundColor: colors.deepGold, borderColor: colors.deepGold },
+    timelineDotText: { color: 'rgba(255,255,255,0.7)', fontWeight: '900', fontSize: 11 },
+    timelineDotTextDone: { color: colors.primaryNavy },
+    timelineLabel: { color: 'rgba(255,255,255,0.68)', fontWeight: '900', fontSize: 10, textAlign: 'center' },
+    timelineLabelDone: { color: colors.white },
+
+    detailBlock: {
+        backgroundColor: 'rgba(255,255,255,0.42)',
+        borderRadius: 16,
+        borderWidth: 1,
+        borderColor: 'rgba(15,31,53,0.08)',
+        paddingHorizontal: 10,
+        paddingTop: 10,
+        marginBottom: 12,
+    },
+    blockTitle: { color: colors.primaryNavy, fontSize: 15, fontWeight: '900', marginBottom: 4 },
+
     infoRow: {
         borderBottomWidth: 1,
         borderBottomColor: 'rgba(15,31,53,0.09)',
@@ -596,7 +899,7 @@ const styles = StyleSheet.create({
     infoLabel: { color: colors.slateText, fontSize: 11, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 0.7 },
     infoValue: { color: colors.primaryNavy, fontSize: 14, fontWeight: '900', marginTop: 3 },
 
-    notesBox: { marginTop: 14, marginBottom: 12 },
+    notesBox: { marginTop: 2, marginBottom: 12 },
     notesLabel: { color: colors.primaryNavy, fontWeight: '900', marginBottom: 6 },
     notesInput: {
         minHeight: 78,
@@ -628,12 +931,57 @@ const styles = StyleSheet.create({
         marginVertical: 10,
         borderWidth: 1,
         borderColor: colors.cardGoldBorder,
+        lineHeight: 19,
     },
+
+    activationBox: {
+        backgroundColor: 'rgba(13, 33, 57, 0.95)',
+        borderRadius: 18,
+        padding: 14,
+        borderWidth: 1,
+        borderColor: 'rgba(212,175,55,0.45)',
+        marginTop: 8,
+        marginBottom: 12,
+    },
+    activationTitle: { color: colors.white, fontSize: 17, fontWeight: '900', marginBottom: 5 },
+    activationText: { color: 'rgba(255,255,255,0.82)', fontWeight: '800', lineHeight: 19, marginBottom: 10 },
+    activationButtons: { gap: 10, marginTop: 10, marginBottom: 8 },
+    secondaryButton: {
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.42)',
+        borderRadius: 14,
+        paddingVertical: 12,
+        alignItems: 'center',
+    },
+    secondaryButtonText: { color: colors.white, fontWeight: '900' },
+    activationNote: { color: 'rgba(255,255,255,0.82)', fontWeight: '800', lineHeight: 18, marginTop: 4 },
+    credentialsWrap: { marginTop: 10, gap: 10 },
+    credentialCard: {
+        backgroundColor: 'rgba(255,253,247,0.96)',
+        borderRadius: 16,
+        padding: 12,
+        borderWidth: 1,
+        borderColor: colors.cardGoldBorder,
+    },
+    credentialRole: { color: colors.deepGold, fontWeight: '900', fontSize: 13, letterSpacing: 0.8, marginBottom: 4 },
+    credentialNote: { color: colors.slateText, fontWeight: '800', lineHeight: 18, marginTop: 8, fontSize: 12 },
 
     auditBox: { marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: 'rgba(15,31,53,0.12)' },
     auditTitle: { color: colors.primaryNavy, fontSize: 16, fontWeight: '900', marginBottom: 10 },
+    auditSubTitle: { color: colors.primaryNavy, fontSize: 14, fontWeight: '900', marginTop: 12, marginBottom: 8 },
+    auditGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+    auditGridItem: {
+        width: '48%',
+        backgroundColor: colors.cardCream,
+        borderRadius: 12,
+        padding: 10,
+        borderWidth: 1,
+        borderColor: colors.cardGoldBorder,
+    },
+    auditGridLabel: { color: colors.slateText, fontWeight: '900', fontSize: 10, textTransform: 'uppercase' },
+    auditGridValue: { color: colors.primaryNavy, fontWeight: '900', marginTop: 4, fontSize: 12, lineHeight: 16 },
     auditItem: { flexDirection: 'row', gap: 10, marginBottom: 10 },
     auditDot: { color: colors.deepGold, fontSize: 13, marginTop: 1 },
     auditStatus: { color: colors.primaryNavy, fontWeight: '900' },
-    auditDate: { color: colors.slateText, fontWeight: '700', marginTop: 2, fontSize: 12 },
+    auditDate: { color: colors.slateText, fontWeight: '700', marginTop: 2, fontSize: 12, lineHeight: 16 },
 });

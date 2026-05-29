@@ -65,6 +65,7 @@ export async function requestPilotDemo(payload: PilotDemoPayload) {
 }
 
 
+
 export type OnboardingStatusResponse = {
     referenceId: string;
     schoolId?: string | null;
@@ -75,14 +76,21 @@ export type OnboardingStatusResponse = {
     nextStep: string;
     loginEnabled: boolean;
     importEnabled: boolean;
+    registrationDate?: string | null;
+    submittedAt?: string | null;
+    approvedAt?: string | null;
+    pilotActivatedAt?: string | null;
+    activatedAt?: string | null;
+    submittedBy?: string | null;
+    approvedBy?: string | null;
+    pilotEnabledBy?: string | null;
+    activatedBy?: string | null;
+    credentialsIssuedBy?: string | null;
+    credentialsIssuedAt?: string | null;
+    statusHistory?: string | null;
 };
 
-export type OnboardingReviewItem = {
-    referenceId: string;
-    schoolId?: string | null;
-    schoolName: string;
-    requestType: string;
-    status: OnboardingStatus;
+export type OnboardingReviewItem = OnboardingStatusResponse & {
     contactPerson?: string | null;
     contactPhone?: string | null;
     contactEmail?: string | null;
@@ -90,14 +98,32 @@ export type OnboardingReviewItem = {
     expectedTeachers?: number | null;
     city?: string | null;
     state?: string | null;
-    submittedAt?: string | null;
     updatedAt?: string | null;
-    approvedAt?: string | null;
-    pilotActivatedAt?: string | null;
-    activatedAt?: string | null;
     rejectedAt?: string | null;
     reviewNotes?: string | null;
-    statusHistory?: string | null;
+};
+
+export type ActivationCredential = {
+    role: string;
+    username: string;
+    initialPassword: string;
+    displayName: string;
+    created: boolean;
+};
+
+export type ActivationPackage = {
+    referenceId: string;
+    schoolId: string;
+    schoolName: string;
+    status: OnboardingStatus;
+    registrationDate?: string | null;
+    activatedAt?: string | null;
+    credentialsIssuedAt?: string | null;
+    message: string;
+    nextStep: string;
+    loginEnabled: boolean;
+    credentials: ActivationCredential[];
+    statusSummary: OnboardingStatusResponse;
 };
 
 export function onboardingStatusLabel(status: string) {
@@ -120,7 +146,23 @@ export async function getOnboardingReviewQueue() {
 }
 
 export function normalizeOnboardingText(value?: string | null) {
-    return (value || '').replace(/\\n/g, '\n').replace(/\r\n/g, '\n');
+    return (value || '')
+        .replace(/Admin\/Principal must review/g, 'VidyaSetu onboarding team will review')
+        .replace(/registration submitted for Admin\/Principal review/gi, 'Registration submitted for VidyaSetu onboarding team review')
+        .replace(/ADMIN_PRINCIPAL/g, 'VidyaSetu Onboarding Team')
+        .replace(/\\n/g, '\n')
+        .replace(/\r\n/g, '\n');
+}
+
+export function statusTimeline(status?: string | null) {
+    const order = ['PENDING', 'APPROVED', 'PILOT', 'ACTIVE'];
+    const currentIndex = Math.max(0, order.indexOf(status || 'PENDING'));
+    return [
+        { key: 'PENDING', label: 'Submitted', done: currentIndex >= 0 },
+        { key: 'APPROVED', label: 'Approved', done: currentIndex >= 1 },
+        { key: 'PILOT', label: 'Pilot', done: currentIndex >= 2 },
+        { key: 'ACTIVE', label: 'Active', done: currentIndex >= 3 },
+    ];
 }
 
 export async function updateOnboardingStatus(referenceId: string, status: OnboardingStatus, reviewNotes?: string) {
@@ -130,5 +172,15 @@ export async function updateOnboardingStatus(referenceId: string, status: Onboar
 
 export async function runOnboardingAction(referenceId: string, action: 'approve' | 'reject' | 'mark-pilot' | 'activate', reviewNotes?: string) {
     const response = await api.post<OnboardingStatusResponse>(`/school-registration/review/${referenceId}/${action}`, { reviewNotes });
+    return response.data;
+}
+
+export async function generateActivationPackage(referenceId: string) {
+    const response = await api.post<ActivationPackage>(`/school-registration/activation-package/${referenceId}/generate`);
+    return response.data;
+}
+
+export async function getActivationPackage(referenceId: string) {
+    const response = await api.get<ActivationPackage>(`/school-registration/activation-package/${referenceId}`);
     return response.data;
 }
