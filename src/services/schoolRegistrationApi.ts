@@ -32,7 +32,7 @@ export type PilotDemoPayload = {
     notes?: string;
 };
 
-export type OnboardingStatus = 'RESERVED' | 'PENDING' | 'APPROVED' | 'PILOT' | 'ACTIVE' | 'REJECTED';
+export type OnboardingStatus = 'RESERVED' | 'PENDING' | 'APPROVED' | 'PILOT' | 'ACTIVE' | 'REJECTED' | 'NOT_STARTED';
 
 export type RegistrationResponse = {
     referenceId: string;
@@ -127,6 +127,7 @@ export type ActivationPackage = {
 };
 
 export function onboardingStatusLabel(status: string) {
+    if (status === 'PENDING') return 'Registration Submitted';
     return status.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, (value) => value.toUpperCase());
 }
 
@@ -150,6 +151,11 @@ export function normalizeOnboardingText(value?: string | null) {
         .replace(/Admin\/Principal must review/g, 'VidyaSetu onboarding team will review')
         .replace(/registration submitted for Admin\/Principal review/gi, 'Registration submitted for VidyaSetu onboarding team review')
         .replace(/ADMIN_PRINCIPAL/g, 'VidyaSetu Onboarding Team')
+        .replace(/Admin Review/gi, 'VidyaSetu Onboarding Team Review')
+        .replace(/Principal Review/gi, 'VidyaSetu Onboarding Team Review')
+        .replace(/Tenant Activation Queue/gi, 'VidyaSetu Onboarding Status')
+        .replace(/Activation Queue/gi, 'VidyaSetu Onboarding Status')
+        .replace(/Activate Tenant/gi, 'Mark Active')
         .replace(/\\n/g, '\n')
         .replace(/\r\n/g, '\n');
 }
@@ -158,7 +164,7 @@ export function statusTimeline(status?: string | null) {
     const order = ['PENDING', 'APPROVED', 'PILOT', 'ACTIVE'];
     const currentIndex = Math.max(0, order.indexOf(status || 'PENDING'));
     return [
-        { key: 'PENDING', label: 'Submitted', done: currentIndex >= 0 },
+        { key: 'PENDING', label: 'Registration Submitted', done: currentIndex >= 0 },
         { key: 'APPROVED', label: 'Approved', done: currentIndex >= 1 },
         { key: 'PILOT', label: 'Pilot', done: currentIndex >= 2 },
         { key: 'ACTIVE', label: 'Active', done: currentIndex >= 3 },

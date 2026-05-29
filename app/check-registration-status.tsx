@@ -29,7 +29,7 @@ export default function CheckRegistrationStatusScreen() {
                     <View style={styles.headerRow}><TouchableOpacity style={styles.navButton} onPress={() => router.back()}><Text style={styles.navButtonText}>‹</Text></TouchableOpacity><TouchableOpacity style={styles.homeButton} onPress={() => router.replace('/login')}><Text style={styles.homeButtonText}>Login</Text></TouchableOpacity></View>
                     <Text style={styles.eyebrow}>PUBLIC ONBOARDING STATUS</Text>
                     <Text style={styles.title}>Check Registration Status</Text>
-                    <Text style={styles.subtitle}>Track onboarding by Reference ID. Login access is enabled only after Active status and credential provisioning.</Text>
+                    <Text style={styles.subtitle}>Track school onboarding by Reference ID. Login access stays disabled until the VidyaSetu Onboarding Team activates the school workspace and issues credentials.</Text>
                     <View style={styles.card}>
                         <Text style={styles.label}>Reference ID</Text>
                         <TextInput style={styles.input} placeholder="REG-202605290012-D74FC5" placeholderTextColor={colors.mutedText} value={referenceId} onChangeText={(value) => setReferenceId(value.toUpperCase())} autoCapitalize="characters" />
@@ -42,14 +42,14 @@ export default function CheckRegistrationStatusScreen() {
                             <Detail label="School ID" value={status.schoolId || 'Pending'} />
                             <Detail label="Registration Date" value={status.registrationDate || status.submittedAt} />
                             <Detail label="Current Status" value={onboardingStatusLabel(status.status)} />
-                            <Detail label="Login Access" value={status.loginEnabled ? 'Enabled after credentials are issued' : 'Disabled'} />
+                            <Detail label="Login Access" value={status.loginEnabled ? (status.credentialsIssuedAt ? 'Enabled — credentials issued' : 'Enabled — credentials pending') : 'Disabled until Active + Credentials Issued'} />
                             <Text style={styles.sectionTitle}>Status Message</Text>
                             <Text style={styles.message}>{normalizeOnboardingText(status.message)}</Text>
                             <Text style={styles.sectionTitle}>Next Step</Text>
                             <Text style={styles.message}>{normalizeOnboardingText(status.nextStep)}</Text>
                             <Text style={styles.sectionTitle}>Status Timeline</Text>
                             <View style={styles.timelineGrid}>{statusTimeline(status.status).map((step) => <Text key={step.key} style={[styles.timelineChip, !step.done && styles.timelineChipPending]}>{step.done ? '✓ ' : '○ '}{step.label}</Text>)}</View>
-                            <Text style={styles.sectionTitle}>Audit Trail</Text>
+                            <Text style={styles.sectionTitle}>Audit History</Text>
                             <Detail label="Submitted By" value={status.submittedBy || 'School Registration Portal'} />
                             <Detail label="Submitted Date" value={status.submittedAt} />
                             <Detail label="Approved By" value={status.approvedBy} />
@@ -58,6 +58,9 @@ export default function CheckRegistrationStatusScreen() {
                             <Detail label="Pilot Date" value={status.pilotActivatedAt} />
                             <Detail label="Activated By" value={status.activatedBy} />
                             <Detail label="Activated Date" value={status.activatedAt} />
+                            <Detail label="Credentials Issued By" value={status.credentialsIssuedBy} />
+                            <Detail label="Credentials Issued Date" value={status.credentialsIssuedAt} />
+                            {status.statusHistory ? <Text style={styles.auditHistory}>{normalizeOnboardingText(status.statusHistory)}</Text> : null}
                         </View>
                     ) : null}
                 </ScrollView>
@@ -78,4 +81,5 @@ const styles = StyleSheet.create({
     primaryButton: { height: 58, borderRadius: 16, backgroundColor: colors.premiumGold, alignItems: 'center', justifyContent: 'center', marginTop: spacing.lg, ...shadows.medium }, primaryButtonText: { color: colors.primaryNavy, fontWeight: '900', fontSize: 17 },
     schoolName: { color: colors.primaryNavy, fontSize: 19, fontWeight: '900', marginBottom: spacing.sm }, details: { color: colors.slateText, fontWeight: '700', lineHeight: 21, marginTop: 5 }, bold: { color: colors.primaryNavy, fontWeight: '900' }, message: { color: colors.primaryNavy, fontWeight: '800', lineHeight: 21, marginTop: spacing.sm }, sectionTitle: { color: colors.primaryNavy, fontWeight: '900', fontSize: 15, marginTop: spacing.lg },
     timelineGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: spacing.sm }, timelineChip: { color: colors.primaryNavy, fontWeight: '900', borderWidth: 1, borderColor: colors.cardGoldBorder, borderRadius: 14, paddingHorizontal: 10, paddingVertical: 8, backgroundColor: 'rgba(248,223,155,0.34)' }, timelineChipPending: { opacity: 0.45 },
+    auditHistory: { color: colors.slateText, fontWeight: '700', lineHeight: 20, marginTop: spacing.sm },
 });

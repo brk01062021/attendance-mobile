@@ -330,13 +330,6 @@ export default function AdminDashboardScreen() {
                             onPress={openRegisterChooser}
                         />
 
-                        <QuickAction
-                            emoji="🚀"
-                            title="Pilot Onboarding"
-                            subtitle="API validation"
-                            onPress={() => openRoute('/pilot-onboarding')}
-                        />
-
                     </View>
                 </View>
 
@@ -532,11 +525,6 @@ export default function AdminDashboardScreen() {
                             <MenuItem
                                 title="Import School Data"
                                 onPress={() => openRoute('/import-school-data')}
-                            />
-
-                            <MenuItem
-                                title="Pilot Onboarding"
-                                onPress={() => openRoute('/pilot-onboarding')}
                             />
 
                             <MenuSectionTitle title="Communication" />
