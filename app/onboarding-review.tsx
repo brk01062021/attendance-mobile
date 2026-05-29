@@ -81,7 +81,7 @@ export default function OnboardingReviewScreen() {
                 <View style={styles.metricGrid}>{metrics.map((metric) => <View key={metric.label} style={styles.metricCard}><Text style={styles.metricValue}>{metric.value}</Text><Text style={styles.metricLabel}>{metric.label}</Text></View>)}</View>
                 <TouchableOpacity style={styles.refreshButton} onPress={loadQueue} disabled={loading}><Text style={styles.refreshButtonText}>{loading ? 'Loading...' : 'Refresh Queue'}</Text></TouchableOpacity>
 
-                {items.length === 0 && !loading ? <View style={styles.card}><Text style={styles.emptyText}>No pending onboarding items found.</Text></View> : null}
+                {items.length === 0 && !loading ? <View style={styles.card}><Text style={styles.emptyText}>No onboarding items found.</Text></View> : null}
 
                 {items.map((item) => (
                     <View key={item.referenceId} style={styles.card}>
@@ -93,11 +93,12 @@ export default function OnboardingReviewScreen() {
                         <Text style={styles.details}>Size: {item.expectedStudents ?? '—'} students / {item.expectedTeachers ?? '—'} teachers</Text>
                         <TouchableOpacity style={styles.detailButton} onPress={() => setSelected(item)}><Text style={styles.detailButtonText}>View Details & Audit</Text></TouchableOpacity>
                         <View style={styles.statusGrid}>
-                            {ACTIONS.map((entry) => (
+                            {item.status === 'ACTIVE' ? <Text style={styles.activatedText}>Activated ✓</Text> : null}
+                            {ACTIONS.filter((entry) => canRunAction(item.status, entry.status)).map((entry) => (
                                 <TouchableOpacity
                                     key={entry.action}
-                                    style={[styles.statusButton, entry.status === 'ACTIVE' && styles.primaryStatusButton, !canRunAction(item.status, entry.status) && styles.disabledButton]}
-                                    disabled={activeReference === item.referenceId || !canRunAction(item.status, entry.status)}
+                                    style={[styles.statusButton, entry.status === 'ACTIVE' && styles.primaryStatusButton]}
+                                    disabled={activeReference === item.referenceId}
                                     onPress={() => changeStatus(item, entry.action, entry.label)}
                                 >
                                     <Text style={[styles.statusButtonText, entry.status === 'ACTIVE' && styles.primaryStatusButtonText]}>{entry.label}</Text>
@@ -162,6 +163,7 @@ const styles = StyleSheet.create({
     statusButton: { borderRadius: 14, borderWidth: 1, borderColor: colors.cardGoldBorder, paddingHorizontal: 12, paddingVertical: 10, backgroundColor: colors.white },
     primaryStatusButton: { backgroundColor: colors.premiumGold, borderColor: colors.premiumGold },
     disabledButton: { opacity: 0.38 },
+    activatedText: { color: colors.primaryNavy, fontWeight: '900', paddingVertical: 10 },
     statusButtonText: { color: colors.primaryNavy, fontWeight: '900' },
     primaryStatusButtonText: { color: colors.primaryNavy },
     modalOverlay: { flex: 1, backgroundColor: 'rgba(3, 8, 18, 0.76)' },

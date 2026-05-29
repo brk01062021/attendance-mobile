@@ -11,6 +11,7 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
+import { getOnboardingStatusBySchoolId, normalizeOnboardingText } from '../src/services/schoolRegistrationApi';
 import { normalizeSchoolId, saveSession } from '../src/services/sessionService';
 import { colors, shadows, spacing, typography } from '../src/theme';
 import { resolveSchoolName } from '../src/utils/schoolUtils';
@@ -25,12 +26,23 @@ export default function LoginScreen() {
 
     const roles: LoginRole[] = ['ADMIN', 'PRINCIPAL', 'TEACHER', 'PARENT', 'STUDENT'];
 
-    const handleLogin = () => {
+    const handleLogin = async () => {
         const cleanUsername = username.trim();
         const cleanSchoolId = normalizeSchoolId(schoolId);
 
         if (!cleanUsername || !password.trim()) {
             Alert.alert('Validation', 'Please enter username and password');
+            return;
+        }
+
+        try {
+            const status = await getOnboardingStatusBySchoolId(cleanSchoolId);
+            if (!status.loginEnabled) {
+                Alert.alert('Registration Not Active', normalizeOnboardingText(`${status.message}\n\n${status.nextStep}\n\nUse Check Registration Status with your reference ID.`));
+                return;
+            }
+        } catch (error: any) {
+            Alert.alert('Login Validation', error?.response?.data?.message || error?.message || 'Unable to validate school registration status.');
             return;
         }
 
@@ -219,6 +231,13 @@ export default function LoginScreen() {
                             >
                                 <Text style={styles.onboardingButtonText}>Request Pilot Demo</Text>
                             </TouchableOpacity>
+                            <TouchableOpacity
+                                style={[styles.onboardingButton, styles.statusCheckButton]}
+                                onPress={() => router.push('/check-registration-status')}
+                                activeOpacity={0.88}
+                            >
+                                <Text style={styles.onboardingButtonText}>Check Registration Status</Text>
+                            </TouchableOpacity>
                         </View>
 
                         <View style={styles.linksRow}>
@@ -365,8 +384,12 @@ const styles = StyleSheet.create({
         fontWeight: '900',
         fontSize: 18,
     },
+    statusCheckButton: {
+        width: '100%',
+    },
     onboardingActions: {
         flexDirection: 'row',
+        flexWrap: 'wrap',
         gap: 10,
         marginBottom: spacing.lg,
     },

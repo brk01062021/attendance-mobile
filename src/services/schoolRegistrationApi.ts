@@ -109,13 +109,18 @@ export async function getOnboardingStatus(referenceId: string) {
     return response.data;
 }
 
+export async function getOnboardingStatusBySchoolId(schoolId: string) {
+    const response = await api.get<OnboardingStatusResponse>('/school-registration/status/by-school-id', { params: { schoolId } });
+    return response.data;
+}
+
 export async function getOnboardingReviewQueue() {
     const response = await api.get<OnboardingReviewItem[]>('/school-registration/review-queue');
     return response.data;
 }
 
 export function normalizeOnboardingText(value?: string | null) {
-    return (value || '').replace(/\\n/g, '\n');
+    return (value || '').replace(/\\n/g, '\n').replace(/\r\n/g, '\n');
 }
 
 export async function updateOnboardingStatus(referenceId: string, status: OnboardingStatus, reviewNotes?: string) {
