@@ -84,13 +84,21 @@ export default function PrincipalHomeScreen() {
     }, []);
 
     const todayStats = useMemo(
-        () => ({
-            totalStudents: String(stats.totalStudents || 0),
-            present: String(stats.presentStudents || 0),
-            absent: String(stats.absentStudents || 0),
-            late: String(stats.lateStudents || 0),
-            attendancePercent: `${Math.round(stats.attendancePercentage || 0)}%`,
-        }),
+        () => {
+            const attendanceTaken =
+                Number(stats.presentStudents || 0) +
+                Number(stats.absentStudents || 0) +
+                Number(stats.lateStudents || 0) > 0;
+
+            return {
+                totalStudents: String(stats.totalStudents || 0),
+                present: String(stats.presentStudents || 0),
+                absent: String(stats.absentStudents || 0),
+                late: String(stats.lateStudents || 0),
+                attendanceLabel: attendanceTaken ? 'Attendance Percentage' : 'Attendance Pending',
+                attendancePercent: attendanceTaken ? `${Math.round(stats.attendancePercentage || 0)}%` : '--%',
+            };
+        },
         [stats]
     );
 
@@ -216,7 +224,7 @@ export default function PrincipalHomeScreen() {
 
                             <View style={styles.percentageBox}>
                                 <Text style={styles.percentageLabel}>
-                                    Attendance Percentage
+                                    {todayStats.attendanceLabel}
                                 </Text>
 
                                 <Text style={styles.percentageValue}>
@@ -226,24 +234,6 @@ export default function PrincipalHomeScreen() {
                         </>
                     )}
                 </View>
-
-                <TouchableOpacity
-                    style={styles.primaryAction}
-                    onPress={() => openRoute('/principal-dashboard')}
-                    activeOpacity={0.9}
-                >
-                    <View style={styles.primaryActionTextBox}>
-                        <Text style={styles.primaryActionTitle}>
-                            School Intelligence
-                        </Text>
-
-                        <Text style={styles.primaryActionSubtitle}>
-                            Open executive intelligence dashboard
-                        </Text>
-                    </View>
-
-                    <Text style={styles.primaryActionArrow}>›</Text>
-                </TouchableOpacity>
 
                 <View style={styles.quickActionsCard}>
                     <Text style={styles.sectionEyebrow}>Quick Actions</Text>

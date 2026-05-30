@@ -156,13 +156,21 @@ export default function AdminDashboardScreen() {
         loadAdminAnalyticsBreakdown();
     }, []);
 
-    const todayStats = useMemo(() => ({
-        totalStudents: String(dashboardStats.totalStudents || 0),
-        present: String(dashboardStats.presentStudents || 0),
-        absent: String(dashboardStats.absentStudents || 0),
-        late: String(dashboardStats.lateStudents || 0),
-        attendancePercent: `${Math.round(dashboardStats.attendancePercentage || 0)}%`,
-    }), [dashboardStats]);
+    const todayStats = useMemo(() => {
+        const attendanceTaken =
+            Number(dashboardStats.presentStudents || 0) +
+            Number(dashboardStats.absentStudents || 0) +
+            Number(dashboardStats.lateStudents || 0) > 0;
+
+        return {
+            totalStudents: String(dashboardStats.totalStudents || 0),
+            present: String(dashboardStats.presentStudents || 0),
+            absent: String(dashboardStats.absentStudents || 0),
+            late: String(dashboardStats.lateStudents || 0),
+            attendanceLabel: attendanceTaken ? 'Attendance Percentage' : 'Attendance Pending',
+            attendancePercent: attendanceTaken ? `${Math.round(dashboardStats.attendancePercentage || 0)}%` : '--%',
+        };
+    }, [dashboardStats]);
 
     const openRoute = (path: string, params: Record<string, string> = {}) => {
         setMenuVisible(false);
@@ -260,7 +268,7 @@ export default function AdminDashboardScreen() {
                             </View>
 
                             <View style={styles.percentageBox}>
-                                <Text style={styles.percentageLabel}>Attendance Percentage</Text>
+                                <Text style={styles.percentageLabel}>{todayStats.attendanceLabel}</Text>
                                 <Text style={styles.percentageValue}>{todayStats.attendancePercent}</Text>
                             </View>
                         </>
