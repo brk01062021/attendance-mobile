@@ -7,6 +7,8 @@ export type VidyaSetuSession = {
   schoolId: string;
   schoolName: string;
   token?: string;
+  username?: string;
+  forcePasswordChange?: boolean;
   teacherId?: string | number | null;
   studentId?: string | number | null;
 };
@@ -19,7 +21,7 @@ export function normalizeSchoolId(value?: string) {
 }
 
 export function saveSession(session: VidyaSetuSession) {
-  activeSession = { ...session, schoolId: normalizeSchoolId(session.schoolId) };
+  activeSession = { ...session, schoolId: normalizeSchoolId(session.schoolId), forcePasswordChange: Boolean(session.forcePasswordChange) };
   return activeSession;
 }
 

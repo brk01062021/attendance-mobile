@@ -11,10 +11,10 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
+import { authResponseToSession, loginWithTenant } from '../src/services/authApi';
 import { getOnboardingStatusBySchoolId, normalizeOnboardingText } from '../src/services/schoolRegistrationApi';
 import { normalizeSchoolId, saveSession } from '../src/services/sessionService';
 import { colors, shadows, spacing, typography } from '../src/theme';
-import { resolveSchoolName } from '../src/utils/schoolUtils';
 
 type LoginRole = 'ADMIN' | 'PRINCIPAL' | 'TEACHER' | 'PARENT' | 'STUDENT';
 
@@ -26,11 +26,36 @@ export default function LoginScreen() {
 
     const roles: LoginRole[] = ['ADMIN', 'PRINCIPAL', 'TEACHER', 'PARENT', 'STUDENT'];
 
+    const routeAfterLogin = (role: LoginRole, cleanUsername: string, cleanSchoolId: string, userId: string, teacherId?: string | number | null, studentId?: string | number | null) => {
+        if (role === 'ADMIN') {
+            router.replace({ pathname: '/admin-dashboard', params: { role, adminName: cleanUsername || 'Admin', userId, schoolId: cleanSchoolId } } as any);
+            return;
+        }
+
+        if (role === 'PRINCIPAL') {
+            router.replace({ pathname: '/principal-home', params: { role, principalName: cleanUsername || 'Principal', userId, schoolId: cleanSchoolId } } as any);
+            return;
+        }
+
+        if (role === 'TEACHER') {
+            router.replace({ pathname: '/teacher-dashboard', params: { role, teacherId: String(teacherId || userId || '1'), teacherName: cleanUsername, schoolId: cleanSchoolId } } as any);
+            return;
+        }
+
+        if (role === 'PARENT') {
+            router.replace({ pathname: '/parent-dashboard', params: { role, parentId: userId || '1', parentName: cleanUsername, studentId: String(studentId || '1'), studentName: 'Demo Student', schoolId: cleanSchoolId } } as any);
+            return;
+        }
+
+        router.replace({ pathname: '/student-dashboard', params: { role, studentId: String(studentId || userId || '1'), studentName: cleanUsername, schoolId: cleanSchoolId } } as any);
+    };
+
     const handleLogin = async () => {
         const cleanUsername = username.trim();
         const cleanSchoolId = normalizeSchoolId(schoolId);
+        const cleanPassword = password.trim();
 
-        if (!cleanUsername || !password.trim()) {
+        if (!cleanUsername || !cleanPassword) {
             Alert.alert('Validation', 'Please enter username and password');
             return;
         }
@@ -38,82 +63,34 @@ export default function LoginScreen() {
         try {
             const status = await getOnboardingStatusBySchoolId(cleanSchoolId);
             if (!status.loginEnabled) {
-                Alert.alert('Registration Not Active', normalizeOnboardingText(`${status.message}\n\n${status.nextStep}\n\nUse Check Registration Status with your reference ID.`));
+                Alert.alert('Registration Not Active', normalizeOnboardingText(`${status.message}
+
+${status.nextStep}
+
+Use Check Registration Status with your reference ID.`));
                 return;
             }
+
+            const authResponse = await loginWithTenant({ username: cleanUsername, password: cleanPassword, role: selectedRole, schoolId: cleanSchoolId });
+            const session = authResponseToSession(authResponse, selectedRole, cleanUsername, cleanSchoolId);
+            saveSession(session);
+
+            if (session.forcePasswordChange) {
+                router.replace({
+                    pathname: '/change-password',
+                    params: {
+                        username: cleanUsername,
+                        schoolId: cleanSchoolId,
+                        role: session.role,
+                        currentPassword: cleanPassword,
+                    },
+                } as any);
+                return;
+            }
+
+            routeAfterLogin(session.role, session.displayName || cleanUsername, session.schoolId, session.userId, session.teacherId, session.studentId);
         } catch (error: any) {
-            Alert.alert('Login Validation', error?.response?.data?.message || error?.message || 'Unable to validate school registration status.');
-            return;
-        }
-
-        const boundTeacherId = selectedRole === 'TEACHER' ? '1' : undefined;
-        const boundStudentId = selectedRole === 'STUDENT' ? '1' : undefined;
-        saveSession({ role: selectedRole, userId: '1', displayName: cleanUsername, schoolId: cleanSchoolId, schoolName: resolveSchoolName(cleanSchoolId), teacherId: boundTeacherId, studentId: boundStudentId });
-
-        if (selectedRole === 'ADMIN') {
-            router.replace({
-                pathname: '/admin-dashboard',
-                params: {
-                    role: selectedRole,
-                    adminName: cleanUsername || 'Admin',
-                    userId: '1',
-                    schoolId: cleanSchoolId,
-                },
-            } as any);
-            return;
-        }
-
-        if (selectedRole === 'PRINCIPAL') {
-            router.replace({
-                pathname: '/principal-home',
-                params: {
-                    role: selectedRole,
-                    principalName: cleanUsername || 'Principal',
-                    userId: '1',
-                    schoolId: cleanSchoolId,
-                },
-            } as any);
-            return;
-        }
-
-        if (selectedRole === 'TEACHER') {
-            router.replace({
-                pathname: '/teacher-dashboard',
-                params: {
-                    role: selectedRole,
-                    teacherId: '1',
-                    teacherName: cleanUsername,
-                    schoolId: cleanSchoolId,
-                },
-            } as any);
-            return;
-        }
-
-        if (selectedRole === 'PARENT') {
-            router.replace({
-                pathname: '/parent-dashboard',
-                params: {
-                    role: selectedRole,
-                    parentId: '1',
-                    parentName: cleanUsername,
-                    studentId: '1',
-                    studentName: 'Demo Student',
-                    schoolId: cleanSchoolId,
-                },
-            } as any);
-            return;
-        }
-
-        if (selectedRole === 'STUDENT') {
-            router.replace({
-                pathname: '/student-dashboard',
-                params: {
-                    role: selectedRole,
-                    studentId: '1',
-                    studentName: cleanUsername,
-                    schoolId: cleanSchoolId,
-                },
-            } as any);
+            Alert.alert('Login Failed', error?.response?.data?.message || error?.response?.data || error?.message || 'Invalid username, password, or school ID');
         }
     };
 
