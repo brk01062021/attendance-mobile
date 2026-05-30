@@ -72,6 +72,9 @@ export const API_ENDPOINTS = {
     notificationUnreadCount: `${API_BASE_URL}/notifications/unread-count`,
     pilotOnboardingHealth: `${API_BASE_URL}/pilot-onboarding/health`,
     pilotOnboardingSummary: `${API_BASE_URL}/pilot-onboarding/summary`,
+    workspaceSetupStatus: `${API_BASE_URL}/workspace-setup/status`,
+    workspaceSetupStep: `${API_BASE_URL}/workspace-setup`,
+    workspaceImportLock: `${API_BASE_URL}/workspace-setup/import-lock`,
 
     teacherLeavePreview: `${API_BASE_URL}/teacher-leave/preview-replacements`,
     teacherLeaveSubmit: `${API_BASE_URL}/teacher-leave/submit`,

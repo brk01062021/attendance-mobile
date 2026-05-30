@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
     ActivityIndicator,
     ImageBackground,
@@ -11,19 +11,31 @@ import {
 } from 'react-native';
 import { day28SampleSheets, validateImportPreview, type ImportPreviewResponse } from '../src/services/importValidationApi';
 import { getSession } from '../src/services/sessionService';
+import { loadWorkspaceImportLock, type WorkspaceChecklist } from '../src/services/workspaceSetupApi';
 import { colors, shadows, spacing } from '../src/theme';
 
 export default function ImportSchoolDataScreen() {
     const [loading, setLoading] = useState(false);
     const [preview, setPreview] = useState<ImportPreviewResponse | null>(null);
     const [error, setError] = useState<string | null>(null);
+    const [lockStatus, setLockStatus] = useState<WorkspaceChecklist | null>(null);
     const session = getSession();
+
+    useEffect(() => {
+        loadWorkspaceImportLock()
+            .then(setLockStatus)
+            .catch((lockError: any) => setError(lockError?.response?.data?.message || lockError?.message || 'Unable to verify workspace import lock.'));
+    }, []);
 
     const totalRows = useMemo(() => Object.values(preview?.rowCounts || {}).reduce((sum, count) => sum + count, 0), [preview]);
     const errors = preview?.issues?.filter((issue) => issue.severity === 'ERROR') || [];
     const warnings = preview?.issues?.filter((issue) => issue.severity === 'WARNING') || [];
 
     const runPreview = async () => {
+        if (lockStatus?.importLocked) {
+            setError(lockStatus.importLockMessage);
+            return;
+        }
         try {
             setLoading(true);
             setError(null);
@@ -59,7 +71,18 @@ export default function ImportSchoolDataScreen() {
                     <Text style={styles.sectionTitle}>{session?.schoolId || 'DEMO'} · {session?.role || 'ADMIN'}</Text>
                     <Text style={styles.bodyText}>Validate workbook sheets, required tabs, row counts, role permission, and school_id isolation before final import processing.</Text>
 
-                    <TouchableOpacity style={styles.primaryButton} onPress={runPreview} activeOpacity={0.88} disabled={loading}>
+                    {lockStatus?.importLocked ? (
+                        <View style={styles.previewBox}>
+                            <Text style={styles.previewStatus}>🔒 Import Locked</Text>
+                            <Text style={styles.previewSummary}>{lockStatus.importLockMessage}</Text>
+                            <Text style={styles.previewSummary}>{lockStatus.completedSteps}/{lockStatus.totalSteps} workspace setup steps complete.</Text>
+                            <TouchableOpacity style={styles.primaryButton} onPress={() => router.push('/workspace-setup')} activeOpacity={0.88}>
+                                <Text style={styles.primaryButtonText}>Open Workspace Initialization</Text>
+                            </TouchableOpacity>
+                        </View>
+                    ) : null}
+
+                    <TouchableOpacity style={[styles.primaryButton, lockStatus?.importLocked && { opacity: 0.45 }]} onPress={runPreview} activeOpacity={0.88} disabled={loading}>
                         {loading ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.primaryButtonText}>Run Preview Validation</Text>}
                     </TouchableOpacity>
 

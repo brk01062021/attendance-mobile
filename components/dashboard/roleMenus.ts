@@ -21,7 +21,8 @@ export const roleMenus: Record<DashboardRole, DashboardMenuConfig[]> = {
         { icon: '🗂️', label: 'Timetable Batch Center', route: '/timetable-batch-center?role=ADMIN&sourceRole=admin', description: 'Use, publish, export batches' },
         { icon: '🔒', label: 'Timetable Operations', route: '/timetable-operations?role=ADMIN&sourceRole=admin', description: 'Publish lock, exports, live views' },
         { icon: '📝', label: 'Register Here', action: 'register', description: 'Teacher, student, parent' },
-        { icon: '📥', label: 'Import School Data', route: '/import-school-data?sourceRole=admin&role=ADMIN', description: 'Excel onboarding engine' },
+        { icon: '🧭', label: 'Workspace Initialization', route: '/workspace-setup?sourceRole=admin&role=ADMIN', description: 'Setup progress and import unlock' },
+        { icon: '📥', label: 'Import School Data', route: '/import-school-data?sourceRole=admin&role=ADMIN', description: 'Locked until setup is complete' },
         { icon: '📣', label: 'Create School Notice', route: '/create-school-notice?sourceRole=admin&role=ADMIN', description: 'Announcements and alerts' },
     ],
     PRINCIPAL: [
@@ -36,7 +37,8 @@ export const roleMenus: Record<DashboardRole, DashboardMenuConfig[]> = {
         { icon: '🗂️', label: 'Timetable Batch Center', route: '/timetable-batch-center?role=PRINCIPAL&sourceRole=principal', description: 'Use, publish, export batches' },
         { icon: '🔒', label: 'Timetable Operations', route: '/timetable-operations?role=PRINCIPAL&sourceRole=principal', description: 'Publish lock, exports, live views' },
         { icon: '📝', label: 'Register Here', action: 'register', description: 'Teacher, student, parent' },
-        { icon: '📥', label: 'Import School Data', route: '/import-school-data?sourceRole=principal&role=PRINCIPAL', description: 'Excel onboarding engine' },
+        { icon: '🧭', label: 'Workspace Initialization', route: '/workspace-setup?sourceRole=principal&role=PRINCIPAL', description: 'Setup progress and import unlock' },
+        { icon: '📥', label: 'Import School Data', route: '/import-school-data?sourceRole=principal&role=PRINCIPAL', description: 'Locked until setup is complete' },
         { icon: '📣', label: 'Create School Notice', route: '/create-school-notice?sourceRole=principal&role=PRINCIPAL', description: 'Announcements and alerts' },
     ],
     TEACHER: [
