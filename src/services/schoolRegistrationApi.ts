@@ -111,6 +111,13 @@ export type ActivationCredential = {
     created: boolean;
 };
 
+export type WorkspaceProvisioningStep = {
+    key: string;
+    label: string;
+    status: string;
+    detail: string;
+};
+
 export type ActivationPackage = {
     referenceId: string;
     schoolId: string;
@@ -123,6 +130,9 @@ export type ActivationPackage = {
     nextStep: string;
     loginEnabled: boolean;
     credentials: ActivationCredential[];
+    workspaceSteps?: WorkspaceProvisioningStep[];
+    activationChecklist?: string[];
+    importPreparationChecklist?: string[];
     statusSummary: OnboardingStatusResponse;
 };
 

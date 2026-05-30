@@ -1,13 +1,18 @@
-import { router } from 'expo-router';
-import React, { useState } from 'react';
+import { router, useLocalSearchParams } from 'expo-router';
+import React, { useEffect, useState } from 'react';
 import { Alert, ImageBackground, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { ActivationPackage, generateActivationPackage, normalizeOnboardingText, onboardingStatusLabel, statusTimeline } from '../src/services/schoolRegistrationApi';
 import { colors, shadows, spacing } from '../src/theme';
 
 export default function ActivationPackageScreen() {
+    const params = useLocalSearchParams<{ referenceId?: string }>();
     const [referenceId, setReferenceId] = useState('');
     const [pkg, setPkg] = useState<ActivationPackage | null>(null);
     const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+        if (params.referenceId) setReferenceId(String(params.referenceId).toUpperCase());
+    }, [params.referenceId]);
 
     const onGenerate = async () => {
         const clean = referenceId.trim().toUpperCase();
@@ -22,9 +27,9 @@ export default function ActivationPackageScreen() {
         <ImageBackground source={require('../assets/branding/splash-dark.png')} style={styles.background} imageStyle={styles.bgImage}>
             <ScrollView contentContainerStyle={styles.container}>
                 <View style={styles.headerRow}><TouchableOpacity style={styles.navButton} onPress={() => router.back()}><Text style={styles.navButtonText}>‹</Text></TouchableOpacity><TouchableOpacity style={styles.homeButton} onPress={() => router.replace('/onboarding-review')}><Text style={styles.homeButtonText}>Queue</Text></TouchableOpacity></View>
-                <Text style={styles.eyebrow}>ACTIVE TENANT CREDENTIALS</Text>
+                <Text style={styles.eyebrow}>SCHOOL ACTIVATION & WORKSPACE PROVISIONING</Text>
                 <Text style={styles.title}>Activation Package</Text>
-                <Text style={styles.subtitle}>Generate first Admin and Principal login credentials after tenant activation.</Text>
+                <Text style={styles.subtitle}>Generate first Admin and Principal login credentials after activation, then use this as the workspace handover checklist.</Text>
                 <View style={styles.card}>
                     <Text style={styles.label}>Reference ID</Text>
                     <TextInput style={styles.input} placeholder="REG-202605290012-D74FC5" placeholderTextColor={colors.mutedText} value={referenceId} onChangeText={(value) => setReferenceId(value.toUpperCase())} autoCapitalize="characters" />
@@ -40,6 +45,7 @@ export default function ActivationPackageScreen() {
                         <Text style={styles.sectionTitle}>Activation Summary</Text>
                         <Text style={styles.message}>{normalizeOnboardingText(pkg.message)}</Text>
                         <Text style={styles.message}>{normalizeOnboardingText(pkg.nextStep)}</Text>
+                        {pkg.workspaceSteps?.length ? (<><Text style={styles.sectionTitle}>Workspace Provisioning</Text>{pkg.workspaceSteps.map((step) => (<View key={step.key} style={styles.credentialBox}><Text style={styles.credentialRole}>{step.status} • {step.label}</Text><Text style={styles.details}>{step.detail}</Text></View>))}</>) : null}
                         <Text style={styles.sectionTitle}>Generated Credentials</Text>
                         {pkg.credentials.map((credential) => (
                             <View key={credential.role} style={styles.credentialBox}>
@@ -49,6 +55,8 @@ export default function ActivationPackageScreen() {
                                 <Text style={styles.details}>Account: {credential.created ? 'Created now' : 'Already available'}</Text>
                             </View>
                         ))}
+                        {pkg.activationChecklist?.length ? (<><Text style={styles.sectionTitle}>Activation Handover Checklist</Text>{pkg.activationChecklist.map((item) => <Text key={item} style={styles.details}>✓ {item}</Text>)}</>) : null}
+                        {pkg.importPreparationChecklist?.length ? (<><Text style={styles.sectionTitle}>Excel Import Preparation</Text>{pkg.importPreparationChecklist.map((item) => <Text key={item} style={styles.details}>• {item}</Text>)}</>) : null}
                         <Text style={styles.sectionTitle}>Status Timeline</Text>
                         <View style={styles.timelineGrid}>{statusTimeline(pkg.status).map((step) => <Text key={step.key} style={[styles.timelineChip, !step.done && styles.timelineChipPending]}>{step.done ? '✓ ' : '○ '}{step.label}</Text>)}</View>
                         <Text style={styles.sectionTitle}>Audit History</Text>

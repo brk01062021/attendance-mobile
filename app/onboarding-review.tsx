@@ -93,7 +93,7 @@ export default function OnboardingReviewScreen() {
                         <Text style={styles.details}>Size: {item.expectedStudents ?? '—'} students / {item.expectedTeachers ?? '—'} teachers</Text>
                         <TouchableOpacity style={styles.detailButton} onPress={() => setSelected(item)}><Text style={styles.detailButtonText}>View Details & Audit</Text></TouchableOpacity>
                         <View style={styles.statusGrid}>
-                            {item.status === 'ACTIVE' ? <TouchableOpacity style={styles.statusButton} onPress={() => router.push('/activation-package')}><Text style={styles.statusButtonText}>Manage Activation Package</Text></TouchableOpacity> : null}
+                            {item.status === 'ACTIVE' ? <TouchableOpacity style={styles.statusButton} onPress={() => router.push({ pathname: '/activation-package', params: { referenceId: item.referenceId } })}><Text style={styles.statusButtonText}>Manage Activation Package</Text></TouchableOpacity> : null}
                             {ACTIONS.filter((entry) => canRunAction(item.status, entry.status)).map((entry) => (
                                 <TouchableOpacity
                                     key={entry.action}
