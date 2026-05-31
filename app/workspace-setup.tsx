@@ -1,9 +1,77 @@
 import { router } from 'expo-router';
-import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, ImageBackground, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import React, { useEffect, useMemo, useState } from 'react';
+import {
+  ActivityIndicator,
+  ImageBackground,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { getSession } from '../src/services/sessionService';
-import { loadWorkspaceSetup, saveWorkspaceStep, type WorkspaceChecklist } from '../src/services/workspaceSetupApi';
+import { loadWorkspaceSetup, saveWorkspaceStep, type WorkspaceChecklist, type WorkspaceStep } from '../src/services/workspaceSetupApi';
 import { colors, shadows, spacing } from '../src/theme';
+
+type WorkingDayOption = 'MONDAY_FRIDAY' | 'MONDAY_SATURDAY' | 'CUSTOM';
+
+const PRODUCTION_STEP_KEYS = ['SCHOOL_PROFILE', 'ACADEMIC_YEAR', 'WORKING_DAYS', 'SCHOOL_TIMINGS'];
+const DAY_OPTIONS = [
+  { key: 'MONDAY', short: 'MON', label: 'Monday' },
+  { key: 'TUESDAY', short: 'TUE', label: 'Tuesday' },
+  { key: 'WEDNESDAY', short: 'WED', label: 'Wednesday' },
+  { key: 'THURSDAY', short: 'THU', label: 'Thursday' },
+  { key: 'FRIDAY', short: 'FRI', label: 'Friday' },
+  { key: 'SATURDAY', short: 'SAT', label: 'Saturday' },
+  { key: 'SUNDAY', short: 'SUN', label: 'Sunday' },
+];
+const PERIOD_OPTIONS = ['5', '6', '7', '8', '9', '10'];
+
+function normalizeDays(raw?: string) {
+  return (raw || '')
+    .split(',')
+    .map((day) => day.trim().toUpperCase())
+    .filter(Boolean)
+    .map((day) => {
+      const found = DAY_OPTIONS.find((option) => option.key === day || option.short === day);
+      return found?.key || day;
+    });
+}
+
+function serializeDays(days: string[]) {
+  return DAY_OPTIONS.filter((option) => days.includes(option.key)).map((option) => option.key).join(',');
+}
+
+function labelDays(days: string[]) {
+  const normalized = normalizeDays(days.join(','));
+  if (normalized.join(',') === 'MONDAY,TUESDAY,WEDNESDAY,THURSDAY,FRIDAY') return 'Monday – Friday';
+  if (normalized.join(',') === 'MONDAY,TUESDAY,WEDNESDAY,THURSDAY,FRIDAY,SATURDAY') return 'Monday – Saturday';
+  return DAY_OPTIONS.filter((option) => normalized.includes(option.key)).map((option) => option.label).join(', ') || 'No days selected';
+}
+
+function optionFromDays(days: string[]): WorkingDayOption {
+  const serialized = normalizeDays(days.join(',')).join(',');
+  if (serialized === 'MONDAY,TUESDAY,WEDNESDAY,THURSDAY,FRIDAY') return 'MONDAY_FRIDAY';
+  if (serialized === 'MONDAY,TUESDAY,WEDNESDAY,THURSDAY,FRIDAY,SATURDAY') return 'MONDAY_SATURDAY';
+  return 'CUSTOM';
+}
+
+function buildProductionChecklist(checklist: WorkspaceChecklist | null) {
+  const allSteps = checklist?.steps || [];
+  const fallbackSteps: WorkspaceStep[] = [
+    { key: 'SCHOOL_PROFILE', label: 'School Profile', completed: false, requiredBeforeImport: true },
+    { key: 'ACADEMIC_YEAR', label: 'Academic Year', completed: false, requiredBeforeImport: true },
+    { key: 'WORKING_DAYS', label: 'Working Days', completed: false, requiredBeforeImport: true },
+    { key: 'SCHOOL_TIMINGS', label: 'School Timings', completed: false, requiredBeforeImport: true },
+  ];
+  const visibleSteps = fallbackSteps.map((fallback) => allSteps.find((step) => step.key === fallback.key) || fallback);
+  const completedSteps = visibleSteps.filter((step) => step.completed).length;
+  const totalSteps = visibleSteps.length;
+  const progressPercent = Math.round((completedSteps / totalSteps) * 100);
+  const importLocked = completedSteps < totalSteps;
+  return { visibleSteps, completedSteps, totalSteps, progressPercent, importLocked };
+}
 
 export default function WorkspaceSetupScreen() {
   const session = getSession();
@@ -13,10 +81,14 @@ export default function WorkspaceSetupScreen() {
   const [message, setMessage] = useState('');
   const [schoolName, setSchoolName] = useState(session?.schoolName || '');
   const [academicYear, setAcademicYear] = useState('2026-2027');
-  const [workingDays, setWorkingDays] = useState('MONDAY,TUESDAY,WEDNESDAY,THURSDAY,FRIDAY,SATURDAY');
+  const [workingDayOption, setWorkingDayOption] = useState<WorkingDayOption>('MONDAY_SATURDAY');
+  const [selectedDays, setSelectedDays] = useState<string[]>(['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY']);
   const [startTime, setStartTime] = useState('09:00');
   const [endTime, setEndTime] = useState('16:00');
   const [periodsPerDay, setPeriodsPerDay] = useState('7');
+
+  const productionChecklist = useMemo(() => buildProductionChecklist(checklist), [checklist]);
+  const canManage = session?.role === 'ADMIN' || session?.role === 'PRINCIPAL';
 
   useEffect(() => {
     loadWorkspaceSetup()
@@ -24,7 +96,9 @@ export default function WorkspaceSetupScreen() {
         setChecklist(data);
         setSchoolName(data.schoolName || session?.schoolName || '');
         setAcademicYear(data.academicYear || '2026-2027');
-        setWorkingDays(data.workingDays || 'MONDAY,TUESDAY,WEDNESDAY,THURSDAY,FRIDAY,SATURDAY');
+        const hydratedDays = normalizeDays(data.workingDays || 'MONDAY,TUESDAY,WEDNESDAY,THURSDAY,FRIDAY,SATURDAY');
+        setSelectedDays(hydratedDays);
+        setWorkingDayOption(optionFromDays(hydratedDays));
         setStartTime(data.schoolStartTime || '09:00');
         setEndTime(data.schoolEndTime || '16:00');
         setPeriodsPerDay(String(data.periodsPerDay || 7));
@@ -32,6 +106,24 @@ export default function WorkspaceSetupScreen() {
       .catch((error: any) => setMessage(error?.response?.data?.message || error?.message || 'Unable to load workspace setup.'))
       .finally(() => setLoading(false));
   }, []);
+
+  function chooseWorkingDayOption(option: WorkingDayOption) {
+    setWorkingDayOption(option);
+    if (option === 'MONDAY_FRIDAY') {
+      setSelectedDays(['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY']);
+    }
+    if (option === 'MONDAY_SATURDAY') {
+      setSelectedDays(['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY']);
+    }
+  }
+
+  function toggleCustomDay(dayKey: string) {
+    setWorkingDayOption('CUSTOM');
+    setSelectedDays((current) => {
+      if (current.includes(dayKey)) return current.filter((day) => day !== dayKey);
+      return [...current, dayKey];
+    });
+  }
 
   async function save(stepKey: string, body: Record<string, unknown>) {
     try {
@@ -47,17 +139,26 @@ export default function WorkspaceSetupScreen() {
     }
   }
 
-  const canManage = session?.role === 'ADMIN' || session?.role === 'PRINCIPAL';
+  const saveWorkingDays = () => {
+    if (!selectedDays.length) {
+      setMessage('Please select at least one working day.');
+      return;
+    }
+    save('WORKING_DAYS', { workingDays: serializeDays(selectedDays) });
+  };
 
   return (
     <ImageBackground source={require('../assets/branding/splash-gold.png')} style={styles.background} resizeMode="cover">
       <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
-        <TouchableOpacity style={styles.backButton} onPress={() => router.back()} activeOpacity={0.85}><Text style={styles.backButtonText}>‹</Text></TouchableOpacity>
+        <TouchableOpacity style={styles.backButton} onPress={() => router.back()} activeOpacity={0.85}>
+          <Text style={styles.backButtonText}>‹</Text>
+        </TouchableOpacity>
+
         <View style={styles.heroCard}>
-          <Text style={styles.eyebrow}>Workspace Initialization</Text>
-          <Text style={styles.title}>{checklist ? `${checklist.completedSteps}/${checklist.totalSteps} Complete` : 'Setup Progress'}</Text>
-          <Text style={styles.subtitle}>{checklist?.importLocked ? 'Import School Data is locked until setup is completed.' : 'Import School Data is unlocked.'}</Text>
-          <View style={styles.progressTrack}><View style={[styles.progressFill, { width: `${checklist?.progressPercent || 0}%` }]} /></View>
+          <Text style={styles.eyebrow}>School Workspace Setup</Text>
+          <Text style={styles.title}>{productionChecklist.completedSteps}/{productionChecklist.totalSteps} Complete</Text>
+          <Text style={styles.subtitle}>{productionChecklist.importLocked ? 'Complete the required school setup before importing school data.' : 'Import School Data is unlocked.'}</Text>
+          <View style={styles.progressTrack}><View style={[styles.progressFill, { width: `${productionChecklist.progressPercent}%` }]} /></View>
         </View>
 
         {!canManage ? <Text style={styles.errorText}>Workspace setup is available only for Admin and Principal.</Text> : null}
@@ -66,11 +167,11 @@ export default function WorkspaceSetupScreen() {
 
         {canManage && checklist ? (
           <View style={styles.card}>
-            <Text style={styles.sectionTitle}>Required setup order</Text>
-            {checklist.steps.map((step, index) => (
+            <Text style={styles.sectionTitle}>Required setup before import</Text>
+            {productionChecklist.visibleSteps.map((step, index) => (
               <View key={step.key} style={[styles.stepRow, step.completed && styles.stepDone]}>
                 <Text style={styles.stepText}>{index + 1}. {step.label}</Text>
-                <Text style={styles.stepStatus}>{step.completed ? 'Done' : 'Pending'}</Text>
+                <Text style={styles.stepStatus}>{step.completed ? 'Completed' : 'Pending'}</Text>
               </View>
             ))}
 
@@ -80,17 +181,41 @@ export default function WorkspaceSetupScreen() {
             <SetupInput label="Academic Year" value={academicYear} onChangeText={setAcademicYear} />
             <PrimaryButton title="Save Academic Year" loading={saving === 'ACADEMIC_YEAR'} onPress={() => save('ACADEMIC_YEAR', { academicYear, academicYearStartDate: '2026-06-01', academicYearEndDate: '2027-04-30' })} />
 
-            <SetupInput label="Working Days" value={workingDays} onChangeText={setWorkingDays} />
-            <PrimaryButton title="Save Working Days" loading={saving === 'WORKING_DAYS'} onPress={() => save('WORKING_DAYS', { workingDays })} />
+            <Text style={styles.inputLabel}>Working Days</Text>
+            <View style={styles.optionRow}>
+              <ChoiceChip title="Monday–Friday" selected={workingDayOption === 'MONDAY_FRIDAY'} onPress={() => chooseWorkingDayOption('MONDAY_FRIDAY')} />
+              <ChoiceChip title="Monday–Saturday" selected={workingDayOption === 'MONDAY_SATURDAY'} onPress={() => chooseWorkingDayOption('MONDAY_SATURDAY')} />
+              <ChoiceChip title="Custom" selected={workingDayOption === 'CUSTOM'} onPress={() => chooseWorkingDayOption('CUSTOM')} />
+            </View>
+            {workingDayOption === 'CUSTOM' ? (
+              <View style={styles.customDaysBox}>
+                <Text style={styles.helperText}>Select working days</Text>
+                {DAY_OPTIONS.map((day) => (
+                  <TouchableOpacity key={day.key} style={styles.checkboxRow} onPress={() => toggleCustomDay(day.key)} activeOpacity={0.85}>
+                    <Text style={styles.checkbox}>{selectedDays.includes(day.key) ? '☑' : '☐'}</Text>
+                    <Text style={styles.checkboxLabel}>{day.label}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            ) : null}
+            <Text style={styles.selectedText}>Selected: {labelDays(selectedDays)}</Text>
+            <PrimaryButton title="Save Working Days" loading={saving === 'WORKING_DAYS'} onPress={saveWorkingDays} />
 
-            <SetupInput label="Start Time" value={startTime} onChangeText={setStartTime} />
-            <SetupInput label="End Time" value={endTime} onChangeText={setEndTime} />
-            <SetupInput label="Periods Per Day" value={periodsPerDay} onChangeText={setPeriodsPerDay} keyboardType="number-pad" />
+            <SetupInput label="School Start Time" value={startTime} onChangeText={setStartTime} />
+            <SetupInput label="School End Time" value={endTime} onChangeText={setEndTime} />
+            <Text style={styles.inputLabel}>Periods Per Day</Text>
+            <View style={styles.optionRow}>
+              {PERIOD_OPTIONS.map((period) => (
+                <ChoiceChip key={period} title={period} selected={periodsPerDay === period} onPress={() => setPeriodsPerDay(period)} compact />
+              ))}
+            </View>
+            <Text style={styles.helperText}>These settings are used for timetable generation and attendance scheduling.</Text>
             <PrimaryButton title="Save School Timings" loading={saving === 'SCHOOL_TIMINGS'} onPress={() => save('SCHOOL_TIMINGS', { schoolStartTime: startTime, schoolEndTime: endTime, periodsPerDay: Number(periodsPerDay) })} />
 
-            {['CLASSES', 'SECTIONS', 'TEACHERS', 'SUBJECTS', 'HOLIDAY_CALENDAR'].map((step) => (
-              <PrimaryButton key={step} title={`Mark ${step.replace('_', ' ')} Complete`} loading={saving === step} onPress={() => save(step, {})} />
-            ))}
+            <View style={styles.importInfoBox}>
+              <Text style={styles.importInfoTitle}>Next: Import School Data</Text>
+              <Text style={styles.importInfoText}>Classes, sections, teachers, subjects, teacher assignments, students, parents, holiday calendar, and academic rules will be validated through the Excel import engine.</Text>
+            </View>
           </View>
         ) : null}
       </ScrollView>
@@ -100,6 +225,14 @@ export default function WorkspaceSetupScreen() {
 
 function SetupInput(props: any) {
   return <><Text style={styles.inputLabel}>{props.label}</Text><TextInput {...props} style={styles.input} placeholderTextColor="rgba(20,35,55,.55)" /></>;
+}
+
+function ChoiceChip({ title, selected, compact, onPress }: { title: string; selected: boolean; compact?: boolean; onPress: () => void }) {
+  return (
+    <TouchableOpacity style={[styles.choiceChip, compact && styles.choiceChipCompact, selected && styles.choiceChipSelected]} onPress={onPress} activeOpacity={0.85}>
+      <Text style={[styles.choiceChipText, selected && styles.choiceChipTextSelected]}>{title}</Text>
+    </TouchableOpacity>
+  );
 }
 
 function PrimaryButton({ title, loading, onPress }: { title: string; loading?: boolean; onPress: () => void }) {
@@ -125,6 +258,21 @@ const styles = StyleSheet.create({
   stepStatus: { fontSize: 13, fontWeight: '900', color: colors.primaryNavy },
   inputLabel: { marginTop: spacing.lg, marginBottom: spacing.xs, fontSize: 13, fontWeight: '900', color: colors.primaryNavy },
   input: { borderWidth: 1, borderColor: colors.cardGoldBorder, borderRadius: 16, paddingHorizontal: spacing.md, paddingVertical: spacing.md, color: colors.primaryNavy, backgroundColor: '#FFFDF7', fontWeight: '800' },
+  optionRow: { flexDirection: 'row', flexWrap: 'wrap', marginTop: spacing.xs },
+  choiceChip: { borderWidth: 1.4, borderColor: colors.cardGoldBorder, backgroundColor: '#FFFDF7', borderRadius: 999, paddingHorizontal: 14, paddingVertical: 10, marginRight: 8, marginBottom: 8 },
+  choiceChipCompact: { minWidth: 42, alignItems: 'center' },
+  choiceChipSelected: { backgroundColor: colors.primaryNavy, borderColor: colors.primaryNavy },
+  choiceChipText: { fontSize: 13, fontWeight: '900', color: colors.primaryNavy },
+  choiceChipTextSelected: { color: '#FFFFFF' },
+  customDaysBox: { backgroundColor: '#FFF8E8', borderRadius: 18, borderWidth: 1, borderColor: colors.cardGoldBorder, padding: spacing.md, marginTop: spacing.sm },
+  checkboxRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8 },
+  checkbox: { fontSize: 20, color: colors.primaryNavy, marginRight: 10 },
+  checkboxLabel: { fontSize: 14, fontWeight: '900', color: colors.primaryNavy },
+  selectedText: { fontSize: 13, lineHeight: 19, color: colors.slateText, fontWeight: '900', marginTop: spacing.sm },
+  helperText: { fontSize: 13, lineHeight: 19, color: colors.slateText, fontWeight: '800', marginTop: spacing.sm },
+  importInfoBox: { backgroundColor: '#FFF8E8', borderRadius: 20, borderWidth: 1, borderColor: colors.cardGoldBorder, padding: spacing.md, marginTop: spacing.xl },
+  importInfoTitle: { fontSize: 15, fontWeight: '900', color: colors.primaryNavy },
+  importInfoText: { fontSize: 13, lineHeight: 20, fontWeight: '800', color: colors.slateText, marginTop: 4 },
   primaryButton: { marginTop: spacing.md, borderRadius: 18, paddingVertical: 15, alignItems: 'center', backgroundColor: colors.primaryNavy },
   primaryButtonText: { color: '#FFFFFF', fontSize: 15, fontWeight: '900' },
   messageText: { color: colors.primaryNavy, fontSize: 14, fontWeight: '900', marginBottom: spacing.md },

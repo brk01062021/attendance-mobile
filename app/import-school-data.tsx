@@ -14,6 +14,19 @@ import { getSession } from '../src/services/sessionService';
 import { loadWorkspaceImportLock, type WorkspaceChecklist } from '../src/services/workspaceSetupApi';
 import { colors, shadows, spacing } from '../src/theme';
 
+const PRODUCTION_STEP_KEYS = ['SCHOOL_PROFILE', 'ACADEMIC_YEAR', 'WORKING_DAYS', 'SCHOOL_TIMINGS'];
+
+function getProductionImportStatus(lockStatus: WorkspaceChecklist | null) {
+    const visibleSteps = (lockStatus?.steps || []).filter((step) => PRODUCTION_STEP_KEYS.includes(step.key));
+    const completedSteps = visibleSteps.filter((step) => step.completed).length;
+    const totalSteps = PRODUCTION_STEP_KEYS.length;
+    const importLocked = completedSteps < totalSteps;
+    const importLockMessage = importLocked
+        ? 'Complete School Profile, Academic Year, Working Days, and School Timings before importing school data.'
+        : 'School workspace setup complete. Import School Data is unlocked.';
+    return { visibleSteps, completedSteps, totalSteps, importLocked, importLockMessage };
+}
+
 export default function ImportSchoolDataScreen() {
     const [loading, setLoading] = useState(false);
     const [preview, setPreview] = useState<ImportPreviewResponse | null>(null);
@@ -27,13 +40,14 @@ export default function ImportSchoolDataScreen() {
             .catch((lockError: any) => setError(lockError?.response?.data?.message || lockError?.message || 'Unable to verify workspace import lock.'));
     }, []);
 
+    const productionImportStatus = useMemo(() => getProductionImportStatus(lockStatus), [lockStatus]);
     const totalRows = useMemo(() => Object.values(preview?.rowCounts || {}).reduce((sum, count) => sum + count, 0), [preview]);
     const errors = preview?.issues?.filter((issue) => issue.severity === 'ERROR') || [];
     const warnings = preview?.issues?.filter((issue) => issue.severity === 'WARNING') || [];
 
     const runPreview = async () => {
-        if (lockStatus?.importLocked) {
-            setError(lockStatus.importLockMessage);
+        if (productionImportStatus.importLocked) {
+            setError(productionImportStatus.importLockMessage);
             return;
         }
         try {
@@ -70,19 +84,20 @@ export default function ImportSchoolDataScreen() {
                     <Text style={styles.sectionEyebrow}>ACTIVE TENANT</Text>
                     <Text style={styles.sectionTitle}>{session?.schoolId || 'DEMO'} · {session?.role || 'ADMIN'}</Text>
                     <Text style={styles.bodyText}>Validate workbook sheets, required tabs, row counts, role permission, and school_id isolation before final import processing.</Text>
+                    <Text style={styles.previewSummary}>Required workspace setup: {productionImportStatus.completedSteps}/{productionImportStatus.totalSteps} complete.</Text>
 
-                    {lockStatus?.importLocked ? (
+                    {productionImportStatus.importLocked ? (
                         <View style={styles.previewBox}>
                             <Text style={styles.previewStatus}>🔒 Import Locked</Text>
-                            <Text style={styles.previewSummary}>{lockStatus.importLockMessage}</Text>
-                            <Text style={styles.previewSummary}>{lockStatus.completedSteps}/{lockStatus.totalSteps} workspace setup steps complete.</Text>
+                            <Text style={styles.previewSummary}>{productionImportStatus.importLockMessage}</Text>
+                            <Text style={styles.previewSummary}>{productionImportStatus.completedSteps}/{productionImportStatus.totalSteps} required setup steps complete.</Text>
                             <TouchableOpacity style={styles.primaryButton} onPress={() => router.push('/workspace-setup')} activeOpacity={0.88}>
                                 <Text style={styles.primaryButtonText}>Open Workspace Initialization</Text>
                             </TouchableOpacity>
                         </View>
                     ) : null}
 
-                    <TouchableOpacity style={[styles.primaryButton, lockStatus?.importLocked && { opacity: 0.45 }]} onPress={runPreview} activeOpacity={0.88} disabled={loading}>
+                    <TouchableOpacity style={[styles.primaryButton, productionImportStatus.importLocked && { opacity: 0.45 }]} onPress={runPreview} activeOpacity={0.88} disabled={loading}>
                         {loading ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.primaryButtonText}>Run Preview Validation</Text>}
                     </TouchableOpacity>
 
