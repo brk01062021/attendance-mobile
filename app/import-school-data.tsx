@@ -9,7 +9,7 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
-import { day28SampleSheets, validateImportPreview, type ImportPreviewResponse } from '../src/services/importValidationApi';
+import { getImportTemplateRequirements, type ImportPreviewResponse, type ImportTemplateRequirementsResponse } from '../src/services/importValidationApi';
 import { getSession } from '../src/services/sessionService';
 import { loadWorkspaceImportLock, type WorkspaceChecklist } from '../src/services/workspaceSetupApi';
 import { colors, shadows, spacing } from '../src/theme';
@@ -27,9 +27,15 @@ function getProductionImportStatus(lockStatus: WorkspaceChecklist | null) {
     return { visibleSteps, completedSteps, totalSteps, importLocked, importLockMessage };
 }
 
+function isCommitReadyStatus(status?: string | null) {
+    return status === 'READY_TO_IMPORT' || status === 'READY_WITH_WARNINGS';
+}
+
 export default function ImportSchoolDataScreen() {
     const [loading, setLoading] = useState(false);
+    const [templateLoading, setTemplateLoading] = useState(false);
     const [preview, setPreview] = useState<ImportPreviewResponse | null>(null);
+    const [template, setTemplate] = useState<ImportTemplateRequirementsResponse | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [lockStatus, setLockStatus] = useState<WorkspaceChecklist | null>(null);
     const session = getSession();
@@ -44,23 +50,39 @@ export default function ImportSchoolDataScreen() {
     const totalRows = useMemo(() => Object.values(preview?.rowCounts || {}).reduce((sum, count) => sum + count, 0), [preview]);
     const errors = preview?.issues?.filter((issue) => issue.severity === 'ERROR') || [];
     const warnings = preview?.issues?.filter((issue) => issue.severity === 'WARNING') || [];
+    const canCommitPreview = Boolean(preview?.valid && isCommitReadyStatus(preview?.status));
 
-    const runPreview = async () => {
+    const loadRequirements = async () => {
         if (productionImportStatus.importLocked) {
             setError(productionImportStatus.importLockMessage);
             return;
         }
         try {
-            setLoading(true);
+            setTemplateLoading(true);
             setError(null);
-            const result = await validateImportPreview(day28SampleSheets);
-            setPreview(result);
-        } catch (previewError: any) {
-            console.log(previewError);
-            setError(previewError?.response?.data?.message || previewError?.message || 'Unable to validate import preview');
+            const result = await getImportTemplateRequirements();
+            setTemplate(result);
+        } catch (requirementsError: any) {
+            console.log(requirementsError);
+            setError(requirementsError?.response?.data?.message || requirementsError?.message || 'Unable to load import requirements.');
         } finally {
-            setLoading(false);
+            setTemplateLoading(false);
         }
+    };
+
+    const runPreview = async () => {
+        setLoading(true);
+        setError(null);
+        setPreview(null);
+        setTimeout(() => {
+            setLoading(false);
+            setError(
+  "No School Data Workbook Found\n\n" +
+  "School data has not been uploaded yet.\n\n" +
+  "To continue, upload and validate your school's Excel workbook from the VidyaSetu Web Portal.\n\n" +
+  "After validation is complete, the import status and readiness information will appear here."
+);
+        }, 350);
     };
 
     return (
@@ -75,16 +97,16 @@ export default function ImportSchoolDataScreen() {
                 </TouchableOpacity>
 
                 <View style={styles.heroCard}>
-                    <Text style={styles.heroEyebrow}>Day 28 Foundation</Text>
-                    <Text style={styles.heroTitle}>Excel Import Validation</Text>
-                    <Text style={styles.heroSubtitle}>Tenant-safe preview before importing real school data.</Text>
+                    <Text style={styles.heroEyebrow}>Day 9 Import Engine</Text>
+                    <Text style={styles.heroTitle}>Real Import School Data</Text>
+                    <Text style={styles.heroSubtitle}>Validate workbook readiness before pilot school import.</Text>
                 </View>
 
                 <View style={styles.contentCard}>
                     <Text style={styles.sectionEyebrow}>ACTIVE TENANT</Text>
                     <Text style={styles.sectionTitle}>{session?.schoolId || 'DEMO'} · {session?.role || 'ADMIN'}</Text>
-                    <Text style={styles.bodyText}>Validate workbook sheets, required tabs, row counts, role permission, and school_id isolation before final import processing.</Text>
-                    <Text style={styles.previewSummary}>Required workspace setup: {productionImportStatus.completedSteps}/{productionImportStatus.totalSteps} complete.</Text>
+                    <Text style={styles.bodyText}>Validate workbook sheets, row-level issues, teacher assignments, academic rules, and timetable readiness before final import processing.</Text>
+                    <Text style={styles.previewSummary}>Workspace setup complete: {productionImportStatus.completedSteps}/{productionImportStatus.totalSteps} complete.</Text>
 
                     {productionImportStatus.importLocked ? (
                         <View style={styles.previewBox}>
@@ -95,13 +117,51 @@ export default function ImportSchoolDataScreen() {
                                 <Text style={styles.primaryButtonText}>Open Workspace Initialization</Text>
                             </TouchableOpacity>
                         </View>
-                    ) : null}
+                    ) : (
+                        <View style={styles.emptyStateBox}>
+                            <Text style={styles.emptyStateStatus}>No School Data Workbook Found</Text>
+                            <Text style={styles.emptyStateTitle}>School data has not been uploaded yet.</Text>
+                            <Text style={styles.emptyStateText}>{"To continue, upload and validate your school's Excel workbook from the VidyaSetu Web Portal.\n\nAfter validation is complete, the import status and readiness information will appear here."}</Text>
+                            <View style={styles.statusPillRow}>
+                                <View style={styles.statusPill}><Text style={styles.statusPillText}>Workbook Status: Not Uploaded</Text></View>
+                                <View style={styles.statusPill}><Text style={styles.statusPillText}>Validation Status: Pending</Text></View>
+                                <View style={styles.statusPill}><Text style={styles.statusPillText}>Import Status: Waiting for Workbook</Text></View>
+                            </View>
+                        </View>
+                    )}
 
-                    <TouchableOpacity style={[styles.primaryButton, productionImportStatus.importLocked && { opacity: 0.45 }]} onPress={runPreview} activeOpacity={0.88} disabled={loading}>
-                        {loading ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.primaryButtonText}>Run Preview Validation</Text>}
+                    <TouchableOpacity style={[styles.primaryButton, productionImportStatus.importLocked && { opacity: 0.45 }]} onPress={loadRequirements} activeOpacity={0.88} disabled={templateLoading || productionImportStatus.importLocked}>
+                        {templateLoading ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.primaryButtonText}>Check Required Workbook Template</Text>}
+                    </TouchableOpacity>
+
+                    <TouchableOpacity style={[styles.secondaryButton, productionImportStatus.importLocked && { opacity: 0.45 }]} onPress={runPreview} activeOpacity={0.88} disabled={loading || productionImportStatus.importLocked}>
+                        {loading ? <ActivityIndicator color={colors.primaryNavy} /> : <Text style={styles.secondaryButtonText}>Open Web Portal to Upload Workbook</Text>}
                     </TouchableOpacity>
 
                     {error ? <Text style={styles.errorText}>{error}</Text> : null}
+
+                    {template ? (
+                        <View style={styles.previewBox}>
+                            <Text style={styles.previewStatus}>Template Requirements Loaded</Text>
+                            <Text style={styles.previewSummary}>Allowed roles: {template.allowedRoles?.join(', ') || 'ADMIN, PRINCIPAL'}</Text>
+                            <Text style={styles.previewSummary}>Import type: {template.importType || 'MASTER_WORKBOOK'}</Text>
+
+                            <Text style={styles.subTitle}>Required Workbook Sheets</Text>
+                            {template.requiredSheets?.map((sheetName) => (
+                                <View key={sheetName} style={styles.sheetRow}>
+                                    <Text style={styles.sheetName}>{sheetName}</Text>
+                                    <Text style={styles.sheetMeta}>{(template.requiredColumns?.[sheetName] || []).join(', ') || 'Columns pending'}</Text>
+                                </View>
+                            ))}
+
+                            <Text style={styles.subTitle}>Validation Rules</Text>
+                            {template.validationRules?.slice(0, 6).map((rule, index) => (
+                                <View key={`${rule}-${index}`} style={styles.ruleRow}>
+                                    <Text style={styles.ruleText}>{rule}</Text>
+                                </View>
+                            ))}
+                        </View>
+                    ) : null}
 
                     {preview ? (
                         <View style={styles.previewBox}>
@@ -114,7 +174,17 @@ export default function ImportSchoolDataScreen() {
                                 <Metric label="Warnings" value={String(warnings.length)} />
                             </View>
 
-                            <Text style={styles.subTitle}>Sheet Preview</Text>
+                            <TouchableOpacity
+                                style={[styles.commitButton, !canCommitPreview && styles.disabledButton]}
+                                activeOpacity={0.88}
+                                disabled={!canCommitPreview}
+                                onPress={() => setError('Mobile commit is enabled only after backend validation returns READY_TO_IMPORT or READY_WITH_WARNINGS.')}
+                            >
+                                <Text style={styles.commitButtonText}>{canCommitPreview ? 'Commit Import' : 'Commit Disabled'}</Text>
+                            </TouchableOpacity>
+                            {!canCommitPreview ? <Text style={styles.previewSummary}>Commit is blocked until workbook status is READY_TO_IMPORT or READY_WITH_WARNINGS.</Text> : null}
+
+                            <Text style={styles.subTitle}>Detected Workbook Sheets</Text>
                             {preview.previewSheets?.map((sheet) => (
                                 <View key={sheet.sheetName} style={styles.sheetRow}>
                                     <Text style={styles.sheetName}>{sheet.sheetName}</Text>
@@ -122,13 +192,13 @@ export default function ImportSchoolDataScreen() {
                                 </View>
                             ))}
 
-                            <Text style={styles.subTitle}>Import Issues</Text>
+                            <Text style={styles.subTitle}>Row-Level Validation Issues</Text>
                             {preview.issues?.length ? preview.issues.map((issue, index) => (
                                 <View key={`${issue.sheetName}-${index}`} style={styles.issueRow}>
                                     <Text style={[styles.issueSeverity, issue.severity === 'ERROR' && styles.issueError]}>{issue.severity}</Text>
                                     <Text style={styles.issueMessage}>{issue.sheetName}: {issue.message}</Text>
                                 </View>
-                            )) : <Text style={styles.successText}>No blocking errors found. Preview is ready for final import confirmation.</Text>}
+                            )) : <Text style={styles.successText}>No blocking errors found. Workbook is ready for backend upload/commit from the web portal.</Text>}
                         </View>
                     ) : null}
                 </View>
@@ -159,8 +229,20 @@ const styles = StyleSheet.create({
     sectionEyebrow: { fontSize: 13, fontWeight: '900', color: colors.premiumGold, textTransform: 'uppercase', letterSpacing: 1.1 },
     sectionTitle: { fontSize: 26, fontWeight: '900', color: colors.primaryNavy, marginTop: spacing.xs },
     bodyText: { fontSize: 16, lineHeight: 24, fontWeight: '800', color: colors.slateText, marginTop: spacing.md },
+    emptyStateBox: { marginTop: spacing.xl, backgroundColor: '#FFF8E1', borderRadius: 24, borderWidth: 1.2, borderColor: colors.cardGoldBorder, padding: spacing.lg },
+    emptyStateStatus: { fontSize: 13, fontWeight: '900', color: '#92400E', textTransform: 'uppercase', letterSpacing: 1.1 },
+    emptyStateTitle: { fontSize: 20, fontWeight: '900', color: colors.primaryNavy, marginTop: spacing.xs },
+    emptyStateText: { fontSize: 14, lineHeight: 21, fontWeight: '800', color: colors.slateText, marginTop: spacing.sm },
+    statusPillRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: spacing.md },
+    statusPill: { backgroundColor: '#FFFFFF', borderRadius: 999, paddingHorizontal: 12, paddingVertical: 8, borderWidth: 1, borderColor: colors.cardGoldBorder },
+    statusPillText: { fontSize: 11, fontWeight: '900', color: colors.primaryNavy },
     primaryButton: { marginTop: spacing.xl, backgroundColor: colors.primaryNavy, borderRadius: 22, paddingVertical: 16, alignItems: 'center' },
-    primaryButtonText: { color: '#FFFFFF', fontSize: 16, fontWeight: '900' },
+    primaryButtonText: { color: '#FFFFFF', fontSize: 16, fontWeight: '900', textAlign: 'center' },
+    secondaryButton: { marginTop: spacing.md, backgroundColor: '#FFFFFF', borderRadius: 22, paddingVertical: 15, alignItems: 'center', borderWidth: 1.2, borderColor: colors.cardGoldBorder },
+    secondaryButtonText: { color: colors.primaryNavy, fontSize: 15, fontWeight: '900', textAlign: 'center' },
+    commitButton: { marginTop: spacing.lg, backgroundColor: '#047857', borderRadius: 22, paddingVertical: 15, alignItems: 'center' },
+    disabledButton: { backgroundColor: '#9CA3AF', opacity: 0.65 },
+    commitButtonText: { color: '#FFFFFF', fontSize: 15, fontWeight: '900' },
     errorText: { marginTop: spacing.md, color: '#B91C1C', fontWeight: '900' },
     previewBox: { marginTop: spacing.xl, backgroundColor: '#FFF8E1', borderRadius: 24, borderWidth: 1.2, borderColor: colors.cardGoldBorder, padding: spacing.lg },
     previewStatus: { fontSize: 18, fontWeight: '900', color: colors.primaryNavy },
@@ -177,5 +259,7 @@ const styles = StyleSheet.create({
     issueSeverity: { fontSize: 12, fontWeight: '900', color: '#92400E' },
     issueError: { color: '#B91C1C' },
     issueMessage: { fontSize: 13, lineHeight: 19, fontWeight: '800', color: colors.slateText, marginTop: 3 },
+    ruleRow: { backgroundColor: '#FFFFFF', borderRadius: 16, padding: 12, marginBottom: 8, borderWidth: 1, borderColor: colors.cardGoldBorder },
+    ruleText: { fontSize: 13, lineHeight: 19, fontWeight: '800', color: colors.slateText },
     successText: { fontSize: 14, lineHeight: 20, fontWeight: '900', color: '#166534' },
 });

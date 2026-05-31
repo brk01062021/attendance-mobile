@@ -59,3 +59,29 @@ export const day28SampleSheets: ImportSheetPreview[] = [
   { sheetName: 'TeacherPools', totalRows: 10, headers: ['class_name', 'teacher_pool'] },
   { sheetName: 'Schedules', totalRows: 40, headers: ['day', 'period', 'start_time', 'end_time'] },
 ];
+
+
+export type ImportTemplateRequirementsResponse = {
+  schoolId: string;
+  role: string;
+  allowedRoles: string[];
+  importType: string;
+  requiredSheets: string[];
+  requiredColumns: Record<string, string[]>;
+  validationRules: string[];
+  status: string[];
+  generatedAt: string;
+};
+
+export async function getImportTemplateRequirements() {
+  const session = getSession();
+  const schoolId = normalizeSchoolId(session?.schoolId);
+  const response = await api.get('/api/import-school-data/day9/template-requirements', {
+    params: { schoolId },
+    headers: {
+      'X-School-Id': schoolId,
+      ...(session?.token ? { Authorization: `Bearer ${session.token}` } : {}),
+    },
+  });
+  return (response.data?.data || response.data) as ImportTemplateRequirementsResponse;
+}
