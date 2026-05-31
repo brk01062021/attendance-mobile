@@ -531,6 +531,11 @@ export default function AdminDashboardScreen() {
                             />
 
                             <MenuItem
+                                title="Workspace Setup"
+                                onPress={() => openRoute('/workspace-setup')}
+                            />
+
+                            <MenuItem
                                 title="Import School Data"
                                 onPress={() => openRoute('/import-school-data')}
                             />

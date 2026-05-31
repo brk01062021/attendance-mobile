@@ -89,6 +89,9 @@ export default function WorkspaceSetupScreen() {
 
   const productionChecklist = useMemo(() => buildProductionChecklist(checklist), [checklist]);
   const canManage = session?.role === 'ADMIN' || session?.role === 'PRINCIPAL';
+  const homePath = session?.role === 'PRINCIPAL' ? '/principal-dashboard' : '/admin-dashboard';
+  const isStepCompleted = (stepKey: string) =>
+    productionChecklist.visibleSteps.some((step) => step.key === stepKey && step.completed);
 
   useEffect(() => {
     loadWorkspaceSetup()
@@ -150,9 +153,15 @@ export default function WorkspaceSetupScreen() {
   return (
     <ImageBackground source={require('../assets/branding/splash-gold.png')} style={styles.background} resizeMode="cover">
       <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
-        <TouchableOpacity style={styles.backButton} onPress={() => router.back()} activeOpacity={0.85}>
-          <Text style={styles.backButtonText}>‹</Text>
-        </TouchableOpacity>
+        <View style={styles.topActionRow}>
+          <TouchableOpacity style={styles.backButton} onPress={() => router.back()} activeOpacity={0.85}>
+            <Text style={styles.backButtonText}>‹</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.homeButton} onPress={() => router.replace(homePath as any)} activeOpacity={0.85}>
+            <Text style={styles.homeButtonText}>⌂</Text>
+          </TouchableOpacity>
+        </View>
 
         <View style={styles.heroCard}>
           <Text style={styles.eyebrow}>School Workspace Setup</Text>
@@ -175,23 +184,31 @@ export default function WorkspaceSetupScreen() {
               </View>
             ))}
 
-            <SetupInput label="School Profile" value={schoolName} onChangeText={setSchoolName} />
-            <PrimaryButton title="Save School Profile" loading={saving === 'SCHOOL_PROFILE'} onPress={() => save('SCHOOL_PROFILE', { schoolName })} />
+            <SetupInput label="School Profile" value={schoolName} onChangeText={setSchoolName} editable={!isStepCompleted('SCHOOL_PROFILE')} />
+            {isStepCompleted('SCHOOL_PROFILE') ? (
+              <CompletedNote text="School Profile completed" />
+            ) : (
+              <PrimaryButton title="Save School Profile" loading={saving === 'SCHOOL_PROFILE'} onPress={() => save('SCHOOL_PROFILE', { schoolName })} />
+            )}
 
-            <SetupInput label="Academic Year" value={academicYear} onChangeText={setAcademicYear} />
-            <PrimaryButton title="Save Academic Year" loading={saving === 'ACADEMIC_YEAR'} onPress={() => save('ACADEMIC_YEAR', { academicYear, academicYearStartDate: '2026-06-01', academicYearEndDate: '2027-04-30' })} />
+            <SetupInput label="Academic Year" value={academicYear} onChangeText={setAcademicYear} editable={!isStepCompleted('ACADEMIC_YEAR')} />
+            {isStepCompleted('ACADEMIC_YEAR') ? (
+              <CompletedNote text="Academic Year completed" />
+            ) : (
+              <PrimaryButton title="Save Academic Year" loading={saving === 'ACADEMIC_YEAR'} onPress={() => save('ACADEMIC_YEAR', { academicYear, academicYearStartDate: '2026-06-01', academicYearEndDate: '2027-04-30' })} />
+            )}
 
             <Text style={styles.inputLabel}>Working Days</Text>
             <View style={styles.optionRow}>
-              <ChoiceChip title="Monday–Friday" selected={workingDayOption === 'MONDAY_FRIDAY'} onPress={() => chooseWorkingDayOption('MONDAY_FRIDAY')} />
-              <ChoiceChip title="Monday–Saturday" selected={workingDayOption === 'MONDAY_SATURDAY'} onPress={() => chooseWorkingDayOption('MONDAY_SATURDAY')} />
-              <ChoiceChip title="Custom" selected={workingDayOption === 'CUSTOM'} onPress={() => chooseWorkingDayOption('CUSTOM')} />
+              <ChoiceChip title="Monday–Friday" selected={workingDayOption === 'MONDAY_FRIDAY'} onPress={() => !isStepCompleted('WORKING_DAYS') && chooseWorkingDayOption('MONDAY_FRIDAY')} />
+              <ChoiceChip title="Monday–Saturday" selected={workingDayOption === 'MONDAY_SATURDAY'} onPress={() => !isStepCompleted('WORKING_DAYS') && chooseWorkingDayOption('MONDAY_SATURDAY')} />
+              <ChoiceChip title="Custom" selected={workingDayOption === 'CUSTOM'} onPress={() => !isStepCompleted('WORKING_DAYS') && chooseWorkingDayOption('CUSTOM')} />
             </View>
             {workingDayOption === 'CUSTOM' ? (
               <View style={styles.customDaysBox}>
                 <Text style={styles.helperText}>Select working days</Text>
                 {DAY_OPTIONS.map((day) => (
-                  <TouchableOpacity key={day.key} style={styles.checkboxRow} onPress={() => toggleCustomDay(day.key)} activeOpacity={0.85}>
+                  <TouchableOpacity key={day.key} style={styles.checkboxRow} onPress={() => !isStepCompleted('WORKING_DAYS') && toggleCustomDay(day.key)} activeOpacity={0.85}>
                     <Text style={styles.checkbox}>{selectedDays.includes(day.key) ? '☑' : '☐'}</Text>
                     <Text style={styles.checkboxLabel}>{day.label}</Text>
                   </TouchableOpacity>
@@ -199,18 +216,27 @@ export default function WorkspaceSetupScreen() {
               </View>
             ) : null}
             <Text style={styles.selectedText}>Selected: {labelDays(selectedDays)}</Text>
-            <PrimaryButton title="Save Working Days" loading={saving === 'WORKING_DAYS'} onPress={saveWorkingDays} />
+            {isStepCompleted('WORKING_DAYS') ? (
+              <CompletedNote text="Working Days completed" />
+            ) : (
+              <PrimaryButton title="Save Working Days" loading={saving === 'WORKING_DAYS'} onPress={saveWorkingDays} />
+            )}
 
-            <SetupInput label="School Start Time" value={startTime} onChangeText={setStartTime} />
-            <SetupInput label="School End Time" value={endTime} onChangeText={setEndTime} />
+            <Text style={styles.groupTitle}>School Operating Hours</Text>
+            <SetupInput label="School Start Time" value={startTime} onChangeText={setStartTime} editable={!isStepCompleted('SCHOOL_TIMINGS')} />
+            <SetupInput label="School End Time" value={endTime} onChangeText={setEndTime} editable={!isStepCompleted('SCHOOL_TIMINGS')} />
             <Text style={styles.inputLabel}>Periods Per Day</Text>
             <View style={styles.optionRow}>
               {PERIOD_OPTIONS.map((period) => (
-                <ChoiceChip key={period} title={period} selected={periodsPerDay === period} onPress={() => setPeriodsPerDay(period)} compact />
+                <ChoiceChip key={period} title={period} selected={periodsPerDay === period} onPress={() => !isStepCompleted('SCHOOL_TIMINGS') && setPeriodsPerDay(period)} compact />
               ))}
             </View>
             <Text style={styles.helperText}>These settings are used for timetable generation and attendance scheduling.</Text>
-            <PrimaryButton title="Save School Timings" loading={saving === 'SCHOOL_TIMINGS'} onPress={() => save('SCHOOL_TIMINGS', { schoolStartTime: startTime, schoolEndTime: endTime, periodsPerDay: Number(periodsPerDay) })} />
+            {isStepCompleted('SCHOOL_TIMINGS') ? (
+              <CompletedNote text="School Timings completed" />
+            ) : (
+              <PrimaryButton title="Save School Timings" loading={saving === 'SCHOOL_TIMINGS'} onPress={() => save('SCHOOL_TIMINGS', { schoolStartTime: startTime, schoolEndTime: endTime, periodsPerDay: Number(periodsPerDay) })} />
+            )}
 
             <View style={styles.importInfoBox}>
               <Text style={styles.importInfoTitle}>Next: Import School Data</Text>
@@ -224,7 +250,26 @@ export default function WorkspaceSetupScreen() {
 }
 
 function SetupInput(props: any) {
-  return <><Text style={styles.inputLabel}>{props.label}</Text><TextInput {...props} style={styles.input} placeholderTextColor="rgba(20,35,55,.55)" /></>;
+  const { label, editable = true, ...inputProps } = props;
+  return (
+    <>
+      <Text style={styles.inputLabel}>{label}</Text>
+      <TextInput
+        {...inputProps}
+        editable={editable}
+        style={[styles.input, !editable && styles.inputDisabled]}
+        placeholderTextColor="rgba(20,35,55,.55)"
+      />
+    </>
+  );
+}
+
+function CompletedNote({ text }: { text: string }) {
+  return (
+    <View style={styles.completedNote}>
+      <Text style={styles.completedNoteText}>✓ {text}</Text>
+    </View>
+  );
 }
 
 function ChoiceChip({ title, selected, compact, onPress }: { title: string; selected: boolean; compact?: boolean; onPress: () => void }) {
@@ -242,8 +287,11 @@ function PrimaryButton({ title, loading, onPress }: { title: string; loading?: b
 const styles = StyleSheet.create({
   background: { flex: 1, backgroundColor: '#F5BE38' },
   container: { paddingHorizontal: spacing.screenPadding, paddingTop: 70, paddingBottom: 120 },
-  backButton: { width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.45)', alignItems: 'center', justifyContent: 'center', marginBottom: spacing.xl },
+  topActionRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.xl },
+  backButton: { width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.45)', alignItems: 'center', justifyContent: 'center' },
+  homeButton: { width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.45)', alignItems: 'center', justifyContent: 'center' },
   backButtonText: { fontSize: 38, lineHeight: 40, fontWeight: '900', color: colors.primaryNavy },
+  homeButtonText: { fontSize: 24, lineHeight: 28, fontWeight: '900', color: colors.primaryNavy },
   heroCard: { backgroundColor: 'rgba(255,255,255,0.22)', borderRadius: 34, borderWidth: 1, borderColor: 'rgba(255,255,255,0.45)', padding: spacing.xl, marginBottom: spacing.xl },
   eyebrow: { fontSize: 13, fontWeight: '900', color: colors.primaryNavy, letterSpacing: 1, textTransform: 'uppercase' },
   title: { fontSize: 34, lineHeight: 40, fontWeight: '900', color: colors.primaryNavy, marginTop: spacing.sm },
@@ -258,6 +306,8 @@ const styles = StyleSheet.create({
   stepStatus: { fontSize: 13, fontWeight: '900', color: colors.primaryNavy },
   inputLabel: { marginTop: spacing.lg, marginBottom: spacing.xs, fontSize: 13, fontWeight: '900', color: colors.primaryNavy },
   input: { borderWidth: 1, borderColor: colors.cardGoldBorder, borderRadius: 16, paddingHorizontal: spacing.md, paddingVertical: spacing.md, color: colors.primaryNavy, backgroundColor: '#FFFDF7', fontWeight: '800' },
+  inputDisabled: { backgroundColor: '#F7F2E6', color: colors.slateText },
+  groupTitle: { marginTop: spacing.xl, marginBottom: spacing.xs, fontSize: 17, fontWeight: '900', color: colors.primaryNavy },
   optionRow: { flexDirection: 'row', flexWrap: 'wrap', marginTop: spacing.xs },
   choiceChip: { borderWidth: 1.4, borderColor: colors.cardGoldBorder, backgroundColor: '#FFFDF7', borderRadius: 999, paddingHorizontal: 14, paddingVertical: 10, marginRight: 8, marginBottom: 8 },
   choiceChipCompact: { minWidth: 42, alignItems: 'center' },
@@ -273,6 +323,8 @@ const styles = StyleSheet.create({
   importInfoBox: { backgroundColor: '#FFF8E8', borderRadius: 20, borderWidth: 1, borderColor: colors.cardGoldBorder, padding: spacing.md, marginTop: spacing.xl },
   importInfoTitle: { fontSize: 15, fontWeight: '900', color: colors.primaryNavy },
   importInfoText: { fontSize: 13, lineHeight: 20, fontWeight: '800', color: colors.slateText, marginTop: 4 },
+  completedNote: { marginTop: spacing.md, borderRadius: 16, paddingVertical: 12, paddingHorizontal: spacing.md, backgroundColor: '#E9F8EF', borderWidth: 1, borderColor: '#BFE9CE' },
+  completedNoteText: { color: colors.primaryNavy, fontSize: 14, fontWeight: '900' },
   primaryButton: { marginTop: spacing.md, borderRadius: 18, paddingVertical: 15, alignItems: 'center', backgroundColor: colors.primaryNavy },
   primaryButtonText: { color: '#FFFFFF', fontSize: 15, fontWeight: '900' },
   messageText: { color: colors.primaryNavy, fontSize: 14, fontWeight: '900', marginBottom: spacing.md },
