@@ -44,6 +44,10 @@ type ActivationSummary = {
     readinessPercent: number;
     committedWorkbookCount: number;
     lastWorkbookCommittedAt?: string;
+    activatedAt?: string;
+    activatedBy?: string;
+    goLiveStatus?: string;
+    nextStep?: string;
     healthItems: HealthItem[];
     auditTrail: AuditItem[];
 };
@@ -118,7 +122,7 @@ export default function WorkspaceHealthScreen() {
             if (!response.ok) throw new Error('Workspace activation could not be completed.');
             const payload = await response.json();
             setSummary(unwrap<ActivationSummary>(payload));
-            setNotice('Workspace activation checks passed. Continue with operational monitoring.');
+            setNotice('Activation completed successfully. Tenant status is ACTIVE and the school is ready for live ERP operations.');
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Workspace activation could not be completed.');
         } finally {
@@ -126,11 +130,20 @@ export default function WorkspaceHealthScreen() {
         }
     }
 
+    const activationButtonLabel = summary?.activationStatus === 'ACTIVE'
+        ? 'Activation Completed'
+        : summary?.readyForActivation
+            ? 'Activate Workspace'
+            : summary?.importCommitted
+                ? 'Activation Pending'
+                : 'Commit Workbook First';
+
     const gates = summary ? [
         { title: 'School Profile', ready: summary.schoolProfileReady },
         { title: 'Academic Year', ready: summary.academicYearReady },
         { title: 'Workspace Setup', ready: summary.workspaceSetupReady },
         { title: 'Workbook Commit', ready: summary.importCommitted },
+        { title: 'Go-Live Status', ready: summary.activationStatus === 'ACTIVE' },
     ] : [];
 
     return (
@@ -168,17 +181,18 @@ export default function WorkspaceHealthScreen() {
                             <Text style={styles.pill}>{label(summary.activationStatus)}</Text>
                             <Text style={styles.heroTitle}>{summary.schoolName || schoolName}</Text>
                             <Text style={styles.heroText}>{summary.activationMessage}</Text>
+                            {summary.nextStep ? <Text style={styles.heroText}>Next Step: {summary.nextStep}</Text> : null}
                             <View style={styles.readinessRow}>
                                 <View>
                                     <Text style={styles.readiness}>{summary.readinessPercent}%</Text>
                                     <Text style={styles.smallText}>Activation readiness</Text>
                                 </View>
                                 <TouchableOpacity
-                                    disabled={!summary.readyForActivation || activating}
-                                    style={[styles.activateButton, (!summary.readyForActivation || activating) && styles.disabled]}
+                                    disabled={!summary.readyForActivation || summary.activationStatus === 'ACTIVE' || activating}
+                                    style={[styles.activateButton, (!summary.readyForActivation || summary.activationStatus === 'ACTIVE' || activating) && styles.disabled]}
                                     onPress={activateWorkspace}
                                 >
-                                    <Text style={styles.activateText}>{activating ? 'Checking...' : 'Activate'}</Text>
+                                    <Text style={styles.activateText}>{activating ? 'Activating...' : activationButtonLabel}</Text>
                                 </TouchableOpacity>
                             </View>
                         </View>
@@ -190,6 +204,16 @@ export default function WorkspaceHealthScreen() {
                                     <Text style={styles.gateTitle}>{gate.title}</Text>
                                 </View>
                             ))}
+                        </View>
+
+                        <View style={styles.card}>
+                            <Text style={styles.sectionTitle}>Admin/Principal Activation Summary</Text>
+                            <View style={styles.rowCard}>
+                                <Text style={styles.pillSmall}>{label(summary.goLiveStatus)}</Text>
+                                <Text style={styles.rowTitle}>Go-Live Readiness</Text>
+                                <Text style={styles.cardText}>Activated by: {summary.activatedBy || 'Not activated yet'}</Text>
+                                <Text style={styles.cardText}>Activated at: {fmt(summary.activatedAt)}</Text>
+                            </View>
                         </View>
 
                         <View style={styles.card}>
