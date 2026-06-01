@@ -114,7 +114,7 @@ export default function ImportSchoolDataScreen() {
                             <Text style={styles.previewSummary}>{productionImportStatus.importLockMessage}</Text>
                             <Text style={styles.previewSummary}>{productionImportStatus.completedSteps}/{productionImportStatus.totalSteps} required setup steps complete.</Text>
                             <TouchableOpacity style={styles.primaryButton} onPress={() => router.push('/workspace-setup')} activeOpacity={0.88}>
-                                <Text style={styles.primaryButtonText}>Open Workspace Setup</Text>
+                                <Text style={styles.primaryButtonText}>Open Workspace Initialization</Text>
                             </TouchableOpacity>
                         </View>
                     ) : (
