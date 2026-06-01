@@ -30,6 +30,19 @@ type AuditItem = {
     eventAt?: string;
 };
 
+type ActivationOperationsCenter = {
+    schoolId: string;
+    schoolName: string;
+    activationStatus: string;
+    reportingStatus: string;
+    readinessPercent: number;
+    readyForActivation: boolean;
+    tenantActive: boolean;
+    operationsNote: string;
+    timeline: { stepKey: string; title: string; status: string; note: string; eventAt?: string }[];
+    notesHistory: string[];
+};
+
 type ActivationSummary = {
     schoolId: string;
     schoolName: string;
@@ -90,6 +103,7 @@ export default function WorkspaceHealthScreen() {
     const roleLabel = sourceRole === 'principal' ? 'Principal' : 'Admin';
     const schoolName = resolveSchoolName(schoolId, session?.schoolName);
     const [summary, setSummary] = useState<ActivationSummary | null>(null);
+    const [operations, setOperations] = useState<ActivationOperationsCenter | null>(null);
     const [loading, setLoading] = useState(true);
     const [activating, setActivating] = useState(false);
     const [error, setError] = useState('');
@@ -110,6 +124,11 @@ export default function WorkspaceHealthScreen() {
             if (!response.ok) throw new Error('Unable to load Workspace Health Center.');
             const payload = await response.json();
             setSummary(unwrap<ActivationSummary>(payload));
+            const operationsResponse = await fetch(`${API_BASE_URL}/workspace-activation/operations-center?schoolId=${schoolId}`, { headers });
+            if (operationsResponse.ok) {
+                const operationsPayload = await operationsResponse.json();
+                setOperations(unwrap<ActivationOperationsCenter>(operationsPayload));
+            }
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Unable to load Workspace Health Center.');
         } finally {
@@ -135,6 +154,11 @@ export default function WorkspaceHealthScreen() {
             if (!response.ok) throw new Error('Workspace activation could not be completed.');
             const payload = await response.json();
             setSummary(unwrap<ActivationSummary>(payload));
+            const operationsResponse = await fetch(`${API_BASE_URL}/workspace-activation/operations-center?schoolId=${schoolId}`, { headers });
+            if (operationsResponse.ok) {
+                const operationsPayload = await operationsResponse.json();
+                setOperations(unwrap<ActivationOperationsCenter>(operationsPayload));
+            }
             setNotice('Workspace activation completed. School is now live ready for Admin/Principal reporting and mobile activation visibility.');
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Workspace activation could not be completed.');
@@ -230,6 +254,27 @@ export default function WorkspaceHealthScreen() {
                                 </View>
                             ))}
                         </View>
+
+                        {operations ? (
+                            <View style={styles.card}>
+                                <Text style={styles.sectionTitle}>Activation Operations Center</Text>
+                                <View style={styles.rowCard}>
+                                    <Text style={styles.pillSmall}>{label(operations.reportingStatus)}</Text>
+                                    <Text style={styles.rowTitle}>Admin/Principal Activation Reporting</Text>
+                                    <Text style={styles.cardText}>{operations.operationsNote}</Text>
+                                    <Text style={styles.dateText}>Readiness: {operations.readinessPercent}%</Text>
+                                </View>
+                                <Text style={styles.sectionTitle}>Activation Timeline</Text>
+                                {operations.timeline.slice(0, 6).map((item, index) => (
+                                    <View key={`${item.stepKey}-${index}`} style={styles.rowCard}>
+                                        <Text style={styles.pillSmall}>{label(item.status)}</Text>
+                                        <Text style={styles.rowTitle}>{item.title}</Text>
+                                        <Text style={styles.cardText}>{item.note}</Text>
+                                        <Text style={styles.dateText}>{fmt(item.eventAt)}</Text>
+                                    </View>
+                                ))}
+                            </View>
+                        ) : null}
 
                         <View style={styles.card}>
                             <Text style={styles.sectionTitle}>Activation & Import Audit Trail</Text>
