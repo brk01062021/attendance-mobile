@@ -536,6 +536,11 @@ export default function AdminDashboardScreen() {
                             />
 
                             <MenuItem
+                                title="Workspace Health"
+                                onPress={() => openRoute('/workspace-health', { role: 'ADMIN', sourceRole: 'admin' })}
+                            />
+
+                            <MenuItem
                                 title="Import School Data"
                                 onPress={() => openRoute('/import-school-data')}
                             />

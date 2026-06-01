@@ -442,6 +442,11 @@ export default function PrincipalHomeScreen() {
                             />
 
                             <MenuItem
+                                title="Workspace Health"
+                                onPress={() => openRoute('/workspace-health', { role: 'PRINCIPAL', sourceRole: 'principal' })}
+                            />
+
+                            <MenuItem
                                 title="Import School Data"
                                 onPress={() =>
                                     openRoute('/import-school-data')

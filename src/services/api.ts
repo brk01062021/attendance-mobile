@@ -75,6 +75,8 @@ export const API_ENDPOINTS = {
     workspaceSetupStatus: `${API_BASE_URL}/workspace-setup/status`,
     workspaceSetupStep: `${API_BASE_URL}/workspace-setup`,
     workspaceImportLock: `${API_BASE_URL}/workspace-setup/import-lock`,
+    workspaceActivationSummary: `${API_BASE_URL}/workspace-activation/summary`,
+    workspaceActivationActivate: `${API_BASE_URL}/workspace-activation/activate`,
 
     teacherLeavePreview: `${API_BASE_URL}/teacher-leave/preview-replacements`,
     teacherLeaveSubmit: `${API_BASE_URL}/teacher-leave/submit`,
