@@ -43,6 +43,39 @@ type ActivationOperationsCenter = {
     notesHistory: string[];
 };
 
+
+
+type WorkbookIssue = {
+    sheetName?: string;
+    rowNumber?: number;
+    fieldName?: string;
+    severity?: string;
+    message?: string;
+};
+
+type WorkbookErrorGroup = {
+    category: string;
+    title: string;
+    explanation: string;
+    recommendedAction: string;
+    errorCount: number;
+    warningCount: number;
+    issues: WorkbookIssue[];
+};
+
+type WorkbookErrorIntelligence = {
+    schoolId: string;
+    fileName: string;
+    status: string;
+    headline: string;
+    totalErrors: number;
+    totalWarnings: number;
+    activationBlocked: boolean;
+    missingSheets: string[];
+    schoolIdMismatchExplanations: string[];
+    groups: WorkbookErrorGroup[];
+};
+
 type ActivationSummary = {
     schoolId: string;
     schoolName: string;
@@ -83,6 +116,13 @@ function fmt(value?: string) {
     }
 }
 
+function titleCaseSchoolName(value?: string) {
+    return String(value || '')
+        .toLowerCase()
+        .replace(/\b[a-z]/g, (letter) => letter.toUpperCase())
+        .replace(/\bErp\b/g, 'ERP');
+}
+
 function isActiveSummary(summary?: ActivationSummary | null) {
     return summary?.activationStatus === 'ACTIVE' || summary?.tenantActive === true;
 }
@@ -95,15 +135,87 @@ function activatedAtLabel(summary?: ActivationSummary | null) {
     return isActiveSummary(summary) && summary?.activatedAt ? fmt(summary.activatedAt) : 'Not activated';
 }
 
+
+function activationCtaLabel(summary?: ActivationSummary | null, intel?: WorkbookErrorIntelligence | null) {
+    if (!summary) return 'Activation Pending';
+    if (summary.readyForActivation) return summary.activationButtonLabel || 'Activate Workspace';
+    if (intel?.activationBlocked || (intel?.totalErrors || 0) > 0) return 'Resolve Errors First';
+    if (!summary.importCommitted) return 'Workbook Pending';
+    return 'Activation Pending';
+}
+
+function normalizeOperationsTimeline(ops: ActivationOperationsCenter): ActivationOperationsCenter {
+    const uploads = ops.timeline.filter((item) => item.stepKey === 'WORKBOOK_IMPORT' && item.title.toLowerCase().includes('workbook'));
+    if (uploads.length <= 1) return ops;
+    const firstUpload = uploads[0];
+    const previousCount = Math.max(uploads.length - 1, 0);
+    const groupedUpload = {
+        ...firstUpload,
+        title: `Workbook uploaded (${uploads.length} attempts)`,
+        note: `${firstUpload.note}${previousCount ? ` • Previous uploads: ${previousCount}` : ''}`,
+    };
+    const timeline: ActivationOperationsCenter['timeline'] = [];
+    let uploadAdded = false;
+    ops.timeline.forEach((item) => {
+        if (item.stepKey === 'WORKBOOK_IMPORT' && item.title.toLowerCase().includes('workbook')) {
+            if (!uploadAdded) {
+                timeline.push(groupedUpload);
+                uploadAdded = true;
+            }
+            return;
+        }
+        timeline.push(item);
+    });
+    return { ...ops, timeline };
+}
+
+
+function normalizeAuditTrail(items: AuditItem[] = []) {
+    const uploads = items.filter((item) => item.title.toLowerCase().includes('workbook uploaded'));
+    if (uploads.length <= 1) return items;
+    const firstUpload = uploads[0];
+    const previousCount = Math.max(uploads.length - 1, 0);
+    const grouped = {
+        ...firstUpload,
+        title: `Workbook uploaded (${uploads.length} attempts)`,
+        description: `${firstUpload.description}${previousCount ? ` • Previous uploads: ${previousCount}` : ''}`,
+    };
+    const output: AuditItem[] = [];
+    let added = false;
+    items.forEach((item) => {
+        if (item.title.toLowerCase().includes('workbook uploaded')) {
+            if (!added) {
+                output.push(grouped);
+                added = true;
+            }
+            return;
+        }
+        output.push(item);
+    });
+    return output;
+}
+
+function groupByCategory(intel?: WorkbookErrorIntelligence | null, category?: string) {
+    return intel?.groups?.find((group) => group.category === category);
+}
+
+function issueLine(issue: WorkbookIssue) {
+    const sheet = issue.sheetName || 'Workbook';
+    const row = issue.rowNumber && issue.rowNumber > 0 ? ` • Row ${issue.rowNumber}` : '';
+    const field = issue.fieldName ? `${issue.fieldName}: ` : '';
+    return `${sheet}${row}\n${field}${issue.message || 'Review this workbook item.'}`;
+}
+
 export default function WorkspaceHealthScreen() {
     const params = useLocalSearchParams<{ role?: string; sourceRole?: string }>();
     const session = getSession();
     const schoolId = String(session?.schoolId || 'BRK1').toUpperCase();
     const sourceRole = String(params.sourceRole || params.role || session?.role || 'admin').toLowerCase();
     const roleLabel = sourceRole === 'principal' ? 'Principal' : 'Admin';
-    const schoolName = resolveSchoolName(schoolId, session?.schoolName);
+    const schoolName = titleCaseSchoolName(resolveSchoolName(schoolId, session?.schoolName));
     const [summary, setSummary] = useState<ActivationSummary | null>(null);
     const [operations, setOperations] = useState<ActivationOperationsCenter | null>(null);
+    const [errorIntel, setErrorIntel] = useState<WorkbookErrorIntelligence | null>(null);
     const [loading, setLoading] = useState(true);
     const [activating, setActivating] = useState(false);
     const [error, setError] = useState('');
@@ -127,7 +239,12 @@ export default function WorkspaceHealthScreen() {
             const operationsResponse = await fetch(`${API_BASE_URL}/workspace-activation/operations-center?schoolId=${schoolId}`, { headers });
             if (operationsResponse.ok) {
                 const operationsPayload = await operationsResponse.json();
-                setOperations(unwrap<ActivationOperationsCenter>(operationsPayload));
+                setOperations(normalizeOperationsTimeline(unwrap<ActivationOperationsCenter>(operationsPayload)));
+            }
+            const intelligenceResponse = await fetch(`${API_BASE_URL}/workspace-activation/error-intelligence?schoolId=${schoolId}`, { headers });
+            if (intelligenceResponse.ok) {
+                const intelligencePayload = await intelligenceResponse.json();
+                setErrorIntel(unwrap<WorkbookErrorIntelligence>(intelligencePayload));
             }
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Unable to load Workspace Health Center.');
@@ -157,7 +274,12 @@ export default function WorkspaceHealthScreen() {
             const operationsResponse = await fetch(`${API_BASE_URL}/workspace-activation/operations-center?schoolId=${schoolId}`, { headers });
             if (operationsResponse.ok) {
                 const operationsPayload = await operationsResponse.json();
-                setOperations(unwrap<ActivationOperationsCenter>(operationsPayload));
+                setOperations(normalizeOperationsTimeline(unwrap<ActivationOperationsCenter>(operationsPayload)));
+            }
+            const intelligenceResponse = await fetch(`${API_BASE_URL}/workspace-activation/error-intelligence?schoolId=${schoolId}`, { headers });
+            if (intelligenceResponse.ok) {
+                const intelligencePayload = await intelligenceResponse.json();
+                setErrorIntel(unwrap<WorkbookErrorIntelligence>(intelligencePayload));
             }
             setNotice('Workspace activation completed. School is now live ready for Admin/Principal reporting and mobile activation visibility.');
         } catch (err) {
@@ -174,6 +296,11 @@ export default function WorkspaceHealthScreen() {
         { title: 'Workbook Commit', ready: summary.importCommitted },
         { title: 'Go-Live Status', ready: summary.activationStatus === 'ACTIVE' || !!summary.tenantActive },
     ] : [];
+
+    const teacherGroup = groupByCategory(errorIntel, 'TEACHER_ASSIGNMENT_ISSUES');
+    const scheduleGroup = groupByCategory(errorIntel, 'SCHEDULE_ISSUES');
+    const missingGroup = groupByCategory(errorIntel, 'MISSING_SHEETS');
+    const schoolIdGroup = groupByCategory(errorIntel, 'SCHOOL_ID_MISMATCH');
 
     return (
         <ImageBackground source={require('../assets/branding/splash-gold.png')} style={styles.bg} resizeMode="cover">
@@ -208,8 +335,8 @@ export default function WorkspaceHealthScreen() {
                     <>
                         <View style={styles.heroCard}>
                             <Text style={styles.pill}>{label(summary.activationStatus)}</Text>
-                            <Text style={styles.heroTitle}>{summary.schoolName || schoolName}</Text>
-                            <Text style={styles.heroText}>{summary.activationMessage}</Text>
+                            <Text style={styles.heroTitle}>{titleCaseSchoolName(summary.schoolName || schoolName)}</Text>
+                            <Text style={styles.heroText}>{errorIntel?.headline || summary.activationMessage}</Text>
                             <View style={styles.readinessRow}>
                                 <View>
                                     <Text style={styles.readiness}>{summary.readinessPercent}%</Text>
@@ -221,7 +348,7 @@ export default function WorkspaceHealthScreen() {
                                     style={[styles.activateButton, (!summary.readyForActivation || activating) && styles.disabled]}
                                     onPress={activateWorkspace}
                                 >
-                                    <Text style={styles.activateText}>{activating ? 'Checking...' : (summary.activationButtonLabel || (summary.readyForActivation ? 'Activate Workspace' : 'Activation Pending'))}</Text>
+                                    <Text style={styles.activateText}>{activating ? 'Checking...' : activationCtaLabel(summary, errorIntel)}</Text>
                                 </TouchableOpacity>
                             </View>
                         </View>
@@ -234,6 +361,59 @@ export default function WorkspaceHealthScreen() {
                                 </View>
                             ))}
                         </View>
+
+                        {errorIntel ? (
+                            <View style={styles.card}>
+                                <Text style={styles.sectionTitle}>Workbook Error Intelligence</Text>
+                                <View style={styles.rowCard}>
+                                    <Text style={styles.blockedPill}>{label(errorIntel.status)}</Text>
+                                    <Text style={styles.rowTitle}>Workbook Status</Text>
+                                    <Text style={styles.cardText}>{errorIntel.headline}</Text>
+                                </View>
+                                <View style={styles.summaryGrid}>
+                                    <View style={styles.metricCard}>
+                                        <Text style={styles.metricValue}>{errorIntel.totalErrors}</Text>
+                                        <Text style={styles.metricLabel}>Errors</Text>
+                                    </View>
+                                    <View style={styles.metricCard}>
+                                        <Text style={styles.metricValue}>{errorIntel.totalWarnings}</Text>
+                                        <Text style={styles.metricLabel}>Warnings</Text>
+                                    </View>
+                                    <View style={styles.metricCard}>
+                                        <Text style={styles.metricValue}>{errorIntel.activationBlocked ? 'Yes' : 'No'}</Text>
+                                        <Text style={styles.metricLabel}>Blocked</Text>
+                                    </View>
+                                </View>
+                                <View style={styles.rowCard}>
+                                    <Text style={styles.rowTitle}>Missing Sheets Summary</Text>
+                                    <Text style={styles.cardText}>These workbook tabs are required before activation.</Text>
+                                    <View style={styles.chipWrap}>
+                                        {(errorIntel.missingSheets || []).map((sheet) => <Text key={sheet} style={styles.errorChip}>{sheet}</Text>)}
+                                    </View>
+                                </View>
+                                {errorIntel.schoolIdMismatchExplanations?.length ? (
+                                    <View style={styles.rowCard}>
+                                        <Text style={styles.rowTitle}>School ID / Upload Explanation</Text>
+                                        {errorIntel.schoolIdMismatchExplanations.slice(0, 2).map((message, index) => (
+                                            <Text key={`${message}-${index}`} style={styles.issueText}>{message}</Text>
+                                        ))}
+                                    </View>
+                                ) : null}
+                                {[teacherGroup, scheduleGroup, missingGroup, schoolIdGroup].filter(Boolean).map((group) => (
+                                    <View key={group!.category} style={styles.rowCard}>
+                                        <Text style={styles.blockedPill}>{group!.errorCount} Errors • {group!.warningCount} Warnings</Text>
+                                        <Text style={styles.rowTitle}>{group!.title}</Text>
+                                        <Text style={styles.cardText}>{group!.explanation}</Text>
+                                        <Text style={styles.recommended}>Recommended action</Text>
+                                        <Text style={styles.cardText}>{group!.recommendedAction}</Text>
+                                        {(group!.issues || []).slice(0, 1).map((issue, index) => (
+                                            <Text key={`${group!.category}-${index}`} style={styles.issueText}>{issueLine(issue)}</Text>
+                                        ))}
+                                        {(group!.issues || []).length > 1 ? <Text style={styles.dateText}>+ {(group!.issues || []).length - 1} more issues. Review Web ERP Workbook Validation for full details.</Text> : null}
+                                    </View>
+                                ))}
+                            </View>
+                        ) : null}
 
                         <View style={styles.card}>
                             <Text style={styles.sectionTitle}>Admin/Principal Activation Summary</Text>
@@ -260,8 +440,8 @@ export default function WorkspaceHealthScreen() {
                                 <Text style={styles.sectionTitle}>Activation Operations Center</Text>
                                 <View style={styles.rowCard}>
                                     <Text style={styles.pillSmall}>{label(operations.reportingStatus)}</Text>
-                                    <Text style={styles.rowTitle}>Admin/Principal Activation Reporting</Text>
-                                    <Text style={styles.cardText}>{operations.operationsNote}</Text>
+                                    <Text style={styles.rowTitle}>Activation Readiness Status</Text>
+                                    <Text style={styles.cardText}>{errorIntel?.activationBlocked ? `Workbook validation has failed. ${errorIntel.totalErrors} errors and ${errorIntel.totalWarnings} warnings must be resolved before workbook commit and school activation.` : operations.operationsNote}</Text>
                                     <Text style={styles.dateText}>Readiness: {operations.readinessPercent}%</Text>
                                 </View>
                                 <Text style={styles.sectionTitle}>Activation Timeline</Text>
@@ -275,18 +455,6 @@ export default function WorkspaceHealthScreen() {
                                 ))}
                             </View>
                         ) : null}
-
-                        <View style={styles.card}>
-                            <Text style={styles.sectionTitle}>Activation & Import Audit Trail</Text>
-                            {summary.auditTrail.map((item, index) => (
-                                <View key={`${item.eventType}-${index}`} style={styles.rowCard}>
-                                    <Text style={styles.pillSmall}>{label(item.status)}</Text>
-                                    <Text style={styles.rowTitle}>{item.title}</Text>
-                                    <Text style={styles.cardText}>{item.description}</Text>
-                                    <Text style={styles.dateText}>{fmt(item.eventAt)}</Text>
-                                </View>
-                            ))}
-                        </View>
                     </>
                 ) : null}
             </ScrollView>
@@ -304,7 +472,7 @@ const styles = StyleSheet.create({
     homeIcon: { color: '#f8df9b', fontSize: 22, fontWeight: '900' },
     schoolName: { color: '#f3c35b', fontSize: 24, fontWeight: '900', letterSpacing: 0.2 },
     subtitle: { color: '#7a5422', fontSize: 13, fontWeight: '800', marginTop: 5, marginBottom: spacing.lg },
-    heroCard: { borderRadius: 28, backgroundColor: 'rgba(255, 250, 236, 0.9)', padding: spacing.lg, borderWidth: 1, borderColor: 'rgba(126, 85, 20, 0.18)', ...shadows.soft },
+    heroCard: { borderRadius: 28, backgroundColor: 'rgba(255, 250, 236, 0.96)', padding: spacing.lg, borderWidth: 1, borderColor: 'rgba(126, 85, 20, 0.18)', ...shadows.soft },
     pill: { alignSelf: 'flex-start', backgroundColor: 'rgba(116, 75, 10, 0.14)', color: '#7a4b0a', borderRadius: 999, paddingHorizontal: 12, paddingVertical: 7, fontSize: 11, fontWeight: '900', overflow: 'hidden', textTransform: 'uppercase' },
     pillSmall: { alignSelf: 'flex-start', backgroundColor: 'rgba(116, 75, 10, 0.12)', color: '#7a4b0a', borderRadius: 999, paddingHorizontal: 10, paddingVertical: 5, fontSize: 10, fontWeight: '900', overflow: 'hidden', textTransform: 'uppercase' },
     heroTitle: { color: '#2d220f', fontSize: 22, fontWeight: '900', marginTop: spacing.md },
@@ -312,20 +480,30 @@ const styles = StyleSheet.create({
     readinessRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: spacing.lg },
     readiness: { color: '#9b650d', fontSize: 44, fontWeight: '900' },
     smallText: { color: '#7a5422', fontSize: 12, fontWeight: '700' },
-    activateButton: { backgroundColor: '#9b650d', paddingHorizontal: 18, paddingVertical: 12, borderRadius: 999 },
-    activateText: { color: '#fff8db', fontWeight: '900' },
+    activateButton: { backgroundColor: '#9b650d', paddingHorizontal: 14, paddingVertical: 12, borderRadius: 999, maxWidth: 170, alignItems: 'center' },
+    activateText: { color: '#fff8db', fontWeight: '900', fontSize: 12, textAlign: 'center' },
     disabled: { opacity: 0.48 },
     gateGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: spacing.md },
-    gateCard: { width: '48%', borderRadius: 20, backgroundColor: 'rgba(255, 250, 236, 0.86)', padding: spacing.md, borderWidth: 1, borderColor: 'rgba(126, 85, 20, 0.15)' },
+    gateCard: { width: '48%', borderRadius: 20, backgroundColor: 'rgba(255, 250, 236, 0.94)', padding: spacing.md, borderWidth: 1, borderColor: 'rgba(126, 85, 20, 0.15)' },
     ready: { color: '#206c38', fontWeight: '900', fontSize: 13 },
     pending: { color: '#a65b00', fontWeight: '900', fontSize: 13 },
     gateTitle: { color: '#37270e', fontWeight: '800', marginTop: 4 },
-    card: { borderRadius: 26, backgroundColor: 'rgba(255, 250, 236, 0.88)', padding: spacing.lg, marginTop: spacing.md, borderWidth: 1, borderColor: 'rgba(126, 85, 20, 0.16)', ...shadows.soft },
+    card: { borderRadius: 26, backgroundColor: 'rgba(255, 250, 236, 0.95)', padding: spacing.lg, marginTop: spacing.md, borderWidth: 1, borderColor: 'rgba(126, 85, 20, 0.16)', ...shadows.soft },
     sectionTitle: { color: '#2d220f', fontSize: 18, fontWeight: '900', marginBottom: spacing.sm },
-    rowCard: { borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.5)', padding: spacing.md, marginTop: spacing.sm, borderWidth: 1, borderColor: 'rgba(126, 85, 20, 0.12)' },
+    rowCard: { borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.72)', padding: spacing.md, marginTop: spacing.sm, borderWidth: 1, borderColor: 'rgba(126, 85, 20, 0.12)' },
     rowTitle: { color: '#2d220f', fontSize: 15, fontWeight: '900', marginTop: 8 },
     cardText: { color: '#604418', fontSize: 13, lineHeight: 19, marginTop: 4 },
     dateText: { color: '#8c6a32', fontSize: 11, fontWeight: '700', marginTop: 6 },
+
+    blockedPill: { alignSelf: 'flex-start', backgroundColor: 'rgba(145, 54, 54, 0.16)', color: '#8c2f2f', borderRadius: 999, paddingHorizontal: 10, paddingVertical: 5, fontSize: 10, fontWeight: '900', overflow: 'hidden', textTransform: 'uppercase' },
+    summaryGrid: { flexDirection: 'row', gap: 8, marginTop: spacing.sm },
+    metricCard: { flex: 1, borderRadius: 16, backgroundColor: 'rgba(255,255,255,0.74)', padding: spacing.sm, borderWidth: 1, borderColor: 'rgba(126, 85, 20, 0.12)' },
+    metricValue: { color: '#8c2f2f', fontSize: 20, fontWeight: '900' },
+    metricLabel: { color: '#604418', fontSize: 11, fontWeight: '800', marginTop: 2 },
+    chipWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: spacing.sm },
+    errorChip: { backgroundColor: 'rgba(145, 54, 54, 0.12)', color: '#8c2f2f', borderRadius: 999, paddingHorizontal: 10, paddingVertical: 6, fontSize: 11, fontWeight: '900', overflow: 'hidden' },
+    issueText: { color: '#604418', fontSize: 12, lineHeight: 18, marginTop: spacing.sm, backgroundColor: 'rgba(255,255,255,0.72)', borderRadius: 14, padding: spacing.sm, borderWidth: 1, borderColor: 'rgba(126, 85, 20, 0.10)' },
+    recommended: { color: '#7a4b0a', fontSize: 12, fontWeight: '900', marginTop: spacing.sm },
     alert: { backgroundColor: 'rgba(119, 32, 20, 0.88)', borderRadius: 18, padding: spacing.md, marginBottom: spacing.md },
     alertText: { color: '#ffe6df', fontWeight: '800' },
     notice: { backgroundColor: 'rgba(28, 94, 51, 0.88)', borderRadius: 18, padding: spacing.md, marginBottom: spacing.md },
