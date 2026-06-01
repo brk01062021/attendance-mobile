@@ -135,7 +135,7 @@ export default function WorkspaceHealthScreen() {
             if (!response.ok) throw new Error('Workspace activation could not be completed.');
             const payload = await response.json();
             setSummary(unwrap<ActivationSummary>(payload));
-            setNotice('Workspace activation completed. School is now live ready for operational monitoring.');
+            setNotice('Workspace activation completed. School is now live ready for Admin/Principal reporting and mobile activation visibility.');
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Workspace activation could not be completed.');
         } finally {
@@ -171,7 +171,7 @@ export default function WorkspaceHealthScreen() {
                 </View>
 
                 <Text style={styles.schoolName}>{schoolName}</Text>
-                <Text style={styles.subtitle}>VidyaSetu ERP • {roleLabel} Workspace Health Center</Text>
+                <Text style={styles.subtitle}>VidyaSetu ERP • {roleLabel} Activation Visibility</Text>
 
                 {loading && !summary ? (
                     <View style={styles.card}><ActivityIndicator /><Text style={styles.cardText}>Loading workspace health...</Text></View>
@@ -232,7 +232,7 @@ export default function WorkspaceHealthScreen() {
                         </View>
 
                         <View style={styles.card}>
-                            <Text style={styles.sectionTitle}>Activation Audit Trail</Text>
+                            <Text style={styles.sectionTitle}>Activation & Import Audit Trail</Text>
                             {summary.auditTrail.map((item, index) => (
                                 <View key={`${item.eventType}-${index}`} style={styles.rowCard}>
                                     <Text style={styles.pillSmall}>{label(item.status)}</Text>

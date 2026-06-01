@@ -97,9 +97,9 @@ export default function ImportSchoolDataScreen() {
                 </TouchableOpacity>
 
                 <View style={styles.heroCard}>
-                    <Text style={styles.heroEyebrow}>Day 9 Import Engine</Text>
-                    <Text style={styles.heroTitle}>Real Import School Data</Text>
-                    <Text style={styles.heroSubtitle}>Validate workbook readiness before pilot school import.</Text>
+                    <Text style={styles.heroEyebrow}>Day 12 Import Engine</Text>
+                    <Text style={styles.heroTitle}>Workbook Commit Visibility</Text>
+                    <Text style={styles.heroSubtitle}>Review workbook upload, validation, commit, rollback, and activation visibility for this school.</Text>
                 </View>
 
                 <View style={styles.contentCard}>
@@ -114,7 +114,7 @@ export default function ImportSchoolDataScreen() {
                             <Text style={styles.previewSummary}>{productionImportStatus.importLockMessage}</Text>
                             <Text style={styles.previewSummary}>{productionImportStatus.completedSteps}/{productionImportStatus.totalSteps} required setup steps complete.</Text>
                             <TouchableOpacity style={styles.primaryButton} onPress={() => router.push('/workspace-setup')} activeOpacity={0.88}>
-                                <Text style={styles.primaryButtonText}>Open Workspace Initialization</Text>
+                                <Text style={styles.primaryButtonText}>Open Workspace Setup</Text>
                             </TouchableOpacity>
                         </View>
                     ) : (
