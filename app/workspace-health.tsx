@@ -93,6 +93,12 @@ type ActivationSummary = {
     tenantActive?: boolean;
     goLiveStatus?: string;
     activationButtonLabel?: string;
+    activationStage?: string;
+    tenantLifecycleStatus?: string;
+    credentialProvisioningStatus?: string;
+    activationSuccessTitle?: string;
+    activationSuccessMessage?: string;
+    activationNotifications?: string[];
     activatedBy?: string;
     activatedAt?: string;
     healthItems: HealthItem[];
@@ -105,6 +111,12 @@ function unwrap<T>(payload: any): T {
 
 function label(value?: string) {
     return String(value || 'PENDING').replace(/_/g, ' ');
+}
+
+function titleStatus(value?: string) {
+    return label(value)
+        .toLowerCase()
+        .replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
 function fmt(value?: string) {
@@ -200,13 +212,23 @@ function groupByCategory(intel?: WorkbookErrorIntelligence | null, category?: st
 }
 
 function isCompactValidationGroup(group: WorkbookErrorGroup) {
-    return ['TEACHER_ASSIGNMENT_ISSUES', 'SCHEDULE_ISSUES'].includes(group.category);
+    return ['TEACHER_ASSIGNMENT_ISSUES', 'SCHEDULE_ISSUES', 'MISSING_SHEETS', 'SCHOOL_ID_MISMATCH'].includes(group.category);
 }
 
 function compactValidationMessage(group: WorkbookErrorGroup) {
-    const total = (group.errorCount || 0) + (group.warningCount || 0);
-    const issueWord = total === 1 ? 'issue' : 'issues';
-    return `${total} ${issueWord} found. Review the Web ERP Workbook Validation screen for row-level details and correction guidance.`;
+    if (group.category === 'TEACHER_ASSIGNMENT_ISSUES') {
+        return 'Review workbook validation results in Web ERP. Verify Teachers, TeacherAssignments, TeacherPools, Subjects, and ClassSections before activation.';
+    }
+    if (group.category === 'SCHEDULE_ISSUES') {
+        return 'Review workbook validation results in Web ERP. Complete Schedules, AcademicRules, Subjects, TeacherPools, and ClassSections before activation.';
+    }
+    if (group.category === 'MISSING_SHEETS') {
+        return 'Add the missing workbook tabs using the VidyaSetu master workbook template and upload again.';
+    }
+    if (group.category === 'SCHOOL_ID_MISMATCH') {
+        return 'Workbook school ID does not match the active workspace. Use the same 4-character school_id in SchoolProfile as the logged-in school workspace.';
+    }
+    return 'Review workbook validation results in Web ERP for correction guidance.';
 }
 
 export default function WorkspaceHealthScreen() {
@@ -345,6 +367,7 @@ export default function WorkspaceHealthScreen() {
                                     <Text style={styles.readiness}>{summary.readinessPercent}%</Text>
                                     <Text style={styles.smallText}>Activation readiness</Text>
                                     <Text style={styles.smallText}>Activated by: {activatedByLabel(summary)}</Text>
+                                    <Text style={styles.smallText}>Lifecycle: {label(summary.tenantLifecycleStatus || summary.activationStatus)}</Text>
                                 </View>
                                 <TouchableOpacity
                                     disabled={!summary.readyForActivation || activating}
@@ -362,6 +385,31 @@ export default function WorkspaceHealthScreen() {
                                     <Text style={gate.ready ? styles.ready : styles.pending}>{gate.ready ? 'Ready' : 'Pending'}</Text>
                                     <Text style={styles.gateTitle}>{gate.title}</Text>
                                 </View>
+                            ))}
+                        </View>
+
+                        <View style={styles.card}>
+                            <Text style={styles.sectionTitle}>Activation Success Dashboard</Text>
+                            <View style={styles.rowCard}>
+                                <Text style={styles.rowTitle}>{summary.activationSuccessTitle || 'Activation Readiness'}</Text>
+                                <Text style={styles.cardText}>{summary.activationSuccessMessage || summary.activationMessage}</Text>
+                            </View>
+                            <View style={styles.summaryGrid}>
+                                <View style={styles.metricCard}>
+                                    <Text style={styles.metricValue} numberOfLines={2} adjustsFontSizeToFit>{titleStatus(summary.tenantLifecycleStatus || summary.activationStatus)}</Text>
+                                    <Text style={styles.metricLabel}>Lifecycle</Text>
+                                </View>
+                                <View style={styles.metricCard}>
+                                    <Text style={styles.metricValue} numberOfLines={2} adjustsFontSizeToFit>{titleStatus(summary.activationStage || summary.activationStatus)}</Text>
+                                    <Text style={styles.metricLabel}>Stage</Text>
+                                </View>
+                                <View style={styles.metricCard}>
+                                    <Text style={styles.metricValue} numberOfLines={2} adjustsFontSizeToFit>{titleStatus(summary.credentialProvisioningStatus || 'LOCKED_UNTIL_ACTIVE')}</Text>
+                                    <Text style={styles.metricLabel}>Credentials</Text>
+                                </View>
+                            </View>
+                            {(summary.activationNotifications || []).slice(0, 4).map((message) => (
+                                <Text key={message} style={styles.compactIssueText}>{message}</Text>
                             ))}
                         </View>
 
@@ -397,9 +445,7 @@ export default function WorkspaceHealthScreen() {
                                 {errorIntel.schoolIdMismatchExplanations?.length ? (
                                     <View style={styles.rowCard}>
                                         <Text style={styles.rowTitle}>School ID / Upload Explanation</Text>
-                                        {errorIntel.schoolIdMismatchExplanations.slice(0, 2).map((message, index) => (
-                                            <Text key={`${message}-${index}`} style={styles.issueText}>{message}</Text>
-                                        ))}
+                                        <Text style={styles.issueText}>Workbook school ID does not match the active workspace. Use the same 4-character school_id in SchoolProfile as the logged-in school workspace.</Text>
                                     </View>
                                 ) : null}
                                 {[teacherGroup, scheduleGroup, missingGroup, schoolIdGroup].filter(Boolean).map((group) => (
@@ -433,6 +479,8 @@ export default function WorkspaceHealthScreen() {
                                 <Text style={styles.cardText}>{label(summary.activationStatus)}</Text>
                                 <Text style={styles.rowTitle}>Go-Live Readiness</Text>
                                 <Text style={styles.cardText}>{label(summary.goLiveStatus || 'NOT_READY')}</Text>
+                                <Text style={styles.rowTitle}>Tenant Lifecycle</Text>
+                                <Text style={styles.cardText}>{titleStatus(summary.tenantLifecycleStatus || summary.activationStatus)}</Text>
                                 <Text style={styles.rowTitle}>Activated At</Text>
                                 <Text style={styles.cardText}>{activatedAtLabel(summary)}</Text>
                             </View>
@@ -509,7 +557,7 @@ const styles = StyleSheet.create({
     blockedPill: { alignSelf: 'flex-start', backgroundColor: 'rgba(145, 54, 54, 0.16)', color: '#8c2f2f', borderRadius: 999, paddingHorizontal: 10, paddingVertical: 5, fontSize: 10, fontWeight: '900', overflow: 'hidden', textTransform: 'uppercase' },
     summaryGrid: { flexDirection: 'row', gap: 8, marginTop: spacing.sm },
     metricCard: { flex: 1, borderRadius: 16, backgroundColor: 'rgba(255,255,255,0.74)', padding: spacing.sm, borderWidth: 1, borderColor: 'rgba(126, 85, 20, 0.12)' },
-    metricValue: { color: '#8c2f2f', fontSize: 20, fontWeight: '900' },
+    metricValue: { color: '#8c2f2f', fontSize: 16, lineHeight: 21, fontWeight: '900' },
     metricLabel: { color: '#604418', fontSize: 11, fontWeight: '800', marginTop: 2 },
     chipWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: spacing.sm },
     errorChip: { backgroundColor: 'rgba(145, 54, 54, 0.12)', color: '#8c2f2f', borderRadius: 999, paddingHorizontal: 10, paddingVertical: 6, fontSize: 11, fontWeight: '900', overflow: 'hidden' },
