@@ -117,6 +117,8 @@ export default function TimetableOperationsScreen() {
             </View> : null}
 
             <View style={styles.grid}>
+                <Action title="Auto Repair" subtitle="Repair conflicts" onPress={() => router.push({ pathname: '/timetable-repair' as any, params: { generatedBatchId: cleanBatchId, sourceRole } })} />
+                <Action title="Manual Review" subtitle="Editor foundation" onPress={() => router.push({ pathname: '/timetable-review' as any, params: { generatedBatchId: cleanBatchId, sourceRole } })} />
                 <Action title="Publish Lock" subtitle="Admin/Principal only" onPress={runPublishLock} />
                 <Action title="PDF Export" subtitle="Real PDF payload" onPress={() => runExport('PDF')} />
                 <Action title="Excel Export" subtitle="Excel .xls payload" onPress={() => runExport('EXCEL')} />

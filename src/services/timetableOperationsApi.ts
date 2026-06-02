@@ -1,15 +1,15 @@
-import { API_BASE_URL } from './api';
 import {
     TimetableArchiveSummary,
     TimetableBinaryExportResponse,
-    TimetableOperationsStatus,
-    TimetableRolloutReadiness,
     TimetableLiveResponse,
     TimetableManualEditRequest,
     TimetableNotification,
+    TimetableOperationsStatus,
     TimetablePublishResponse,
+    TimetableRolloutReadiness,
     TimetableVersion,
 } from '../types/timetable';
+import { API_BASE_URL } from './api';
 
 async function safeJson<T>(response: Response): Promise<T> {
     if (!response.ok) {

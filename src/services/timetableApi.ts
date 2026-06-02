@@ -1,21 +1,21 @@
-import { API_BASE_URL } from './api';
 import {
-    TeacherWorkloadSummary,
-    TimetableConflict,
-    TimetableEntry,
-    TimetableClassSectionReview,
-    TimetableGenerationRequest,
-    TimetableGenerationResponse,
     AcademicRule,
     AcademicRulesSummary,
-    TimetableRepairResult,
-    TimetableManualEditRequest,
-    TimetablePublishResponse,
-    TimetableExportResponse,
     PrincipalTimetableIntelligence,
-    TimetablePublishAudit,
+    TeacherWorkloadSummary,
     TimetableBatchSummary,
+    TimetableClassSectionReview,
+    TimetableConflict,
+    TimetableEntry,
+    TimetableExportResponse,
+    TimetableGenerationRequest,
+    TimetableGenerationResponse,
+    TimetableManualEditRequest,
+    TimetablePublishAudit,
+    TimetablePublishResponse,
+    TimetableRepairResult,
 } from '../types/timetable';
+import { API_BASE_URL } from './api';
 
 async function safeJson<T>(response: Response): Promise<T> {
     if (!response.ok) {
