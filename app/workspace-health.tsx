@@ -199,11 +199,14 @@ function groupByCategory(intel?: WorkbookErrorIntelligence | null, category?: st
     return intel?.groups?.find((group) => group.category === category);
 }
 
-function issueLine(issue: WorkbookIssue) {
-    const sheet = issue.sheetName || 'Workbook';
-    const row = issue.rowNumber && issue.rowNumber > 0 ? ` • Row ${issue.rowNumber}` : '';
-    const field = issue.fieldName ? `${issue.fieldName}: ` : '';
-    return `${sheet}${row}\n${field}${issue.message || 'Review this workbook item.'}`;
+function isCompactValidationGroup(group: WorkbookErrorGroup) {
+    return ['TEACHER_ASSIGNMENT_ISSUES', 'SCHEDULE_ISSUES'].includes(group.category);
+}
+
+function compactValidationMessage(group: WorkbookErrorGroup) {
+    const total = (group.errorCount || 0) + (group.warningCount || 0);
+    const issueWord = total === 1 ? 'issue' : 'issues';
+    return `${total} ${issueWord} found. Review the Web ERP Workbook Validation screen for row-level details and correction guidance.`;
 }
 
 export default function WorkspaceHealthScreen() {
@@ -406,10 +409,18 @@ export default function WorkspaceHealthScreen() {
                                         <Text style={styles.cardText}>{group!.explanation}</Text>
                                         <Text style={styles.recommended}>Recommended action</Text>
                                         <Text style={styles.cardText}>{group!.recommendedAction}</Text>
-                                        {(group!.issues || []).slice(0, 1).map((issue, index) => (
-                                            <Text key={`${group!.category}-${index}`} style={styles.issueText}>{issueLine(issue)}</Text>
-                                        ))}
-                                        {(group!.issues || []).length > 1 ? <Text style={styles.dateText}>+ {(group!.issues || []).length - 1} more issues. Review Web ERP Workbook Validation for full details.</Text> : null}
+                                        {isCompactValidationGroup(group!) ? (
+                                            <Text style={styles.compactIssueText}>{compactValidationMessage(group!)}</Text>
+                                        ) : (
+                                            <>
+                                                {(group!.issues || []).slice(0, 1).map((issue, index) => (
+                                                    <Text key={`${group!.category}-${index}`} style={styles.issueText}>
+                                                        {`${issue.sheetName || 'Workbook'}${issue.rowNumber && issue.rowNumber > 0 ? ` • Row ${issue.rowNumber}` : ''}\n${issue.fieldName ? `${issue.fieldName}: ` : ''}${issue.message || 'Review this workbook item.'}`}
+                                                    </Text>
+                                                ))}
+                                                {(group!.issues || []).length > 1 ? <Text style={styles.dateText}>+ {(group!.issues || []).length - 1} more issues. Review Web ERP Workbook Validation for full details.</Text> : null}
+                                            </>
+                                        )}
                                     </View>
                                 ))}
                             </View>
@@ -464,7 +475,7 @@ export default function WorkspaceHealthScreen() {
 
 const styles = StyleSheet.create({
     bg: { flex: 1 },
-    overlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(74, 45, 4, 0.18)' },
+    overlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(74, 45, 4, 0.08)' },
     container: { paddingTop: 58, paddingHorizontal: spacing.lg, paddingBottom: 42 },
     headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.lg },
     navButton: { width: 42, height: 42, borderRadius: 21, backgroundColor: 'rgba(19, 31, 49, 0.88)', alignItems: 'center', justifyContent: 'center', ...shadows.soft },
@@ -472,7 +483,7 @@ const styles = StyleSheet.create({
     homeIcon: { color: '#f8df9b', fontSize: 22, fontWeight: '900' },
     schoolName: { color: '#f3c35b', fontSize: 24, fontWeight: '900', letterSpacing: 0.2 },
     subtitle: { color: '#7a5422', fontSize: 13, fontWeight: '800', marginTop: 5, marginBottom: spacing.lg },
-    heroCard: { borderRadius: 28, backgroundColor: 'rgba(255, 250, 236, 0.96)', padding: spacing.lg, borderWidth: 1, borderColor: 'rgba(126, 85, 20, 0.18)', ...shadows.soft },
+    heroCard: { borderRadius: 28, backgroundColor: 'rgba(255, 250, 236, 0.985)', padding: spacing.lg, borderWidth: 1, borderColor: 'rgba(126, 85, 20, 0.18)', ...shadows.soft },
     pill: { alignSelf: 'flex-start', backgroundColor: 'rgba(116, 75, 10, 0.14)', color: '#7a4b0a', borderRadius: 999, paddingHorizontal: 12, paddingVertical: 7, fontSize: 11, fontWeight: '900', overflow: 'hidden', textTransform: 'uppercase' },
     pillSmall: { alignSelf: 'flex-start', backgroundColor: 'rgba(116, 75, 10, 0.12)', color: '#7a4b0a', borderRadius: 999, paddingHorizontal: 10, paddingVertical: 5, fontSize: 10, fontWeight: '900', overflow: 'hidden', textTransform: 'uppercase' },
     heroTitle: { color: '#2d220f', fontSize: 22, fontWeight: '900', marginTop: spacing.md },
@@ -488,9 +499,9 @@ const styles = StyleSheet.create({
     ready: { color: '#206c38', fontWeight: '900', fontSize: 13 },
     pending: { color: '#a65b00', fontWeight: '900', fontSize: 13 },
     gateTitle: { color: '#37270e', fontWeight: '800', marginTop: 4 },
-    card: { borderRadius: 26, backgroundColor: 'rgba(255, 250, 236, 0.95)', padding: spacing.lg, marginTop: spacing.md, borderWidth: 1, borderColor: 'rgba(126, 85, 20, 0.16)', ...shadows.soft },
+    card: { borderRadius: 26, backgroundColor: 'rgba(255, 250, 236, 0.985)', padding: spacing.lg, marginTop: spacing.md, borderWidth: 1, borderColor: 'rgba(126, 85, 20, 0.16)', ...shadows.soft },
     sectionTitle: { color: '#2d220f', fontSize: 18, fontWeight: '900', marginBottom: spacing.sm },
-    rowCard: { borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.72)', padding: spacing.md, marginTop: spacing.sm, borderWidth: 1, borderColor: 'rgba(126, 85, 20, 0.12)' },
+    rowCard: { borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.90)', padding: spacing.md, marginTop: spacing.sm, borderWidth: 1, borderColor: 'rgba(126, 85, 20, 0.12)' },
     rowTitle: { color: '#2d220f', fontSize: 15, fontWeight: '900', marginTop: 8 },
     cardText: { color: '#604418', fontSize: 13, lineHeight: 19, marginTop: 4 },
     dateText: { color: '#8c6a32', fontSize: 11, fontWeight: '700', marginTop: 6 },
@@ -502,7 +513,8 @@ const styles = StyleSheet.create({
     metricLabel: { color: '#604418', fontSize: 11, fontWeight: '800', marginTop: 2 },
     chipWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: spacing.sm },
     errorChip: { backgroundColor: 'rgba(145, 54, 54, 0.12)', color: '#8c2f2f', borderRadius: 999, paddingHorizontal: 10, paddingVertical: 6, fontSize: 11, fontWeight: '900', overflow: 'hidden' },
-    issueText: { color: '#604418', fontSize: 12, lineHeight: 18, marginTop: spacing.sm, backgroundColor: 'rgba(255,255,255,0.72)', borderRadius: 14, padding: spacing.sm, borderWidth: 1, borderColor: 'rgba(126, 85, 20, 0.10)' },
+    issueText: { color: '#604418', fontSize: 12, lineHeight: 18, marginTop: spacing.sm, backgroundColor: 'rgba(255,255,255,0.90)', borderRadius: 14, padding: spacing.sm, borderWidth: 1, borderColor: 'rgba(126, 85, 20, 0.10)' },
+    compactIssueText: { color: '#604418', fontSize: 12, lineHeight: 18, marginTop: spacing.sm, backgroundColor: 'rgba(255,255,255,0.90)', borderRadius: 14, padding: spacing.sm, borderWidth: 1, borderColor: 'rgba(126, 85, 20, 0.10)', fontWeight: '800' },
     recommended: { color: '#7a4b0a', fontSize: 12, fontWeight: '900', marginTop: spacing.sm },
     alert: { backgroundColor: 'rgba(119, 32, 20, 0.88)', borderRadius: 18, padding: spacing.md, marginBottom: spacing.md },
     alertText: { color: '#ffe6df', fontWeight: '800' },
