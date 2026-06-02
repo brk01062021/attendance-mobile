@@ -385,6 +385,16 @@ export default function PrincipalHomeScreen() {
                             />
 
                             <MenuItem
+                                title="Import Existing Timetable"
+                                onPress={() =>
+                                    openRoute('/import-existing-timetable', {
+                                        role: 'PRINCIPAL',
+                                        sourceRole: 'principal',
+                                    })
+                                }
+                            />
+
+                            <MenuItem
                                 title="Timetable Batch Center"
                                 onPress={() =>
                                     openRoute('/timetable-batch-center', {

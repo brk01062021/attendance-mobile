@@ -489,6 +489,16 @@ export default function AdminDashboardScreen() {
                             />
 
                             <MenuItem
+                                title="Import Existing Timetable"
+                                onPress={() =>
+                                    openRoute('/import-existing-timetable', {
+                                        role: 'ADMIN',
+                                        sourceRole: 'admin',
+                                    })
+                                }
+                            />
+
+                            <MenuItem
                                 title="Timetable Batch Center"
                                 onPress={() =>
                                     openRoute('/timetable-batch-center', {

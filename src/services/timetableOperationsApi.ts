@@ -114,6 +114,11 @@ export async function getTimetableNotifications(batchId: string): Promise<Timeta
     return safeJson<TimetableNotification[]>(response);
 }
 
+export async function getTimetableRoleNotifications(role: string): Promise<TimetableNotification[]> {
+    const response = await fetch(`${API_BASE_URL}/timetable/role-notifications?role=${encodeURIComponent(role)}`);
+    return safeJson<TimetableNotification[]>(response);
+}
+
 export async function getTimetableArchives(): Promise<TimetableArchiveSummary[]> {
     const response = await fetch(`${API_BASE_URL}/timetable/operations/archives`);
     return safeJson<TimetableArchiveSummary[]>(response);

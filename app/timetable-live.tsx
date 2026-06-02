@@ -1,7 +1,7 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, ImageBackground, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { getLiveTimetable } from '../src/services/timetableOperationsApi';
+import { getLiveTimetable, getTimetableRoleNotifications } from '../src/services/timetableOperationsApi';
 import { colors, shadows, spacing } from '../src/theme';
 import { TimetableEntry, TimetableLiveResponse } from '../src/types/timetable';
 
@@ -15,6 +15,7 @@ export default function TimetableLiveScreen() {
     const [data, setData] = useState<TimetableLiveResponse | null>(null);
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState('Load published timetable visibility for teacher, student, or parent.');
+    const [notifications, setNotifications] = useState<any[]>([]);
 
     const load = async () => {
         setLoading(true);
@@ -28,6 +29,8 @@ export default function TimetableLiveScreen() {
             });
             setData(response);
             setMessage(response.message);
+            const noticeResponse = await getTimetableRoleNotifications(role);
+            setNotifications(noticeResponse || []);
         } catch {
             setMessage('Unable to load live timetable. Confirm backend and batch ID.');
         } finally {
@@ -42,7 +45,7 @@ export default function TimetableLiveScreen() {
             <View style={styles.headerRow}>
                 <TouchableOpacity style={styles.circleButton} onPress={() => router.back()}><Text style={styles.backText}>‹</Text></TouchableOpacity>
                 <View style={styles.headerTextWrap}><Text style={styles.eyebrow}>LIVE TIMETABLE</Text><Text style={styles.title}>Live Timetable</Text></View>
-                <TouchableOpacity style={styles.circleButton} onPress={() => router.replace('/teacher-dashboard' as any)}><Text style={styles.homeIcon}>⌂</Text></TouchableOpacity>
+                <TouchableOpacity style={styles.circleButton} onPress={() => router.replace(homeRouteForRole(String(params.sourceRole || role)) as any)}><Text style={styles.homeIcon}>⌂</Text></TouchableOpacity>
             </View>
 
             <View style={styles.heroCard}><Text style={styles.heroTitle}>{data?.visibilityScope || role} Timetable</Text><Text style={styles.heroText}>{message}</Text></View>
@@ -57,7 +60,7 @@ export default function TimetableLiveScreen() {
                 <TouchableOpacity style={styles.primaryButton} onPress={load}>{loading ? <ActivityIndicator color={colors.white} /> : <Text style={styles.primaryText}>Load Live Timetable</Text>}</TouchableOpacity>
             </View>
 
-            {data ? <View style={styles.statusRow}><Pill text={data.published ? 'Published' : 'Draft'} /><Pill text={data.locked ? 'Locked' : 'Unlocked'} /><Pill text={`${data.entries.length} periods`} /></View> : null}
+            {data ? <View style={styles.statusRow}><Pill text={data.published ? 'Published' : 'Hidden'} /><Pill text={data.locked ? 'Locked' : 'Unlocked'} /><Pill text={`${data.entries.length} periods`} /></View> : null}
             {groupEntries(data?.entries || []).map(group => <View key={group.day} style={styles.card}>
                 <Text style={styles.cardTitle}>{group.day}</Text>
                 {group.entries.map(entry => <View key={`${entry.id}-${entry.periodNumber}`} style={styles.entryRow}>
@@ -65,8 +68,26 @@ export default function TimetableLiveScreen() {
                     <View style={{ flex: 1 }}><Text style={styles.subject}>{entry.subjectName}</Text><Text style={styles.meta}>{entry.className}-{entry.section} • {entry.teacherName} • {entry.startTime || ''}</Text></View>
                 </View>)}
             </View>)}
+            <View style={styles.card}>
+                <Text style={styles.cardTitle}>Timetable Notification Center</Text>
+                {notifications.length === 0 ? <Text style={styles.meta}>No timetable alerts yet.</Text> : notifications.slice(0, 5).map((notice: any) => (
+                    <View key={notice.notificationId} style={styles.entryRow}>
+                        <Text style={styles.period}>•</Text>
+                        <View style={{ flex: 1 }}><Text style={styles.subject}>{notice.title}</Text><Text style={styles.meta}>{notice.message}</Text></View>
+                    </View>
+                ))}
+            </View>
         </ScrollView>
     </ImageBackground>;
+}
+
+function homeRouteForRole(role: string) {
+    const normalized = role.toUpperCase();
+    if (normalized.includes('PARENT')) return '/parent-dashboard';
+    if (normalized.includes('STUDENT')) return '/student-dashboard';
+    if (normalized.includes('PRINCIPAL')) return '/principal-dashboard';
+    if (normalized.includes('ADMIN')) return '/admin-dashboard';
+    return '/teacher-dashboard';
 }
 
 function groupEntries(entries: TimetableEntry[]) {

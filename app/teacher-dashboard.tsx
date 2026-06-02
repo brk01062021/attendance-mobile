@@ -303,6 +303,13 @@ export default function TeacherDashboard() {
 
                             <MenuSectionTitle title="Planning" />
                             <MenuItem
+                                title="My Timetable"
+                                onPress={() => {
+                                    setMenuVisible(false);
+                                    router.push({ pathname: '/timetable-live', params: { role: 'TEACHER', teacherId, sourceRole: 'teacher', schoolId } } as any);
+                                }}
+                            />
+                            <MenuItem
                                 title="Request Leave / Leave Enquiry"
                                 onPress={() => {
                                     setMenuVisible(false);
