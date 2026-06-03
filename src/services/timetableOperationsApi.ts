@@ -1,5 +1,4 @@
 import {
-    TimetableArchiveSummary,
     TimetableBinaryExportResponse,
     TimetableLiveResponse,
     TimetableManualEditRequest,
@@ -7,7 +6,7 @@ import {
     TimetableOperationsStatus,
     TimetablePublishResponse,
     TimetableRolloutReadiness,
-    TimetableVersion,
+    TimetableVersion
 } from '../types/timetable';
 import { API_BASE_URL } from './api';
 
@@ -24,6 +23,7 @@ export async function getLiveTimetable(params: {
     teacherId?: number;
     className?: string;
     section?: string;
+    schoolId?: string;
 }): Promise<TimetableLiveResponse> {
     const query = new URLSearchParams();
 
@@ -33,7 +33,9 @@ export async function getLiveTimetable(params: {
     if (params.className) query.append('className', params.className);
     if (params.section) query.append('section', params.section);
 
-    const response = await fetch(`${API_BASE_URL}/timetable/operations/live?${query.toString()}`);
+    const response = await fetch(`${API_BASE_URL}/timetable/operations/live?${query.toString()}`, {
+        headers: params.schoolId ? { 'X-School-Id': params.schoolId } : undefined,
+    });
     return safeJson<TimetableLiveResponse>(response);
 }
 
@@ -114,12 +116,9 @@ export async function getTimetableNotifications(batchId: string): Promise<Timeta
     return safeJson<TimetableNotification[]>(response);
 }
 
-export async function getTimetableRoleNotifications(role: string): Promise<TimetableNotification[]> {
-    const response = await fetch(`${API_BASE_URL}/timetable/role-notifications?role=${encodeURIComponent(role)}`);
+export async function getTimetableRoleNotifications(role: string, schoolId?: string): Promise<TimetableNotification[]> {
+    const response = await fetch(`${API_BASE_URL}/timetable/role-notifications?role=${encodeURIComponent(role)}`, {
+        headers: schoolId ? { 'X-School-Id': schoolId } : undefined,
+    });
     return safeJson<TimetableNotification[]>(response);
-}
-
-export async function getTimetableArchives(): Promise<TimetableArchiveSummary[]> {
-    const response = await fetch(`${API_BASE_URL}/timetable/operations/archives`);
-    return safeJson<TimetableArchiveSummary[]>(response);
 }
