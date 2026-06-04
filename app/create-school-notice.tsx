@@ -78,7 +78,7 @@ export default function CreateSchoolNoticeScreen() {
             console.error(error);
             Alert.alert(
                 "Publish Failed",
-                "Unable to publish school notice. Please check backend and try again."
+                "Unable to publish school notice. Please try again."
             );
         } finally {
             setLoading(false);

@@ -14,7 +14,7 @@ export default function TimetableConflictsScreen() {
     const backHome = sourceRole === 'principal' ? '/principal-home' : '/admin-dashboard';
     const [conflicts, setConflicts] = useState<TimetableConflict[]>(generatedBatchId === 'DEMO' ? demoConflicts : []);
     const [loading, setLoading] = useState(false);
-    const [status, setStatus] = useState(generatedBatchId === 'DEMO' ? 'Day 13 demo: conflict-free timetable has no teacher double-booking.' : 'Loading backend conflict center...');
+    const [status, setStatus] = useState(generatedBatchId === 'DEMO' ? 'No teacher double-booking found for this timetable.' : 'Loading conflict center...');
 
     useEffect(() => {
         let active = true;
@@ -23,16 +23,16 @@ export default function TimetableConflictsScreen() {
             .then(data => {
                 if (!active) return;
                 setConflicts(data || []);
-                setStatus(data?.length ? `Backend conflicts loaded for ${generatedBatchId}` : `No timetable conflicts found for ${generatedBatchId}`);
+                setStatus(data?.length ? `Conflicts loaded for ${generatedBatchId}` : `No timetable conflicts found for ${generatedBatchId}`);
             })
             .catch(() => {
                 if (!active) return;
                 if (generatedBatchId === 'DEMO') {
                     setConflicts(demoConflicts);
-                    setStatus('Backend conflict API unavailable. Showing Day 13 conflict-free demo.');
+                    setStatus('Conflict details are unavailable. Please refresh after the timetable service is restored.');
                 } else {
                     setConflicts([]);
-                    setStatus('Backend conflict API unavailable for this batch.');
+                    setStatus('Conflict details are unavailable for this batch.');
                 }
             })
             .finally(() => { if (active) setLoading(false); });

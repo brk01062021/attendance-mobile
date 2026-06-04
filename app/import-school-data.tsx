@@ -97,7 +97,7 @@ export default function ImportSchoolDataScreen() {
                 </TouchableOpacity>
 
                 <View style={styles.heroCard}>
-                    <Text style={styles.heroEyebrow}>Day 12 Import Engine</Text>
+                    <Text style={styles.heroEyebrow}>School Data Import</Text>
                     <Text style={styles.heroTitle}>Workbook Commit Visibility</Text>
                     <Text style={styles.heroSubtitle}>Review workbook upload, validation, commit, rollback, and activation visibility for this school.</Text>
                 </View>
@@ -180,9 +180,9 @@ export default function ImportSchoolDataScreen() {
                                 disabled={!canCommitPreview}
                                 onPress={() => setError('Mobile commit is enabled only after backend validation returns READY_TO_IMPORT or READY_WITH_WARNINGS.')}
                             >
-                                <Text style={styles.commitButtonText}>{canCommitPreview ? 'Commit Import' : 'Commit Disabled'}</Text>
+                                <Text style={styles.commitButtonText}>{canCommitPreview ? 'Commit Import' : 'Commit Locked'}</Text>
                             </TouchableOpacity>
-                            {!canCommitPreview ? <Text style={styles.previewSummary}>Commit is blocked until workbook status is READY_TO_IMPORT or READY_WITH_WARNINGS.</Text> : null}
+                            {!canCommitPreview ? <Text style={styles.previewSummary}>Commit is locked until the workbook is ready or ready with warnings.</Text> : null}
 
                             <Text style={styles.subTitle}>Detected Workbook Sheets</Text>
                             {preview.previewSheets?.map((sheet) => (

@@ -405,7 +405,7 @@ export default function PrincipalDashboardScreen() {
 
                 {fatigueAlerts.length > 0 ? (
                     <View style={styles.actionFocusPanel}>
-                        <Text style={styles.focusTitle}>Day 5 Operational Alerts</Text>
+                        <Text style={styles.focusTitle}>Operational Alerts</Text>
                         {fatigueAlerts.slice(0, 3).map((alert) => (
                             <Text key={`${alert.teacherId}-${alert.overloadScore}`} style={styles.focusDescription}>
                                 • {alert.teacherName}: {alert.reason} Action: {alert.actionRequired}

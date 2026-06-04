@@ -20,7 +20,7 @@ export default function TimetableRepairScreen() {
         setStatus('Repairing timetable conflicts and recalculating workload...');
         repairTimetable(generatedBatchId)
             .then(data => { setResult(data); setStatus(data.publishReady ? 'Repair complete. Timetable is publish-ready.' : 'Repair complete. Manual review still recommended.'); })
-            .catch(() => setStatus('Auto repair API unavailable. Please verify backend is running on port 8080.'))
+            .catch(() => setStatus('Auto repair is unavailable. Please try again after the service is restored.'))
             .finally(() => setLoading(false));
     };
 

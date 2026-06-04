@@ -42,7 +42,7 @@ export default function TimetableLiveScreen() {
             const noticeResponse = await getTimetableRoleNotifications(role, schoolId);
             setNotifications(noticeResponse || []);
         } catch {
-            setMessage('Unable to load published timetable. Confirm backend is running and the timetable has been published.');
+            setMessage('Unable to load the published timetable. Confirm a timetable has been published and try again.');
         } finally {
             setLoading(false);
         }

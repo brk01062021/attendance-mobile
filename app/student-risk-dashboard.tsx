@@ -20,7 +20,7 @@ export default function StudentRiskDashboardScreen() {
             setLoading(true);
             setItems(await getStudentAttendanceRisk(firstDayOfMonth(), today()));
         } catch (error) {
-            Alert.alert('Unable to load risk analytics', 'Please confirm backend is running.');
+            Alert.alert('Unable to load risk analytics', 'Please try again.');
         } finally {
             setLoading(false);
         }

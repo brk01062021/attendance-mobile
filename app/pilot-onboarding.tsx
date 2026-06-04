@@ -71,8 +71,8 @@ export default function PilotOnboardingScreen() {
             setRequests(sortQueue(data));
             setMessage('Real onboarding review queue connected. VidyaSetu onboarding team can review, pilot, activate, and issue first-login credentials.');
         } catch (error) {
-            setMessage('Unable to load onboarding review queue. Please verify backend is running.');
-            Alert.alert('Review Queue Error', 'Unable to load onboarding requests. Please check backend API.');
+            setMessage('Unable to load onboarding review queue. Please try again.');
+            Alert.alert('Review Queue Error', 'Unable to load onboarding requests. Please try again.');
         } finally {
             setLoading(false);
             setRefreshing(false);

@@ -15,7 +15,7 @@ export default function PrincipalTimetableIntelligenceScreen() {
     const [data, setData] = useState<PrincipalTimetableIntelligence | null>(null);
     const [latestPublished, setLatestPublished] = useState<TimetablePublishAudit | null>(null);
     const [status, setStatus] = useState('Loading principal timetable intelligence...');
-    useEffect(() => { setLoading(true); Promise.all([getPrincipalTimetableIntelligence(generatedBatchId), getLatestPublishedTimetable().catch(() => null)]).then(([result, latest]) => { setData(result); setLatestPublished(latest); setStatus('Principal intelligence loaded.'); }).catch(() => setStatus('Principal timetable intelligence API unavailable.')).finally(() => setLoading(false)); }, [generatedBatchId]);
+    useEffect(() => { setLoading(true); Promise.all([getPrincipalTimetableIntelligence(generatedBatchId), getLatestPublishedTimetable().catch(() => null)]).then(([result, latest]) => { setData(result); setLatestPublished(latest); setStatus('Principal intelligence loaded.'); }).catch(() => setStatus('Principal timetable intelligence is unavailable. Please try again.')).finally(() => setLoading(false)); }, [generatedBatchId]);
     const navParams = { sourceRole, generatedBatchId };
     return <ImageBackground source={require('../assets/branding/splash-gold.png')} style={styles.bg} resizeMode="cover"><ScrollView contentContainerStyle={styles.container}>
         <Header title="Timetable Intelligence" eyebrow="PRINCIPAL VIEW" homePath={backHome} />

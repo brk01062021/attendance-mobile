@@ -26,7 +26,7 @@ import {
 } from '../src/types/timetable';
 
 const modes: TimetableGenerationMode[] = ['ANNUAL', 'QUARTERLY', 'MONTHLY', 'CUSTOM'];
-const DEFAULT_DAY14_RULES: AcademicRule[] = ['1', '2'].flatMap(className => [
+const DEFAULT_ACADEMIC_RULES: AcademicRule[] = ['1', '2'].flatMap(className => [
     { ruleId: `AR-${className}-TEL`, className, subjectName: 'Telugu', subjectType: 'THEORY', weeklyPeriods: 5, sameTeacherContinuityRequired: true, priority: 'HIGH' },
     { ruleId: `AR-${className}-ENG`, className, subjectName: 'English', subjectType: 'THEORY', weeklyPeriods: 5, sameTeacherContinuityRequired: true, priority: 'HIGH' },
     { ruleId: `AR-${className}-MAT`, className, subjectName: 'Mathematics', subjectType: 'THEORY', weeklyPeriods: 6, sameTeacherContinuityRequired: true, priority: 'HIGH' },
@@ -38,9 +38,9 @@ const DEFAULT_DAY14_RULES: AcademicRule[] = ['1', '2'].flatMap(className => [
 ]);
 
 const poolSources: { key: TeacherPoolSource; label: string; subtitle: string }[] = [
-    { key: 'AUTO_DEFAULT_POOL', label: 'Auto Default Teacher Pool', subtitle: 'Use class-wise pool automatically' },
-    { key: 'EXCEL_CLASS_POOL', label: 'Excel Class Pool', subtitle: 'Principal upload: Pool 1, Pool 2, ...' },
-    { key: 'MANUAL_TEACHER_IDS', label: 'Manual Teacher IDs', subtitle: 'Fallback only when needed' },
+    { key: 'AUTO_DEFAULT_POOL', label: 'Use Existing Teacher Pool', subtitle: 'Use the active teacher-class mapping' },
+    { key: 'EXCEL_CLASS_POOL', label: 'Excel Teacher Pool', subtitle: 'Teacher pools from imported school data' },
+    { key: 'MANUAL_TEACHER_IDS', label: 'Manual Teacher Selection', subtitle: 'Use only when teacher mapping is incomplete' },
 ];
 
 export default function GenerateTimetableScreen() {
@@ -58,7 +58,7 @@ export default function GenerateTimetableScreen() {
     const [loading, setLoading] = useState(false);
     const [result, setResult] = useState<TimetableGenerationResponse | null>(null);
     const [message, setMessage] = useState('');
-    const [academicRules, setAcademicRules] = useState<AcademicRule[]>(DEFAULT_DAY14_RULES);
+    const [academicRules, setAcademicRules] = useState<AcademicRule[]>(DEFAULT_ACADEMIC_RULES);
     const [academicRulesSummary, setAcademicRulesSummary] = useState<AcademicRulesSummary | null>(null);
 
     const autoSections = useMemo(() => {
@@ -118,7 +118,7 @@ export default function GenerateTimetableScreen() {
             setAcademicRules(rules);
         } catch {
             const fallbackClasses = classes.length ? classes : selectedClasses;
-            setAcademicRules(DEFAULT_DAY14_RULES.filter(rule => fallbackClasses.includes(rule.className)));
+            setAcademicRules(DEFAULT_ACADEMIC_RULES.filter(rule => fallbackClasses.includes(rule.className)));
         }
     };
 
@@ -140,10 +140,10 @@ export default function GenerateTimetableScreen() {
             const data = await generateTimetable(request);
             saveTimetableReviewSnapshot(request, data);
             setResult(data);
-            setMessage(data.conflictsDetected === 0 ? 'Smart conflict-free timetable generated successfully. No teacher double-booking found.' : 'Timetable generated. Please review remaining alerts in Conflict Center.');
+            setMessage(data.conflictsDetected === 0 ? 'Timetable generated successfully. No teacher double-booking found.' : 'Timetable generated. Please review remaining alerts in Conflict Center.');
         } catch {
             const demo: TimetableGenerationResponse = {
-                generatedBatchId: `TT-DEMO-${Date.now()}`,
+                generatedBatchId: `TT-OFFLINE-${Date.now()}`,
                 completionPercentage: 94,
                 totalClassesScheduled: request.classNames.length * request.sections.length,
                 totalEntries: request.classNames.length * request.sections.length * 6 * 6,
@@ -156,7 +156,7 @@ export default function GenerateTimetableScreen() {
             };
             saveTimetableReviewSnapshot(request, demo);
             setResult(demo);
-            setMessage('Backend timetable API not available yet. Showing Day 13 conflict-free workflow demo.');
+            setMessage('Timetable service is unavailable. Please try again after the service is restored.');
         } finally {
             setLoading(false);
         }
@@ -165,7 +165,7 @@ export default function GenerateTimetableScreen() {
     const navParams = {
         role,
         sourceRole,
-        generatedBatchId: result?.generatedBatchId || 'DEMO',
+        generatedBatchId: result?.generatedBatchId || 'PENDING',
         classNames: selectedClasses.join(','),
         sections: selectedSections.join(','),
     };
@@ -173,7 +173,7 @@ export default function GenerateTimetableScreen() {
     return (
         <ImageBackground source={require('../assets/branding/splash-gold.png')} style={styles.bg} resizeMode="cover">
             <ScrollView contentContainerStyle={styles.container}>
-                <PageHeader title="Generate Timetable" eyebrow="SMART ACADEMIC RULES ENGINE" homePath={backHome} />
+                <PageHeader title="Generate Timetable" eyebrow="TIMETABLE GENERATION" homePath={backHome} />
 
                 <View style={styles.card}>
                     <Text style={styles.cardTitle}>Generation Setup</Text>
@@ -231,7 +231,7 @@ export default function GenerateTimetableScreen() {
                             </View>
                         </TouchableOpacity>
                     ))}
-                    {teacherPoolSource === 'MANUAL_TEACHER_IDS' ? <Field label="Manual Teacher IDs" value={manualTeacherIds} onChangeText={setManualTeacherIds} placeholder="Example: 1,2,3,4" /> : null}
+                    {teacherPoolSource === 'MANUAL_TEACHER_IDS' ? <Field label="Manual Teacher Selection" value={manualTeacherIds} onChangeText={setManualTeacherIds} placeholder="Example: 1,2,3,4" /> : null}
                 </View>
 
                 <View style={styles.card}>

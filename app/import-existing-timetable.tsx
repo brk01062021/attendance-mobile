@@ -29,7 +29,7 @@ export default function ImportExistingTimetableScreen() {
                     <View style={styles.heroCard}>
                         <Text style={styles.heroTitle}>Upload and Publish from Web Portal</Text>
                         <Text style={styles.heroText}>
-                            Existing timetable imports are completed from the VidyaSetu Web Portal. Use the Web ERP to upload, validate, review, and publish the school's active timetable.
+                            Existing timetable imports are completed from the VidyaSetu Web Portal. Upload the Excel file, review grouped issues, resolve conflicts, and publish only after validation succeeds.
                         </Text>
                         <View style={styles.statusPill}>
                             <Text style={styles.statusText}>Teachers, students, and parents can see only the latest published timetable.</Text>
@@ -47,8 +47,8 @@ export default function ImportExistingTimetableScreen() {
                         <Text style={styles.cardLabel}>PRODUCTION FLOW</Text>
                         <Step number="1" title="Open Web ERP" subtitle="Go to Timetable → Import Existing Timetable." />
                         <Step number="2" title="Upload Excel" subtitle="Select the school's active academic-year timetable file." />
-                        <Step number="3" title="Validate" subtitle="Review accepted rows, errors, and conflicts." />
-                        <Step number="4" title="Publish" subtitle="Publish only after validation succeeds and conflicts are zero." last />
+                        <Step number="3" title="Review Result" subtitle="Review accepted rows, grouped errors, and teacher/class conflicts." />
+                        <Step number="4" title="Publish" subtitle="Publish only when the timetable is ready and conflicts are zero." last />
                     </View>
 
                     <TouchableOpacity style={styles.primaryButton} onPress={() => router.push({ pathname: '/timetable-operations' as any, params: { role: roleLabel.toUpperCase(), sourceRole } })} activeOpacity={0.88}>

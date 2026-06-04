@@ -45,7 +45,7 @@ export default function AcademicRulesEngineScreen() {
             setSummary(validated);
             setMessage(validated.valid ? 'Academic rules are valid for selected classes and sections.' : 'Academic rules need review before publishing.');
         } catch {
-            setMessage('Backend academic rules API not available. Please test after backend starts on port 8080.');
+            setMessage('Academic rules are unavailable. Please try again after the service is restored.');
         } finally {
             setLoading(false);
         }

@@ -39,7 +39,7 @@ export default function TimetableOperationsScreen() {
             setArchives(nextArchives || []);
             setMessage('Timetable operational status loaded.');
         } catch {
-            setMessage('Unable to load timetable operations APIs. Confirm backend is running and batch ID exists.');
+            setMessage('Unable to load timetable operations. Confirm the batch ID exists and try again.');
         } finally {
             setLoading(false);
         }
@@ -70,7 +70,7 @@ export default function TimetableOperationsScreen() {
             const response = await exportTimetableBinary(cleanBatchId, format);
             setMessage(`${response.fileName} generated • ${response.byteSize} bytes • ${response.contentType}`);
         } catch {
-            setMessage(`${format} export failed. Confirm backend operations export endpoint.`);
+            setMessage(`${format} export failed. Please try again.`);
         } finally {
             setLoading(false);
         }

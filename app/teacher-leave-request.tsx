@@ -115,7 +115,7 @@ export default function TeacherLeaveRequestScreen() {
             await loadHistory(true);
             Alert.alert('Leave enquiry requested', 'Your leave enquiry was sent to Admin and Principal. Track the status in My Leave Enquiry History below.');
         } catch (error) {
-            Alert.alert('Request failed', 'Please confirm backend is running and try again.');
+            Alert.alert('Request failed', 'Please try again.');
         } finally {
             setSubmitting(false);
         }

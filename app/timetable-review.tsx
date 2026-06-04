@@ -77,12 +77,12 @@ export default function TimetableReviewScreen() {
                     setClassSections(apiClassSections);
                     setEntries(apiEntries.length ? apiEntries : fallbackEntries);
                     setSelectedIndex(0);
-                    setStatus(`Backend review loaded for batch ${generatedBatchId}`);
+                    setStatus(`Timetable review loaded for batch ${generatedBatchId}`);
                 } else {
-                    setStatus(`Backend review returned no class-section rows for ${generatedBatchId}`);
+                    setStatus(`No class-section rows found for ${generatedBatchId}`);
                 }
             })
-            .catch(() => setStatus('Backend review API unavailable. Showing generated snapshot/demo data.'))
+            .catch(() => setStatus('Timetable review is unavailable. Showing the current generated snapshot.'))
             .finally(() => { if (active) setLoading(false); });
         return () => { active = false; };
     }, [fallbackEntries, generatedBatchId]);

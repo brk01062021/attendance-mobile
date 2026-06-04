@@ -29,7 +29,7 @@ export default function TimetableBatchCenterScreen() {
             if (!batchInput && latestPublished?.batchId) setBatchInput(latestPublished.batchId);
             setMessage(batchList?.length ? 'Loaded available server-session timetable batches.' : 'No generated batches found yet. Generate a timetable first.');
         } catch {
-            setMessage('Batch API unavailable. You can still paste a batch ID and open screens manually.');
+            setMessage('Batch list is unavailable. You can paste a batch ID to continue.');
         } finally {
             setLoading(false);
         }

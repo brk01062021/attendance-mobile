@@ -44,7 +44,7 @@ export default function DateSummaryScreen() {
                 attendancePercentage: Number(data.attendancePercentage || 0),
             });
         } catch (error) {
-            Alert.alert('Date Summary', 'Live summary unavailable. Please confirm backend is running.');
+            Alert.alert('Date Summary', 'Live summary is unavailable. Please try again.');
         } finally {
             setLoading(false);
         }

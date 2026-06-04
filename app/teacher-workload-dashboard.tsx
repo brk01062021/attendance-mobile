@@ -18,7 +18,7 @@ export default function TeacherWorkloadDashboardScreen() {
     const backHome = sourceRole === 'principal' ? '/principal-home' : '/admin-dashboard';
     const [rows, setRows] = useState<TeacherWorkloadSummary[]>(generatedBatchId === 'DEMO' ? demoWorkload : []);
     const [loading, setLoading] = useState(false);
-    const [status, setStatus] = useState(generatedBatchId === 'DEMO' ? 'Demo workload intelligence loaded' : 'Loading backend workload intelligence...');
+    const [status, setStatus] = useState(generatedBatchId === 'DEMO' ? 'Workload summary loaded' : 'Loading workload summary...');
 
     useEffect(() => {
         let active = true;
@@ -27,16 +27,16 @@ export default function TeacherWorkloadDashboardScreen() {
             .then(data => {
                 if (!active) return;
                 setRows(data || []);
-                setStatus(data?.length ? `Backend workload loaded for ${generatedBatchId}` : `No workload rows found for ${generatedBatchId}`);
+                setStatus(data?.length ? `Workload summary loaded for ${generatedBatchId}` : `No workload rows found for ${generatedBatchId}`);
             })
             .catch(() => {
                 if (!active) return;
                 if (generatedBatchId === 'DEMO') {
                     setRows(demoWorkload);
-                    setStatus('Backend workload API unavailable. Showing demo workload.');
+                    setStatus('Workload details are unavailable. Please refresh after the service is restored.');
                 } else {
                     setRows([]);
-                    setStatus('Backend workload API unavailable for this batch.');
+                    setStatus('Workload details are unavailable for this batch.');
                 }
             })
             .finally(() => { if (active) setLoading(false); });

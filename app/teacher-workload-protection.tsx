@@ -21,7 +21,7 @@ export default function TeacherWorkloadProtectionScreen() {
             setLoading(true);
             setItems(await getReplacementLoadSummary(today(), plusDays(7)));
         } catch (error) {
-            Alert.alert('Unable to load workload intelligence', 'Please confirm backend is running.');
+            Alert.alert('Unable to load workload intelligence', 'Please try again.');
         } finally {
             setLoading(false);
         }

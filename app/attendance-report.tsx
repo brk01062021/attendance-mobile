@@ -510,7 +510,7 @@ export default function AttendanceReportScreen() {
         } catch (error) {
             console.log(error);
             setStudentOptions([]);
-            Alert.alert('Error', 'Unable to search students. Please verify backend is running.');
+            Alert.alert('Error', 'Unable to search students. Please try again.');
         } finally {
             setStudentSearchLoading(false);
         }
@@ -736,7 +736,7 @@ export default function AttendanceReportScreen() {
             setGeneratedAt(new Date().toLocaleString());
         } catch (error) {
             console.log(error);
-            Alert.alert('Error', 'Unable to load report. Please verify backend is running.');
+            Alert.alert('Error', 'Unable to load report. Please try again.');
         } finally {
             setLoading(false);
         }
@@ -795,7 +795,7 @@ export default function AttendanceReportScreen() {
             await loadOverviewReport();
         } catch (error) {
             console.log(error);
-            Alert.alert('Analytics Error', 'Unable to load live analytics. Please verify backend is running.');
+            Alert.alert('Analytics Error', 'Unable to load live analytics. Please try again.');
         } finally {
             setAnalyticsLoading(false);
         }
@@ -991,7 +991,7 @@ export default function AttendanceReportScreen() {
             setReplacementOptions(liveOptions.length > 0 ? liveOptions : replacementOptionsData);
         } catch (error) {
             console.log(error);
-            Alert.alert('Replacement Options', 'Unable to load live options. Showing fallback options.');
+            Alert.alert('Replacement Options', 'Unable to load live options. Showing saved options.');
         }
     };
 
@@ -1220,7 +1220,7 @@ export default function AttendanceReportScreen() {
                     title="Select Class"
                     options={classOptions}
                     allLabel="All Classes"
-                    emptyText={activeView === 'studentReport' || activeView === 'classReports' ? 'No classes found. Please verify backend class data exists.' : 'Load report once to see available classes.'}
+                    emptyText={activeView === 'studentReport' || activeView === 'classReports' ? 'No classes found. Please confirm school data has been imported.' : 'Load report once to see available classes.'}
                     onSelect={selectClass}
                     onSelectAll={() => selectClass('')}
                     onClose={() => setDropdownTarget(null)}
@@ -1304,7 +1304,7 @@ export default function AttendanceReportScreen() {
                                             {Math.round(selectedReport.attendancePercentage)}%
                                         </Text>
                                         <Text style={styles.percentageSubText}>
-                                            Student-level list API can be connected under this drilldown next.
+                                            Student-level details will appear here when records are available.
                                         </Text>
                                     </View>
                                 </>
@@ -1606,7 +1606,7 @@ function AnalyticsReportContent({
             setSectionComparison(analyticsMode === 'Monthly' && Array.isArray(sectionData) ? sectionData : []);
         } catch (error) {
             console.log(error);
-            Alert.alert('Analytics Error', 'Unable to load analytics. Please verify backend is running.');
+            Alert.alert('Analytics Error', 'Unable to load analytics. Please try again.');
             setLocalSummary(null);
             setLocalAttendanceTrend([]);
             setLocalClassTrend([]);
@@ -1865,7 +1865,7 @@ function AnalyticsReportContent({
                 title="Select Class"
                 options={analyticsClassOptions}
                 allLabel="All Classes"
-                emptyText="No classes found. Please verify backend class data exists."
+                emptyText="No classes found. Please confirm school data has been imported."
                 onSelect={(className) => {
                     setSectionClassFilter(className);
                     setShowAnalyticsClassModal(false);
@@ -2541,7 +2541,7 @@ function TeacherReportContent({
             });
             setLeaveRows([]);
             setReplacementRows([]);
-            Alert.alert('Teacher Report', 'Unable to load monthly teacher report. Please verify backend is running.');
+            Alert.alert('Teacher Report', 'Unable to load monthly teacher report. Please try again.');
         } finally {
             setMonthlyLoading(false);
         }
@@ -2584,7 +2584,7 @@ function TeacherReportContent({
         } catch (error) {
             console.log(error);
             setTeacherSearchResults([]);
-            Alert.alert('Teacher Search', 'Unable to search teachers. Please verify backend is running.');
+            Alert.alert('Teacher Search', 'Unable to search teachers. Please try again.');
         } finally {
             setTeacherSearchLoading(false);
         }
@@ -2625,7 +2625,7 @@ function TeacherReportContent({
         } catch (error) {
             console.log(error);
             setTeacherInsight(null);
-            Alert.alert('Teacher Insight', 'Unable to load teacher insight. Please verify backend is running.');
+            Alert.alert('Teacher Insight', 'Unable to load teacher insight. Please try again.');
         } finally {
             setTeacherInsightLoading(false);
         }
@@ -3016,7 +3016,7 @@ function NoDataCard() {
         <View style={styles.noDataCard}>
             <Text style={styles.noDataTitle}>No Data Found</Text>
             <Text style={styles.noDataText}>
-                No attendance report data found for selected date. Try another date or confirm backend attendance data exists.
+                No attendance report data found for the selected date. Try another date or confirm attendance has been submitted.
             </Text>
         </View>
     );

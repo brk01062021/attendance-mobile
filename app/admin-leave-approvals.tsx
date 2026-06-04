@@ -38,7 +38,7 @@ export default function AdminLeaveApprovalsScreen() {
             const data = await getPendingLeaveEnquiries(today(), plusDays(30));
             setItems(data || []);
         } catch (error) {
-            Alert.alert('Unable to load', 'Please confirm backend is running and Day 29 leave enquiry APIs are available.');
+            Alert.alert('Unable to load', 'Unable to load leave requests. Please try again.');
         } finally {
             setLoading(false);
         }

@@ -28,7 +28,7 @@ export default function TimetableRolloutReadinessScreen() {
             setReadiness(response);
             setMessage(response.readyForRollout ? 'Ready for teacher, student, and parent rollout.' : 'Rollout blockers found. Fix blockers before final school rollout.');
         } catch {
-            setMessage('Unable to load rollout readiness. Confirm backend is running and batch ID exists.');
+            setMessage('Unable to load rollout readiness. Confirm the batch ID and try again.');
         } finally {
             setLoading(false);
         }
