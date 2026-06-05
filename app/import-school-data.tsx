@@ -104,8 +104,8 @@ export default function ImportSchoolDataScreen() {
 
                 <View style={styles.contentCard}>
                     <Text style={styles.sectionEyebrow}>ACTIVE TENANT</Text>
-                    <Text style={styles.sectionTitle}>{session?.schoolId || 'DEMO'} · {session?.role || 'ADMIN'}</Text>
-                    <Text style={styles.bodyText}>Validate workbook sheets, row-level issues, teacher assignments, academic rules, and timetable readiness before final import processing.</Text>
+                    <Text style={styles.sectionTitle}>{session?.schoolId || 'School'} · {session?.role || 'ADMIN'}</Text>
+                    <Text style={styles.bodyText}>Review workbook status, validation summary, teacher assignments, academic rules, and timetable readiness. Uploads are completed from Web ERP.</Text>
                     <Text style={styles.previewSummary}>Workspace setup complete: {productionImportStatus.completedSteps}/{productionImportStatus.totalSteps} complete.</Text>
 
                     {productionImportStatus.importLocked ? (
@@ -192,13 +192,13 @@ export default function ImportSchoolDataScreen() {
                                 </View>
                             ))}
 
-                            <Text style={styles.subTitle}>Row-Level Validation Issues</Text>
-                            {preview.issues?.length ? preview.issues.map((issue, index) => (
-                                <View key={`${issue.sheetName}-${index}`} style={styles.issueRow}>
-                                    <Text style={[styles.issueSeverity, issue.severity === 'ERROR' && styles.issueError]}>{issue.severity}</Text>
-                                    <Text style={styles.issueMessage}>{issue.sheetName}: {issue.message}</Text>
+                            <Text style={styles.subTitle}>Validation Issue Summary</Text>
+                            {preview.issues?.length ? (
+                                <View style={styles.issueRow}>
+                                    <Text style={styles.issueSeverity}>Summary</Text>
+                                    <Text style={styles.issueMessage}>{errors.length} errors and {warnings.length} warnings found. Open Web ERP Validation Report to review row-level records.</Text>
                                 </View>
-                            )) : <Text style={styles.successText}>No blocking errors found. Workbook is ready for backend upload/commit from the web portal.</Text>}
+                            ) : <Text style={styles.successText}>No blocking errors found. Workbook is ready for backend upload/commit from the web portal.</Text>}
                         </View>
                     ) : null}
                 </View>

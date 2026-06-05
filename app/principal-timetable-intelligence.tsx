@@ -8,7 +8,7 @@ import { PrincipalTimetableIntelligence, TimetablePublishAudit } from '../src/ty
 
 export default function PrincipalTimetableIntelligenceScreen() {
     const params = useLocalSearchParams();
-    const generatedBatchId = String(params.generatedBatchId || 'DEMO');
+    const generatedBatchId = String(params.generatedBatchId || 'PENDING');
     const sourceRole = String(params.sourceRole || 'principal');
     const backHome = sourceRole === 'principal' ? '/principal-home' : '/admin-dashboard';
     const [loading, setLoading] = useState(false);

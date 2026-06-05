@@ -8,7 +8,7 @@ import { TimetableRepairResult } from '../src/types/timetable';
 
 export default function TimetableRepairScreen() {
     const params = useLocalSearchParams();
-    const generatedBatchId = String(params.generatedBatchId || 'DEMO');
+    const generatedBatchId = String(params.generatedBatchId || 'PENDING');
     const sourceRole = String(params.sourceRole || 'admin');
     const backHome = sourceRole === 'principal' ? '/principal-home' : '/admin-dashboard';
     const [loading, setLoading] = useState(false);
@@ -24,7 +24,7 @@ export default function TimetableRepairScreen() {
             .finally(() => setLoading(false));
     };
 
-    useEffect(() => { if (generatedBatchId !== 'DEMO') runRepair(); }, [generatedBatchId]);
+    useEffect(() => { if (generatedBatchId !== 'PENDING') runRepair(); }, [generatedBatchId]);
     const navParams = { sourceRole, generatedBatchId: result?.batchId || generatedBatchId };
 
     return <ImageBackground source={require('../assets/branding/splash-gold.png')} style={styles.bg} resizeMode="cover"><ScrollView contentContainerStyle={styles.container}>

@@ -57,7 +57,7 @@ export default function RequestPilotDemoScreen() {
 
                     <Text style={styles.eyebrow}>PILOT DEMO</Text>
                     <Text style={styles.title}>Request Pilot Demo</Text>
-                    <Text style={styles.subtitle}>Capture school interest before final onboarding, AWS staging, or app-store rollout.</Text>
+                    <Text style={styles.subtitle}>Share school details so the VidyaSetu onboarding team can schedule a pilot walkthrough.</Text>
 
                     <View style={styles.card}>
                         <Field label="School Name" value={schoolName} onChangeText={setSchoolName} placeholder="School name" />
@@ -68,7 +68,7 @@ export default function RequestPilotDemoScreen() {
                         <Field label="City" value={city} onChangeText={setCity} placeholder="City" />
                         <Field label="State" value={state} onChangeText={setState} placeholder="State" />
                         <Field label="Expected Students" value={expectedStudents} onChangeText={setExpectedStudents} placeholder="1000" keyboardType="number-pad" />
-                        <Field label="Demo Notes" value={notes} onChangeText={setNotes} placeholder="Modules to show, best time to contact" multiline />
+                        <Field label="Demo Notes" value={notes} onChangeText={setNotes} placeholder="Best time to contact and modules to review" multiline />
 
                         <TouchableOpacity style={styles.primaryButton} onPress={onSubmit} disabled={loading}><Text style={styles.primaryButtonText}>{loading ? 'Saving...' : 'Submit Pilot Demo Request'}</Text></TouchableOpacity>
                         {result ? <Text style={styles.success}>Reference {result.referenceId}\n{normalizeOnboardingText(result.message)}\nNext: {normalizeOnboardingText(result.nextStep)}</Text> : null}

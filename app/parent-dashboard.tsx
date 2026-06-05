@@ -81,7 +81,7 @@ export default function ParentDashboard() {
     const schoolName = resolveSchoolName(schoolId, session?.schoolName);
 
     const parentName = String(params.parentName || 'Parent');
-    const studentName = String(params.studentName || 'Demo Student');
+    const studentName = String(params.studentName || 'Student');
     const parentId = String(params.parentId || params.userId || '101');
 
     const [menuOpen, setMenuOpen] = useState(false);

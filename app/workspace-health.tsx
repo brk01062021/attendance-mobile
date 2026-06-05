@@ -245,6 +245,7 @@ export default function WorkspaceHealthScreen() {
     const [activating, setActivating] = useState(false);
     const [error, setError] = useState('');
     const [notice, setNotice] = useState('');
+    const [showFullProgress, setShowFullProgress] = useState(false);
 
     const headers = useMemo(() => ({
         'Content-Type': 'application/json',
@@ -258,7 +259,7 @@ export default function WorkspaceHealthScreen() {
         setNotice('');
         try {
             const response = await fetch(`${API_BASE_URL}/workspace-activation/summary?schoolId=${schoolId}`, { headers });
-            if (!response.ok) throw new Error('Unable to load Workspace Health Center.');
+            if (!response.ok) throw new Error('Unable to load Workspace Health.');
             const payload = await response.json();
             setSummary(unwrap<ActivationSummary>(payload));
             const operationsResponse = await fetch(`${API_BASE_URL}/workspace-activation/operations-center?schoolId=${schoolId}`, { headers });
@@ -272,7 +273,7 @@ export default function WorkspaceHealthScreen() {
                 setErrorIntel(unwrap<WorkbookErrorIntelligence>(intelligencePayload));
             }
         } catch (err) {
-            setError(err instanceof Error ? err.message : 'Unable to load Workspace Health Center.');
+            setError(err instanceof Error ? err.message : 'Unable to load Workspace Health.');
         } finally {
             setLoading(false);
         }
@@ -291,7 +292,7 @@ export default function WorkspaceHealthScreen() {
             const response = await fetch(`${API_BASE_URL}/workspace-activation/activate?schoolId=${schoolId}`, {
                 method: 'POST',
                 headers,
-                body: JSON.stringify({ activatedBy: session?.displayName || roleLabel, remarks: 'Activated from mobile Workspace Health Center' }),
+                body: JSON.stringify({ activatedBy: session?.displayName || roleLabel, remarks: 'Activated from mobile Workspace Health' }),
             });
             if (!response.ok) throw new Error('Workspace activation could not be completed.');
             const payload = await response.json();
@@ -306,7 +307,7 @@ export default function WorkspaceHealthScreen() {
                 const intelligencePayload = await intelligenceResponse.json();
                 setErrorIntel(unwrap<WorkbookErrorIntelligence>(intelligencePayload));
             }
-            setNotice('Workspace activation completed. School is now live ready for Admin/Principal reporting and mobile activation visibility.');
+            setNotice('Workspace activation completed. School is now ready for Admin/Principal monitoring.');
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Workspace activation could not be completed.');
         } finally {
@@ -473,7 +474,7 @@ export default function WorkspaceHealthScreen() {
                         ) : null}
 
                         <View style={styles.card}>
-                            <Text style={styles.sectionTitle}>Admin/Principal Activation Summary</Text>
+                            <Text style={styles.sectionTitle}>School Activation Summary</Text>
                             <View style={styles.rowCard}>
                                 <Text style={styles.rowTitle}>Activation Status</Text>
                                 <Text style={styles.cardText}>{label(summary.activationStatus)}</Text>
@@ -496,15 +497,22 @@ export default function WorkspaceHealthScreen() {
 
                         {operations ? (
                             <View style={styles.card}>
-                                <Text style={styles.sectionTitle}>Activation Operations Center</Text>
+                                <Text style={styles.sectionTitle}>School Activation Status</Text>
                                 <View style={styles.rowCard}>
                                     <Text style={styles.pillSmall}>{label(operations.reportingStatus)}</Text>
                                     <Text style={styles.rowTitle}>Activation Readiness Status</Text>
                                     <Text style={styles.cardText}>{errorIntel?.activationBlocked ? `Workbook validation has failed. ${errorIntel.totalErrors} errors and ${errorIntel.totalWarnings} warnings must be resolved before workbook commit and school activation.` : operations.operationsNote}</Text>
                                     <Text style={styles.dateText}>Readiness: {operations.readinessPercent}%</Text>
                                 </View>
-                                <Text style={styles.sectionTitle}>Activation Timeline</Text>
-                                {operations.timeline.slice(0, 6).map((item, index) => (
+                                <View style={styles.sectionHeaderRow}>
+                                    <Text style={styles.sectionTitle}>Activation Progress</Text>
+                                    {operations.timeline.length > 1 ? (
+                                        <TouchableOpacity style={styles.expandButton} onPress={() => setShowFullProgress(value => !value)}>
+                                            <Text style={styles.expandText}>{showFullProgress ? 'Hide History' : 'Show History'}</Text>
+                                        </TouchableOpacity>
+                                    ) : null}
+                                </View>
+                                {(showFullProgress ? operations.timeline : operations.timeline.slice(0, 1)).map((item, index) => (
                                     <View key={`${item.stepKey}-${index}`} style={styles.rowCard}>
                                         <Text style={styles.pillSmall}>{label(item.status)}</Text>
                                         <Text style={styles.rowTitle}>{item.title}</Text>
@@ -549,6 +557,9 @@ const styles = StyleSheet.create({
     gateTitle: { color: '#37270e', fontWeight: '800', marginTop: 4 },
     card: { borderRadius: 26, backgroundColor: 'rgba(255, 250, 236, 0.985)', padding: spacing.lg, marginTop: spacing.md, borderWidth: 1, borderColor: 'rgba(126, 85, 20, 0.16)', ...shadows.soft },
     sectionTitle: { color: '#2d220f', fontSize: 18, fontWeight: '900', marginBottom: spacing.sm },
+    sectionHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: spacing.sm },
+    expandButton: { borderRadius: 999, backgroundColor: 'rgba(116, 75, 10, 0.12)', paddingHorizontal: 12, paddingVertical: 7 },
+    expandText: { color: '#7a4b0a', fontSize: 11, fontWeight: '900' },
     rowCard: { borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.90)', padding: spacing.md, marginTop: spacing.sm, borderWidth: 1, borderColor: 'rgba(126, 85, 20, 0.12)' },
     rowTitle: { color: '#2d220f', fontSize: 15, fontWeight: '900', marginTop: 8 },
     cardText: { color: '#604418', fontSize: 13, lineHeight: 19, marginTop: 4 },

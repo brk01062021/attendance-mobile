@@ -7,7 +7,7 @@ import { TimetableExportResponse, TimetablePublishAudit, TimetablePublishRespons
 
 export default function TimetablePublishScreen() {
     const params = useLocalSearchParams();
-    const generatedBatchId = String(params.generatedBatchId || 'DEMO');
+    const generatedBatchId = String(params.generatedBatchId || 'PENDING');
     const sourceRole = String(params.sourceRole || 'admin');
     const backHome = sourceRole === 'principal' ? '/principal-home' : '/admin-dashboard';
     const [loading, setLoading] = useState(false);

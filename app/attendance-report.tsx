@@ -697,7 +697,7 @@ export default function AttendanceReportScreen() {
 
     const loadOverviewReport = async () => {
         if (!canAccessSchoolReports) {
-            Alert.alert('Teacher Report', 'Teacher attendance reports will be connected next.');
+            Alert.alert('Teacher Report', 'Teacher attendance reports are unavailable for the selected context.');
             return;
         }
 

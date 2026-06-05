@@ -43,7 +43,7 @@ export default function LoginScreen() {
         }
 
         if (role === 'PARENT') {
-            router.replace({ pathname: '/parent-dashboard', params: { role, parentId: userId || '1', parentName: cleanUsername, studentId: String(studentId || '1'), studentName: 'Demo Student', schoolId: cleanSchoolId } } as any);
+            router.replace({ pathname: '/parent-dashboard', params: { role, parentId: userId || '1', parentName: cleanUsername, studentId: String(studentId || '1'), studentName: cleanUsername, schoolId: cleanSchoolId } } as any);
             return;
         }
 

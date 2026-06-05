@@ -10,11 +10,11 @@ const demoConflicts: TimetableConflict[] = [];
 export default function TimetableConflictsScreen() {
     const params = useLocalSearchParams();
     const sourceRole = String(params.sourceRole || 'admin');
-    const generatedBatchId = String(params.generatedBatchId || 'DEMO');
+    const generatedBatchId = String(params.generatedBatchId || 'PENDING');
     const backHome = sourceRole === 'principal' ? '/principal-home' : '/admin-dashboard';
-    const [conflicts, setConflicts] = useState<TimetableConflict[]>(generatedBatchId === 'DEMO' ? demoConflicts : []);
+    const [conflicts, setConflicts] = useState<TimetableConflict[]>(generatedBatchId === 'PENDING' ? demoConflicts : []);
     const [loading, setLoading] = useState(false);
-    const [status, setStatus] = useState(generatedBatchId === 'DEMO' ? 'No teacher double-booking found for this timetable.' : 'Loading conflict center...');
+    const [status, setStatus] = useState(generatedBatchId === 'PENDING' ? 'No teacher double-booking found for this timetable.' : 'Loading conflict center...');
 
     useEffect(() => {
         let active = true;
@@ -27,7 +27,7 @@ export default function TimetableConflictsScreen() {
             })
             .catch(() => {
                 if (!active) return;
-                if (generatedBatchId === 'DEMO') {
+                if (generatedBatchId === 'PENDING') {
                     setConflicts(demoConflicts);
                     setStatus('Conflict details are unavailable. Please refresh after the timetable service is restored.');
                 } else {

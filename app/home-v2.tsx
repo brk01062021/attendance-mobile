@@ -157,7 +157,7 @@ export default function HomeV2Screen() {
     };
 
     const openComingSoon = (title: string) => {
-        Alert.alert('Coming Soon', `${title} screen will be connected next.`);
+        Alert.alert('Unavailable', `${title} is not available in this workspace yet.`);
     };
 
     const adminTiles = [

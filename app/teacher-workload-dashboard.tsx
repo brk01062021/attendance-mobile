@@ -14,11 +14,11 @@ const demoWorkload: TeacherWorkloadSummary[] = [
 export default function TeacherWorkloadDashboardScreen() {
     const params = useLocalSearchParams();
     const sourceRole = String(params.sourceRole || 'admin');
-    const generatedBatchId = String(params.generatedBatchId || 'DEMO');
+    const generatedBatchId = String(params.generatedBatchId || 'PENDING');
     const backHome = sourceRole === 'principal' ? '/principal-home' : '/admin-dashboard';
-    const [rows, setRows] = useState<TeacherWorkloadSummary[]>(generatedBatchId === 'DEMO' ? demoWorkload : []);
+    const [rows, setRows] = useState<TeacherWorkloadSummary[]>(generatedBatchId === 'PENDING' ? demoWorkload : []);
     const [loading, setLoading] = useState(false);
-    const [status, setStatus] = useState(generatedBatchId === 'DEMO' ? 'Workload summary loaded' : 'Loading workload summary...');
+    const [status, setStatus] = useState(generatedBatchId === 'PENDING' ? 'Workload summary loaded' : 'Loading workload summary...');
 
     useEffect(() => {
         let active = true;
@@ -31,7 +31,7 @@ export default function TeacherWorkloadDashboardScreen() {
             })
             .catch(() => {
                 if (!active) return;
-                if (generatedBatchId === 'DEMO') {
+                if (generatedBatchId === 'PENDING') {
                     setRows(demoWorkload);
                     setStatus('Workload details are unavailable. Please refresh after the service is restored.');
                 } else {
