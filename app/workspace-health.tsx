@@ -1,14 +1,14 @@
 import { router, useLocalSearchParams } from "expo-router";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
-    ActivityIndicator,
-    ImageBackground,
-    RefreshControl,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  ImageBackground,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { API_BASE_URL } from "../src/services/api";
 import { getSession } from "../src/services/sessionService";
@@ -490,36 +490,42 @@ export default function WorkspaceHealthScreen() {
                     Activated by: {activatedByLabel(summary)}
                   </Text>
                   <Text style={styles.smallText}>
+                    Activation: {label(summary.activationStage || summary.activationStatus)}
+                  </Text>
+                  <Text style={styles.smallText}>
                     Lifecycle:{" "}
                     {label(
                       summary.tenantLifecycleStatus || summary.activationStatus,
                     )}
                   </Text>
                 </View>
-                <TouchableOpacity
-                  disabled={!summary.readyForActivation || activating}
-                  style={[
-                    styles.activateButton,
-                    (!summary.readyForActivation || activating) &&
-                      styles.disabled,
-                  ]}
-                  onPress={activateWorkspace}
-                >
-                  <Text style={styles.activateText}>
-                    {activating
-                      ? "Checking..."
-                      : activationCtaLabel(summary, errorIntel)}
-                  </Text>
-                </TouchableOpacity>
               </View>
+              <TouchableOpacity
+                disabled={!summary.readyForActivation || activating}
+                style={[
+                  styles.activateButton,
+                  (!summary.readyForActivation || activating) &&
+                    styles.disabled,
+                ]}
+                onPress={activateWorkspace}
+              >
+                <Text style={styles.activateText}>
+                  {activating
+                    ? "Checking..."
+                    : activationCtaLabel(summary, errorIntel)}
+                </Text>
+              </TouchableOpacity>
             </View>
 
             <View style={styles.gateGrid}>
               {gates.map((gate) => (
-                <View key={gate.title} style={styles.gateCard}>
-                  <Text style={gate.ready ? styles.ready : styles.pending}>
-                    {gate.ready ? "Ready" : "Pending"}
-                  </Text>
+                <View
+                  key={gate.title}
+                  style={[
+                    styles.gateCard,
+                    gate.ready ? styles.gateReady : styles.gatePending,
+                  ]}
+                >
                   <Text style={styles.gateTitle}>{gate.title}</Text>
                 </View>
               ))}
@@ -534,8 +540,10 @@ export default function WorkspaceHealthScreen() {
                   <Text style={styles.blockedPill}>
                     {label(errorIntel.status)}
                   </Text>
-                  <Text style={styles.rowTitle}>Workbook Status</Text>
-                  <Text style={styles.cardText}>{errorIntel.headline}</Text>
+                  <Text style={styles.rowTitle}>Workbook Validation Required</Text>
+                  <Text style={styles.cardText}>
+                    Resolve workbook validation issues before activation.
+                  </Text>
                 </View>
                 <View style={styles.summaryGrid}>
                   <View style={styles.metricCard}>
@@ -573,7 +581,7 @@ export default function WorkspaceHealthScreen() {
                 {errorIntel.schoolIdMismatchExplanations?.length ? (
                   <View style={styles.rowCard}>
                     <Text style={styles.rowTitle}>
-                      School ID / Upload Explanation
+                      School ID Validation
                     </Text>
                     <Text style={styles.issueText}>
                       Workbook school ID does not match the active workspace.
@@ -596,11 +604,7 @@ export default function WorkspaceHealthScreen() {
                       <Text style={styles.cardText}>
                         {group!.recommendedAction}
                       </Text>
-                      {isCompactValidationGroup(group!) ? (
-                        <Text style={styles.compactIssueText}>
-                          {compactValidationMessage(group!)}
-                        </Text>
-                      ) : (
+                      {!isCompactValidationGroup(group!) ? (
                         <>
                           {(group!.issues || [])
                             .slice(0, 1)
@@ -620,7 +624,7 @@ export default function WorkspaceHealthScreen() {
                             </Text>
                           ) : null}
                         </>
-                      )}
+                      ) : null}
                     </View>
                   ))}
               </View>
@@ -636,7 +640,7 @@ export default function WorkspaceHealthScreen() {
                       onPress={() => setShowFullProgress((value) => !value)}
                     >
                       <Text style={styles.expandText}>
-                        {showFullProgress ? "Hide History" : "Show History"}
+                        {showFullProgress ? "Hide History" : "View History"}
                       </Text>
                     </TouchableOpacity>
                   ) : null}
@@ -744,17 +748,18 @@ const styles = StyleSheet.create({
   readinessRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "center",
+    alignItems: "flex-start",
     marginTop: spacing.lg,
   },
   readiness: { color: "#9b650d", fontSize: 44, fontWeight: "900" },
   smallText: { color: "#7a5422", fontSize: 12, fontWeight: "700" },
   activateButton: {
+    alignSelf: "flex-start",
     backgroundColor: "#9b650d",
-    paddingHorizontal: 14,
+    paddingHorizontal: 16,
     paddingVertical: 12,
     borderRadius: 999,
-    maxWidth: 170,
+    marginTop: spacing.md,
     alignItems: "center",
   },
   activateText: {
@@ -775,12 +780,14 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     backgroundColor: "rgba(255, 250, 236, 0.94)",
     padding: spacing.md,
-    borderWidth: 1,
+    borderWidth: 2,
     borderColor: "rgba(126, 85, 20, 0.15)",
   },
+  gateReady: { borderColor: "rgba(32, 108, 56, 0.32)" },
+  gatePending: { borderColor: "rgba(166, 91, 0, 0.32)" },
   ready: { color: "#206c38", fontWeight: "900", fontSize: 13 },
   pending: { color: "#a65b00", fontWeight: "900", fontSize: 13 },
-  gateTitle: { color: "#37270e", fontWeight: "800", marginTop: 4 },
+  gateTitle: { color: "#37270e", fontWeight: "800" },
   card: {
     borderRadius: 26,
     backgroundColor: "rgba(255, 250, 236, 0.985)",
