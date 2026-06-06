@@ -395,49 +395,9 @@ export default function PrincipalHomeScreen() {
                             />
 
                             <MenuItem
-                                title="Timetable Batch Center"
-                                onPress={() =>
-                                    openRoute('/timetable-batch-center', {
-                                        role: 'PRINCIPAL',
-                                        sourceRole: 'principal',
-                                    })
-                                }
-                            />
-
-                            <MenuItem
                                 title="Timetable Operations"
                                 onPress={() =>
                                     openRoute('/timetable-operations', {
-                                        role: 'PRINCIPAL',
-                                        sourceRole: 'principal',
-                                    })
-                                }
-                            />
-
-                            <MenuItem
-                                title="Timetable Review"
-                                onPress={() =>
-                                    openRoute('/timetable-review', {
-                                        role: 'PRINCIPAL',
-                                        sourceRole: 'principal',
-                                    })
-                                }
-                            />
-
-                            <MenuItem
-                                title="Timetable Conflicts"
-                                onPress={() =>
-                                    openRoute('/timetable-conflicts', {
-                                        role: 'PRINCIPAL',
-                                        sourceRole: 'principal',
-                                    })
-                                }
-                            />
-
-                            <MenuItem
-                                title="Teacher Workload Dashboard"
-                                onPress={() =>
-                                    openRoute('/teacher-workload-dashboard', {
                                         role: 'PRINCIPAL',
                                         sourceRole: 'principal',
                                     })

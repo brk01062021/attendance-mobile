@@ -499,16 +499,6 @@ export default function AdminDashboardScreen() {
                             />
 
                             <MenuItem
-                                title="Timetable Batch Center"
-                                onPress={() =>
-                                    openRoute('/timetable-batch-center', {
-                                        role: 'ADMIN',
-                                        sourceRole: 'admin',
-                                    })
-                                }
-                            />
-
-                            <MenuItem
                                 title="Timetable Operations"
                                 onPress={() =>
                                     openRoute('/timetable-operations', {
@@ -516,21 +506,6 @@ export default function AdminDashboardScreen() {
                                         sourceRole: 'admin',
                                     })
                                 }
-                            />
-
-                            <MenuItem
-                                title="Timetable Review"
-                                onPress={() => openRoute('/timetable-review', { role: 'ADMIN', sourceRole: 'admin' })}
-                            />
-
-                            <MenuItem
-                                title="Timetable Conflicts"
-                                onPress={() => openRoute('/timetable-conflicts', { role: 'ADMIN', sourceRole: 'admin' })}
-                            />
-
-                            <MenuItem
-                                title="Teacher Workload Dashboard"
-                                onPress={() => openRoute('/teacher-workload-dashboard', { role: 'ADMIN', sourceRole: 'admin' })}
                             />
 
                             <MenuSectionTitle title="Management" />

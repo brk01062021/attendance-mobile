@@ -10,6 +10,13 @@ import {
 } from 'react-native';
 import { colors, shadows, spacing } from '../src/theme';
 
+const assignmentRows = [
+    { label: 'Teacher Pool Summary', value: 'Class-wise teacher pools are prepared from workbook import.' },
+    { label: 'Assignment Summary', value: 'Teacher-subject-class-section mappings appear after school data import.' },
+    { label: 'Class Filter', value: 'Review assignments by class after workbook validation.' },
+    { label: 'Section Filter', value: 'Review assignments by section after workbook validation.' },
+];
+
 export default function TeacherAssignmentsScreen() {
     return (
         <ImageBackground
@@ -24,18 +31,31 @@ export default function TeacherAssignmentsScreen() {
 
                 <View style={styles.heroCard}>
                     <Text style={styles.heroEyebrow}>Admin Operations</Text>
-                    <Text style={styles.heroTitle}>Teacher Assignments</Text>
-                    <Text style={styles.heroSubtitle}>SUBTeacher Assignments</Text>
+                    <Text style={styles.heroTitle}>Teacher Assignment Center</Text>
+                    <Text style={styles.heroSubtitle}>Teacher-subject-class-section mapping for timetable readiness and workload planning.</Text>
                 </View>
 
                 <View style={styles.contentCard}>
-                    <Text style={styles.sectionEyebrow}>CURRENT STATUS</Text>
-                    <Text style={styles.sectionTitle}>SECTION_Teacher Assignments</Text>
-                    <Text style={styles.bodyText}>Use this screen for teacher-subject-class-section mapping, academic workload balancing, and timetable preparation.</Text>
+                    <Text style={styles.sectionEyebrow}>Current Status</Text>
+                    <Text style={styles.sectionTitle}>Teacher Assignments</Text>
+                    <Text style={styles.bodyText}>
+                        Manage teacher-subject-class-section assignments used for timetable generation and workload planning.
+                    </Text>
 
                     <View style={styles.infoBox}>
-                        <Text style={styles.infoTitle}>Production workflow</Text>
-                        <Text style={styles.infoText}>Build editable assignment tables, subject mapping, section filters and save APIs.</Text>
+                        <Text style={styles.infoTitle}>Assignment data source</Text>
+                        <Text style={styles.infoText}>
+                            Teacher assignments will appear after workbook import. Use Web ERP to manage bulk assignment updates.
+                        </Text>
+                    </View>
+
+                    <View style={styles.summaryGrid}>
+                        {assignmentRows.map((row) => (
+                            <View key={row.label} style={styles.summaryCard}>
+                                <Text style={styles.summaryTitle}>{row.label}</Text>
+                                <Text style={styles.summaryText}>{row.value}</Text>
+                            </View>
+                        ))}
                     </View>
                 </View>
             </ScrollView>
@@ -92,8 +112,8 @@ const styles = StyleSheet.create({
     },
 
     heroTitle: {
-        fontSize: 34,
-        lineHeight: 40,
+        fontSize: 32,
+        lineHeight: 38,
         fontWeight: '900',
         color: colors.primaryNavy,
         marginTop: spacing.sm,
@@ -158,6 +178,33 @@ const styles = StyleSheet.create({
         fontSize: 14,
         lineHeight: 21,
         fontWeight: '800',
+        color: colors.slateText,
+        marginTop: spacing.sm,
+    },
+
+    summaryGrid: {
+        marginTop: spacing.lg,
+        gap: spacing.md,
+    },
+
+    summaryCard: {
+        backgroundColor: 'rgba(255,255,255,0.92)',
+        borderRadius: 22,
+        borderWidth: 1,
+        borderColor: colors.cardGoldBorder,
+        padding: spacing.lg,
+    },
+
+    summaryTitle: {
+        fontSize: 18,
+        fontWeight: '900',
+        color: colors.primaryNavy,
+    },
+
+    summaryText: {
+        fontSize: 14,
+        lineHeight: 21,
+        fontWeight: '700',
         color: colors.slateText,
         marginTop: spacing.sm,
     },

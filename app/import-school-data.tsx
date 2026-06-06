@@ -192,11 +192,11 @@ export default function ImportSchoolDataScreen() {
                                 </View>
                             ))}
 
-                            <Text style={styles.subTitle}>Validation Issue Summary</Text>
+                            <Text style={styles.subTitle}>Validation Categories</Text>
                             {preview.issues?.length ? (
                                 <View style={styles.issueRow}>
                                     <Text style={styles.issueSeverity}>Summary</Text>
-                                    <Text style={styles.issueMessage}>{errors.length} errors and {warnings.length} warnings found. Open Web ERP Validation Report to review row-level records.</Text>
+                                    <Text style={styles.issueMessage}>{errors.length} errors and {warnings.length} warnings found. Open Web ERP Validation Report to review categories and affected records.</Text>
                                 </View>
                             ) : <Text style={styles.successText}>No blocking errors found. Workbook is ready for backend upload/commit from the web portal.</Text>}
                         </View>
