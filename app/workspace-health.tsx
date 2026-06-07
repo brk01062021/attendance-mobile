@@ -92,6 +92,15 @@ type TimetableImportStatus = {
   totalPeriodAllocations: number;
 };
 
+type AttendanceRecoveryStatus = {
+  status: string;
+  label: string;
+  message: string;
+  latestRecoveryBatchId?: string;
+  submittedRows: number;
+  auditTrail: string[];
+};
+
 type ActivationSummary = {
   schoolId: string;
   schoolName: string;
@@ -127,6 +136,21 @@ function unwrap<T>(payload: any): T {
 
 function label(value?: string) {
   return String(value || "PENDING").replace(/_/g, " ");
+}
+
+function displayTimetableLabel(status?: TimetableImportStatus | null) {
+  const raw = String(status?.status || status?.label || "").toUpperCase();
+  if (raw === "READY_TO_PUBLISH" || raw.includes("READY TO PUBLISH")) return "Ready to Publish";
+  if (raw === "PUBLISHED") return "Published";
+  if (raw === "NO_TIMETABLE_IMPORTED") return "No Timetable Imported";
+  if (raw === "VALIDATION_PENDING" || raw.includes("VALIDATION PENDING")) return "Validation Pending";
+  return titleStatus(status?.label || status?.status);
+}
+
+function displayTimetableMessage(status?: TimetableImportStatus | null) {
+  const raw = String(status?.status || status?.label || "").toUpperCase();
+  if (raw === "READY_TO_PUBLISH" || raw.includes("READY TO PUBLISH")) return "Validation completed. Ready for publishing.";
+  return status?.message || "No imported timetable status available.";
 }
 
 function titleStatus(value?: string) {
@@ -293,6 +317,8 @@ export default function WorkspaceHealthScreen() {
     useState<WorkbookErrorIntelligence | null>(null);
   const [timetableImportStatus, setTimetableImportStatus] =
     useState<TimetableImportStatus | null>(null);
+  const [attendanceRecoveryStatus, setAttendanceRecoveryStatus] =
+    useState<AttendanceRecoveryStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [activating, setActivating] = useState(false);
   const [error, setError] = useState("");
@@ -347,6 +373,14 @@ export default function WorkspaceHealthScreen() {
       if (timetableImportResponse.ok) {
         const timetableImportPayload = await timetableImportResponse.json();
         setTimetableImportStatus(unwrap<TimetableImportStatus>(timetableImportPayload));
+      }
+      const recoveryResponse = await fetch(
+        `${API_BASE_URL}/attendance/recovery/status?schoolId=${schoolId}`,
+        { headers },
+      );
+      if (recoveryResponse.ok) {
+        const recoveryPayload = await recoveryResponse.json();
+        setAttendanceRecoveryStatus(unwrap<AttendanceRecoveryStatus>(recoveryPayload));
       }
     } catch (err) {
       setError(
@@ -557,11 +591,11 @@ export default function WorkspaceHealthScreen() {
 
             {timetableImportStatus ? (
               <View style={styles.card}>
-                <Text style={styles.sectionTitle}>Timetable Import Status</Text>
+                <Text style={styles.sectionTitle}>Imported Timetable</Text>
                 <View style={styles.rowCard}>
                   <Text style={styles.pill}>{label(timetableImportStatus.status)}</Text>
-                  <Text style={styles.rowTitle}>{timetableImportStatus.label}</Text>
-                  <Text style={styles.cardText}>{timetableImportStatus.message}</Text>
+                  <Text style={styles.rowTitle}>{displayTimetableLabel(timetableImportStatus)}</Text>
+                  <Text style={styles.cardText}>{displayTimetableMessage(timetableImportStatus)}</Text>
                 </View>
                 <View style={styles.summaryGrid}>
                   <View style={styles.metricCard}>
@@ -577,6 +611,28 @@ export default function WorkspaceHealthScreen() {
                     <Text style={styles.metricLabel}>Periods</Text>
                   </View>
                 </View>
+              </View>
+            ) : null}
+
+            {attendanceRecoveryStatus ? (
+              <View style={styles.card}>
+                <Text style={styles.sectionTitle}>Missed Attendance Recovery</Text>
+                <View style={styles.rowCard}>
+                  <Text style={styles.pill}>{label(attendanceRecoveryStatus.status)}</Text>
+                  <Text style={styles.rowTitle}>{attendanceRecoveryStatus.label}</Text>
+                  <Text style={styles.cardText}>{attendanceRecoveryStatus.message}</Text>
+                </View>
+                <View style={styles.summaryGrid}>
+                  <View style={styles.metricCard}>
+                    <Text style={styles.metricValue}>{attendanceRecoveryStatus.submittedRows || 0}</Text>
+                    <Text style={styles.metricLabel}>Recovered</Text>
+                  </View>
+                  <View style={styles.metricCard}>
+                    <Text style={styles.metricValue}>{attendanceRecoveryStatus.auditTrail?.length || 0}</Text>
+                    <Text style={styles.metricLabel}>Audit Events</Text>
+                  </View>
+                </View>
+                <Text style={styles.cardText}>Use Web ERP to download template, upload, validate, preview, and submit recovery. Mobile is read-only.</Text>
               </View>
             ) : null}
 
@@ -648,11 +704,7 @@ export default function WorkspaceHealthScreen() {
                         Warnings
                       </Text>
                       <Text style={styles.rowTitle}>{group!.title}</Text>
-                      <Text style={styles.cardText}>{group!.explanation}</Text>
-                      <Text style={styles.recommended}>Recommended action</Text>
-                      <Text style={styles.cardText}>
-                        {group!.recommendedAction}
-                      </Text>
+                      <Text style={styles.cardText}>{compactValidationMessage(group!)}</Text>
                       {!isCompactValidationGroup(group!) ? (
                         <>
                           {(group!.issues || [])

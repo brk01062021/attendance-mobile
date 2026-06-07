@@ -394,6 +394,18 @@ export default function PrincipalHomeScreen() {
                                 }
                             />
 
+
+
+                            <MenuItem
+                                title="Recover Missed Attendance"
+                                onPress={() =>
+                                    openRoute('/recover-missed-attendance', {
+                                        role: 'PRINCIPAL',
+                                        sourceRole: 'principal',
+                                    })
+                                }
+                            />
+
                             <MenuItem
                                 title="Timetable Operations"
                                 onPress={() =>

@@ -27,12 +27,12 @@ export default function ImportExistingTimetableScreen() {
                     </View>
 
                     <View style={styles.heroCard}>
-                        <Text style={styles.heroTitle}>Upload and Publish from Web Portal</Text>
+                        <Text style={styles.heroTitle}>Web ERP Import Guidance</Text>
                         <Text style={styles.heroText}>
-                            Existing timetable imports are completed from the VidyaSetu Web Portal. Upload the Excel file, validate required columns, review teacher/class conflicts, preview period allocations, and publish only after validation succeeds.
+                            Use Web ERP to upload, validate, preview, and publish the active school timetable.
                         </Text>
                         <View style={styles.statusPill}>
-                            <Text style={styles.statusText}>After publish, the imported timetable behaves exactly like a generated timetable for Teacher, Student, and Parent visibility.</Text>
+                            <Text style={styles.statusText}>After publish, Teacher, Student, and Parent timetable visibility is updated.</Text>
                         </View>
                     </View>
 
@@ -40,15 +40,15 @@ export default function ImportExistingTimetableScreen() {
                         <Text style={styles.cardLabel}>REQUIRED FORMAT</Text>
                         <Text style={styles.cardTitle}>Excel columns</Text>
                         <Text style={styles.requiredText}>Class · Section · Day · Period · Subject · Teacher</Text>
-                        <Text style={styles.bodyText}>Keep headers in row 1. Add one row per class period. Use weekdays such as MONDAY, TUESDAY, and WEDNESDAY.</Text>
+                        <Text style={styles.bodyText}>Keep headers in row 1. Add one row per class period.</Text>
                     </View>
 
                     <View style={styles.card}>
                         <Text style={styles.cardLabel}>PRODUCTION FLOW</Text>
                         <Step number="1" title="Open Web ERP" subtitle="Go to Timetable → Import Existing Timetable." />
-                        <Step number="2" title="Upload Excel" subtitle="Select the school's active academic-year timetable file." />
-                        <Step number="3" title="Preview and Validate" subtitle="Review total classes, sections, teachers, period allocations, warnings, and errors." />
-                        <Step number="4" title="Publish" subtitle="Publish only after validation passes. Attendance can start from the published timetable." last />
+                        <Step number="2" title="Upload Excel" subtitle="Select the active timetable file." />
+                        <Step number="3" title="Validate and Preview" subtitle="Review summary cards and preview records." />
+                        <Step number="4" title="Publish" subtitle="Publish after validation passes." last />
                     </View>
 
                     <TouchableOpacity style={styles.primaryButton} onPress={() => router.push({ pathname: '/timetable-operations' as any, params: { role: roleLabel.toUpperCase(), sourceRole } })} activeOpacity={0.88}>

@@ -498,6 +498,18 @@ export default function AdminDashboardScreen() {
                                 }
                             />
 
+
+
+                            <MenuItem
+                                title="Recover Missed Attendance"
+                                onPress={() =>
+                                    openRoute('/recover-missed-attendance', {
+                                        role: 'ADMIN',
+                                        sourceRole: 'admin',
+                                    })
+                                }
+                            />
+
                             <MenuItem
                                 title="Timetable Operations"
                                 onPress={() =>
