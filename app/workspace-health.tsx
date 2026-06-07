@@ -80,6 +80,18 @@ type WorkbookErrorIntelligence = {
   groups: WorkbookErrorGroup[];
 };
 
+type TimetableImportStatus = {
+  status: string;
+  label: string;
+  message: string;
+  importBatchId?: string;
+  publishedBatchId?: string;
+  totalClasses: number;
+  totalSections: number;
+  totalTeachers: number;
+  totalPeriodAllocations: number;
+};
+
 type ActivationSummary = {
   schoolId: string;
   schoolName: string;
@@ -279,6 +291,8 @@ export default function WorkspaceHealthScreen() {
     useState<ActivationOperationsCenter | null>(null);
   const [errorIntel, setErrorIntel] =
     useState<WorkbookErrorIntelligence | null>(null);
+  const [timetableImportStatus, setTimetableImportStatus] =
+    useState<TimetableImportStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [activating, setActivating] = useState(false);
   const [error, setError] = useState("");
@@ -325,6 +339,14 @@ export default function WorkspaceHealthScreen() {
       if (intelligenceResponse.ok) {
         const intelligencePayload = await intelligenceResponse.json();
         setErrorIntel(unwrap<WorkbookErrorIntelligence>(intelligencePayload));
+      }
+      const timetableImportResponse = await fetch(
+        `${API_BASE_URL}/timetable/import-existing/status?schoolId=${schoolId}`,
+        { headers },
+      );
+      if (timetableImportResponse.ok) {
+        const timetableImportPayload = await timetableImportResponse.json();
+        setTimetableImportStatus(unwrap<TimetableImportStatus>(timetableImportPayload));
       }
     } catch (err) {
       setError(
@@ -530,6 +552,33 @@ export default function WorkspaceHealthScreen() {
                 </View>
               ))}
             </View>
+
+
+
+            {timetableImportStatus ? (
+              <View style={styles.card}>
+                <Text style={styles.sectionTitle}>Timetable Import Status</Text>
+                <View style={styles.rowCard}>
+                  <Text style={styles.pill}>{label(timetableImportStatus.status)}</Text>
+                  <Text style={styles.rowTitle}>{timetableImportStatus.label}</Text>
+                  <Text style={styles.cardText}>{timetableImportStatus.message}</Text>
+                </View>
+                <View style={styles.summaryGrid}>
+                  <View style={styles.metricCard}>
+                    <Text style={styles.metricValue}>{timetableImportStatus.totalClasses || 0}</Text>
+                    <Text style={styles.metricLabel}>Classes</Text>
+                  </View>
+                  <View style={styles.metricCard}>
+                    <Text style={styles.metricValue}>{timetableImportStatus.totalSections || 0}</Text>
+                    <Text style={styles.metricLabel}>Sections</Text>
+                  </View>
+                  <View style={styles.metricCard}>
+                    <Text style={styles.metricValue}>{timetableImportStatus.totalPeriodAllocations || 0}</Text>
+                    <Text style={styles.metricLabel}>Periods</Text>
+                  </View>
+                </View>
+              </View>
+            ) : null}
 
             {errorIntel ? (
               <View style={styles.card}>

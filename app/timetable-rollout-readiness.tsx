@@ -12,7 +12,7 @@ export default function TimetableRolloutReadinessScreen() {
     const backHome = sourceRole === 'principal' ? '/principal-home' : '/admin-dashboard';
     const [batchId, setBatchId] = useState(String(params.batchId || params.generatedBatchId || ''));
     const [loading, setLoading] = useState(false);
-    const [message, setMessage] = useState('Load rollout readiness before publishing timetable visibility to teachers, students, and parents.');
+    const [message, setMessage] = useState('Load timetable readiness before publishing visibility to teachers, students, and parents.');
     const [readiness, setReadiness] = useState<TimetableRolloutReadiness | null>(null);
 
     const cleanBatchId = batchId.trim().toUpperCase();
@@ -26,9 +26,9 @@ export default function TimetableRolloutReadinessScreen() {
         try {
             const response = await getTimetableRolloutReadiness(cleanBatchId);
             setReadiness(response);
-            setMessage(response.readyForRollout ? 'Ready for teacher, student, and parent rollout.' : 'Rollout blockers found. Fix blockers before final school rollout.');
+            setMessage(response.readyForRollout ? 'Ready for teacher, student, and parent visibility.' : 'Timetable blockers found. Fix blockers before publishing visibility.');
         } catch {
-            setMessage('Unable to load rollout readiness. Confirm the batch ID and try again.');
+            setMessage('Unable to load timetable readiness. Confirm the batch ID and try again.');
         } finally {
             setLoading(false);
         }
@@ -43,7 +43,7 @@ export default function TimetableRolloutReadinessScreen() {
         setLoading(true);
         try {
             await publishLockTimetable(cleanBatchId, role, role === 'PRINCIPAL' ? 'Principal' : 'Admin');
-            setMessage('Publish lock completed. Reloading rollout readiness.');
+            setMessage('Publish lock completed. Reloading timetable readiness.');
             const response = await getTimetableRolloutReadiness(cleanBatchId);
             setReadiness(response);
         } catch {
@@ -58,8 +58,8 @@ export default function TimetableRolloutReadinessScreen() {
             <View style={styles.headerRow}>
                 <TouchableOpacity style={styles.circleButton} onPress={() => router.back()}><Text style={styles.backText}>‹</Text></TouchableOpacity>
                 <View style={styles.headerTextWrap}>
-                    <Text style={styles.eyebrow}>FINAL TIMETABLE GATE</Text>
-                    <Text style={styles.title}>Rollout Readiness</Text>
+                    <Text style={styles.eyebrow}>TIMETABLE READINESS</Text>
+                    <Text style={styles.title}>Timetable Readiness</Text>
                 </View>
                 <TouchableOpacity style={styles.circleButton} onPress={() => router.replace(backHome as any)}><Text style={styles.homeIcon}>⌂</Text></TouchableOpacity>
             </View>
@@ -72,13 +72,13 @@ export default function TimetableRolloutReadinessScreen() {
             <View style={styles.card}>
                 <Text style={styles.label}>Batch ID</Text>
                 <TextInput value={batchId} onChangeText={setBatchId} autoCapitalize="characters" placeholder="Example: TT-99266EBB" placeholderTextColor={colors.mutedText} style={styles.input} />
-                <TouchableOpacity style={styles.primaryButton} onPress={load}>{loading ? <ActivityIndicator color={colors.white} /> : <Text style={styles.primaryText}>Load Rollout Readiness</Text>}</TouchableOpacity>
+                <TouchableOpacity style={styles.primaryButton} onPress={load}>{loading ? <ActivityIndicator color={colors.white} /> : <Text style={styles.primaryText}>Load Timetable Readiness</Text>}</TouchableOpacity>
             </View>
 
             {readiness ? <>
                 <View style={styles.scoreCard}>
                     <Text style={styles.score}>{readiness.readinessScore}%</Text>
-                    <Text style={styles.scoreTitle}>{readiness.readyForRollout ? 'Ready for Rollout' : 'Review Required'}</Text>
+                    <Text style={styles.scoreTitle}>{readiness.readyForRollout ? 'Ready for Visibility' : 'Review Required'}</Text>
                     <Text style={styles.scoreSub}>Batch {readiness.batchId}</Text>
                 </View>
 
@@ -96,7 +96,7 @@ export default function TimetableRolloutReadinessScreen() {
                     <Action title="Open Live Timetable" subtitle="Validate role visibility" onPress={() => router.push({ pathname: '/timetable-live' as any, params: { batchId: readiness.batchId, sourceRole, role } })} />
                 </View>
 
-                <Section title="Rollout Blockers" items={readiness.blockers} empty="No blockers found." urgent />
+                <Section title="Timetable Blockers" items={readiness.blockers} empty="No blockers found." urgent />
                 <Section title="Passed Checks" items={readiness.checks} empty="No checks loaded." />
             </> : null}
         </ScrollView>
