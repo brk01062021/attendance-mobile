@@ -21,6 +21,7 @@ export async function getLiveTimetable(params: {
     batchId?: string;
     role?: 'ADMIN' | 'PRINCIPAL' | 'TEACHER' | 'STUDENT' | 'PARENT' | string;
     teacherId?: number;
+    teacherName?: string;
     className?: string;
     section?: string;
     schoolId?: string;
@@ -29,7 +30,8 @@ export async function getLiveTimetable(params: {
 
     if (params.batchId) query.append('batchId', params.batchId);
     if (params.role) query.append('role', params.role);
-    if (params.teacherId) query.append('teacherId', String(params.teacherId));
+    if (params.teacherName) query.append('teacherName', params.teacherName);
+    if (!params.teacherName && params.teacherId) query.append('teacherId', String(params.teacherId));
     if (params.className) query.append('className', params.className);
     if (params.section) query.append('section', params.section);
 

@@ -1,7 +1,7 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, ImageBackground, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { exportTimetableBinary, getTimetableArchives, getTimetableNotifications, getTimetableOperationsStatus, getTimetableVersions, publishLockTimetable, rollbackTimetableVersion } from '../src/services/timetableOperationsApi';
+import { exportTimetableBinary, getLiveTimetable, getTimetableArchives, getTimetableNotifications, getTimetableOperationsStatus, getTimetableVersions, publishLockTimetable, rollbackTimetableVersion } from '../src/services/timetableOperationsApi';
 import { colors, shadows, spacing } from '../src/theme';
 import { TimetableArchiveSummary, TimetableNotification, TimetableOperationsStatus, TimetableVersion } from '../src/types/timetable';
 
@@ -48,6 +48,19 @@ export default function TimetableOperationsScreen() {
     useEffect(() => {
         if (cleanBatchId) load();
     }, []);
+
+    const loadActivePublished = async () => {
+        setLoading(true);
+        try {
+            const live = await getLiveTimetable({ role, schoolId: String(params.schoolId || '') });
+            if (live.batchId) setBatchId(live.batchId);
+            setMessage(live.message || `Active published timetable loaded with ${live.entries?.length || 0} visible periods.`);
+        } catch {
+            setMessage('Unable to load active published timetable.');
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const runPublishLock = async () => {
         if (!cleanBatchId) return setMessage('Enter batch ID before publish lock.');
@@ -122,6 +135,7 @@ export default function TimetableOperationsScreen() {
                 <Action title="Publish Lock" subtitle="Admin/Principal only" onPress={runPublishLock} />
                 <Action title="PDF Export" subtitle="Real PDF payload" onPress={() => runExport('PDF')} />
                 <Action title="Excel Export" subtitle="Excel .xls payload" onPress={() => runExport('EXCEL')} />
+                <Action title="Active Published" subtitle="Load latest active" onPress={loadActivePublished} />
                 <Action title="Live Timetable" subtitle="Teacher/student/parent view" onPress={() => router.push({ pathname: '/timetable-live' as any, params: { batchId: cleanBatchId, role, sourceRole } })} />
                 <Action title="Timetable Readiness" subtitle="Final timetable check" onPress={() => router.push({ pathname: '/timetable-rollout-readiness' as any, params: { batchId: cleanBatchId, sourceRole } })} />
                 <Action title="Rollback" subtitle="Unlock to review mode" onPress={runRollback} />

@@ -32,6 +32,7 @@ export default function TimetableLiveScreen() {
             const response = await getLiveTimetable({
                 role,
                 teacherId: role === 'TEACHER' ? teacherId : undefined,
+                teacherName: role === 'TEACHER' ? String(params.teacherName || session?.displayName || '') : undefined,
                 className: role === 'TEACHER' ? undefined : className,
                 section: role === 'TEACHER' ? undefined : section,
                 schoolId,
