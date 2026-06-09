@@ -2,6 +2,7 @@ import {
     TimetableArchiveSummary,
     TimetableBatchSummary,
     TimetableBinaryExportResponse,
+    TimetableGenerationResponse,
     TimetableLiveResponse,
     TimetableManualEditRequest,
     TimetableNotification,
@@ -42,6 +43,37 @@ export async function getLiveTimetable(params: {
         headers: params.schoolId ? { 'X-School-Id': params.schoolId } : undefined,
     });
     return safeJson<TimetableLiveResponse>(response);
+}
+
+
+export async function openManualEditBatch(batchId: string): Promise<TimetableGenerationResponse> {
+    const response = await fetch(`${API_BASE_URL}/timetable/operations/manual-edit/${encodeURIComponent(batchId)}`);
+    return safeJson<TimetableGenerationResponse>(response);
+}
+
+export async function saveManualEditBatch(
+    batchId: string,
+    request: TimetableManualEditRequest,
+    role = 'ADMIN',
+    editedBy = 'Admin'
+): Promise<TimetableGenerationResponse> {
+    const response = await fetch(
+        `${API_BASE_URL}/timetable/operations/manual-edit/${encodeURIComponent(batchId)}?role=${encodeURIComponent(role)}&editedBy=${encodeURIComponent(editedBy)}`,
+        {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(request),
+        }
+    );
+    return safeJson<TimetableGenerationResponse>(response);
+}
+
+export async function revalidateManualEditBatch(batchId: string, role = 'ADMIN'): Promise<TimetableGenerationResponse> {
+    const response = await fetch(
+        `${API_BASE_URL}/timetable/operations/revalidate/${encodeURIComponent(batchId)}?role=${encodeURIComponent(role)}`,
+        { method: 'POST', headers: { 'Content-Type': 'application/json' } }
+    );
+    return safeJson<TimetableGenerationResponse>(response);
 }
 
 export async function getTimetableOperationsStatus(batchId: string): Promise<TimetableOperationsStatus> {

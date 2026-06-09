@@ -1,9 +1,9 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, ImageBackground, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { getTimetableArchives, getTimetableBatches, getTimetableBatchSummary, getTimetableNotifications, getTimetableOperationsStatus, getTimetablePublishHistory, getTimetableVersions, publishLockTimetable, restoreTimetableBatchAsActive, rollbackTimetableVersion } from '../src/services/timetableOperationsApi';
+import { getTimetableArchives, getTimetableBatches, getTimetableBatchSummary, getTimetableNotifications, getTimetableOperationsStatus, getTimetablePublishHistory, getTimetableVersions, openManualEditBatch, publishLockTimetable, restoreTimetableBatchAsActive, revalidateManualEditBatch, rollbackTimetableVersion, saveManualEditBatch } from '../src/services/timetableOperationsApi';
 import { colors, shadows, spacing } from '../src/theme';
-import { TimetableArchiveSummary, TimetableBatchSummary, TimetableNotification, TimetableOperationsStatus, TimetablePublishAudit, TimetableVersion } from '../src/types/timetable';
+import { TimetableArchiveSummary, TimetableBatchSummary, TimetableEntry, TimetableNotification, TimetableOperationsStatus, TimetablePublishAudit, TimetableVersion } from '../src/types/timetable';
 
 export default function TimetableOperationsScreen() {
     const params = useLocalSearchParams();
@@ -20,6 +20,10 @@ export default function TimetableOperationsScreen() {
     const [batches, setBatches] = useState<TimetableBatchSummary[]>([]);
     const [selectedBatch, setSelectedBatch] = useState<TimetableBatchSummary | null>(null);
     const [publishAudit, setPublishAudit] = useState<TimetablePublishAudit[]>([]);
+    const [manualOpen, setManualOpen] = useState(false);
+    const [manualEntries, setManualEntries] = useState<TimetableEntry[]>([]);
+    const [selectedEntry, setSelectedEntry] = useState<TimetableEntry | null>(null);
+    const [editForm, setEditForm] = useState({ teacherName: '', teacherId: '', subjectName: '', roomNumber: '', dayOfWeek: '', periodNumber: '' });
     const scrollRef = useRef<ScrollView>(null);
 
     const cleanBatchId = batchId.trim().toUpperCase();
@@ -68,6 +72,72 @@ export default function TimetableOperationsScreen() {
     useEffect(() => {
         if (cleanBatchId) load();
     }, []);
+
+    const selectEntry = (entry: TimetableEntry) => {
+        setSelectedEntry(entry);
+        setEditForm({
+            teacherName: entry.teacherName || '',
+            teacherId: entry.teacherId == null ? '' : String(entry.teacherId),
+            subjectName: entry.subjectName || '',
+            roomNumber: entry.roomNumber || '',
+            dayOfWeek: entry.dayOfWeek || '',
+            periodNumber: entry.periodNumber == null ? '' : String(entry.periodNumber),
+        });
+    };
+
+    const openManualEdit = async () => {
+        if (!cleanBatchId) return setMessage('Enter or open a batch ID before Manual Edit.');
+        setLoading(true);
+        try {
+            const batch = await openManualEditBatch(cleanBatchId);
+            setManualEntries(batch.entries || []);
+            setManualOpen(true);
+            if ((batch.entries || []).length > 0) selectEntry((batch.entries || [])[0]);
+            setMessage('Manual Edit opened. Edits save to batch only until publish.');
+        } catch {
+            setMessage('Unable to open Manual Edit for this batch.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const saveManualEdit = async () => {
+        if (!cleanBatchId || !selectedEntry) return setMessage('Select an entry before saving.');
+        setLoading(true);
+        try {
+            const batch = await saveManualEditBatch(cleanBatchId, {
+                entryId: String(selectedEntry.id),
+                teacherName: editForm.teacherName,
+                teacherId: editForm.teacherId ? Number(editForm.teacherId) : undefined,
+                subjectName: editForm.subjectName,
+                roomNumber: editForm.roomNumber,
+                dayOfWeek: editForm.dayOfWeek,
+                periodNumber: editForm.periodNumber ? Number(editForm.periodNumber) : undefined,
+            }, role, role === 'PRINCIPAL' ? 'Principal' : 'Admin');
+            setManualEntries(batch.entries || []);
+            setMessage((batch.conflictsDetected || 0) > 0 ? 'Saved to batch. Conflicts remain, so publish is disabled.' : 'Saved and revalidated. Batch is ready to publish.');
+            await load(cleanBatchId);
+        } catch {
+            setMessage('Manual Edit save failed.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const revalidateManualBatch = async () => {
+        if (!cleanBatchId) return setMessage('Open a batch before revalidation.');
+        setLoading(true);
+        try {
+            const batch = await revalidateManualEditBatch(cleanBatchId, role);
+            setManualEntries(batch.entries || []);
+            setMessage((batch.conflictsDetected || 0) > 0 ? 'Revalidated. Blocking conflicts remain.' : 'Revalidated. Ready to publish.');
+            await load(cleanBatchId);
+        } catch {
+            setMessage('Revalidation failed.');
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const runPublishLock = async () => {
         if (!cleanBatchId) return setMessage('Enter batch ID before publish lock.');
@@ -153,11 +223,35 @@ export default function TimetableOperationsScreen() {
 
             <View style={styles.grid}>
                 <Action title="Auto Repair" subtitle="Repair conflicts" onPress={() => router.push({ pathname: '/timetable-repair' as any, params: { generatedBatchId: cleanBatchId, sourceRole } })} />
-                <Action title="Manual Review" subtitle="Editor foundation" onPress={() => router.push({ pathname: '/timetable-review' as any, params: { generatedBatchId: cleanBatchId, sourceRole } })} />
+                <Action title="Manual Edit" subtitle="Edit batch rows" onPress={openManualEdit} />
                 <Action title="Publish Lock" subtitle="Admin/Principal only" onPress={runPublishLock} />
                 <Action title="Rollback" subtitle="Unlock to review mode" onPress={runRollback} />
                 <Action title="Refresh History" subtitle="Reload batch list" onPress={() => load()} />
             </View>
+
+            {manualOpen ? <View style={styles.card}>
+                <Text style={styles.cardEyebrow}>MANUAL EDIT WORKFLOW</Text>
+                <Text style={styles.cardTitle}>Save changes to batch only</Text>
+                <Text style={styles.empty}>Change Teacher, Subject, Room, Day, or Period. Revalidate before publish. Active timetable changes only after successful Publish.</Text>
+                <TouchableOpacity style={[styles.primaryButton, { marginTop: 10, marginBottom: 10 }]} onPress={revalidateManualBatch} disabled={loading}><Text style={styles.primaryText}>Revalidate Batch</Text></TouchableOpacity>
+                {manualEntries.slice(0, 16).map(entry => <TouchableOpacity key={String(entry.id)} style={[styles.historyRow, selectedEntry?.id === entry.id ? styles.historyRowActive : null]} onPress={() => selectEntry(entry)}>
+                    <View style={{ flex: 1 }}>
+                        <Text style={styles.historyTitle}>{entry.className}-{entry.section} • {entry.dayOfWeek} P{entry.periodNumber}</Text>
+                        <Text style={styles.historySub}>{entry.subjectName} • {entry.teacherName}{entry.conflict ? ' • CONFLICT' : ''}</Text>
+                    </View>
+                    <Text style={styles.openText}>Edit</Text>
+                </TouchableOpacity>)}
+                {selectedEntry ? <View style={styles.editBox}>
+                    <Text style={styles.cardTitle}>Selected: {selectedEntry.className}-{selectedEntry.section}</Text>
+                    <EditInput label="Teacher" value={editForm.teacherName} onChangeText={(v) => setEditForm(c => ({ ...c, teacherName: v }))} />
+                    <EditInput label="Teacher ID" value={editForm.teacherId} onChangeText={(v) => setEditForm(c => ({ ...c, teacherId: v }))} />
+                    <EditInput label="Subject" value={editForm.subjectName} onChangeText={(v) => setEditForm(c => ({ ...c, subjectName: v }))} />
+                    <EditInput label="Room" value={editForm.roomNumber} onChangeText={(v) => setEditForm(c => ({ ...c, roomNumber: v }))} />
+                    <EditInput label="Day" value={editForm.dayOfWeek} onChangeText={(v) => setEditForm(c => ({ ...c, dayOfWeek: v.toUpperCase() }))} />
+                    <EditInput label="Period" value={editForm.periodNumber} onChangeText={(v) => setEditForm(c => ({ ...c, periodNumber: v }))} />
+                    <TouchableOpacity style={[styles.primaryButton, { marginTop: 10 }]} onPress={saveManualEdit} disabled={loading}><Text style={styles.primaryText}>Save Changes to Batch</Text></TouchableOpacity>
+                </View> : null}
+            </View> : null}
 
             <BatchHistory batches={batches} currentBatchId={cleanBatchId} onOpen={(id) => { setBatchId(id); load(id); scrollRef.current?.scrollTo({ y: 0, animated: true }); }} />
             <Section title="Publish Audit Trail" items={publishAudit.map(a => `${formatStatus(a.status)} • ${a.batchId} • ${a.approvedBy || 'System'} • Previous: ${a.previousActiveBatchId || 'None'} → Active: ${a.newActiveBatchId || a.batchId}`)} />
@@ -213,6 +307,14 @@ function ArchiveHistory({ archives, onRestore }: { archives: TimetableArchiveSum
     </View>;
 }
 
+
+function EditInput({ label, value, onChangeText }: { label: string; value: string; onChangeText: (value: string) => void }) {
+    return <View style={{ marginBottom: 8 }}>
+        <Text style={styles.label}>{label}</Text>
+        <TextInput value={value} onChangeText={onChangeText} style={styles.input} placeholderTextColor={colors.mutedText} />
+    </View>;
+}
+
 function Metric({ title, value, compact = false }: { title: string; value: string; compact?: boolean }) {
     return <View style={styles.metricCard}><Text style={[styles.metricValue, compact ? styles.metricValueCompact : null]} numberOfLines={2} adjustsFontSizeToFit>{value}</Text><Text style={styles.metricTitle}>{title}</Text></View>;
 }
@@ -251,6 +353,7 @@ const styles = StyleSheet.create({
     actionCard: { width: '48%', backgroundColor: colors.cardCream, borderRadius: 18, padding: 14, borderWidth: 1, borderColor: colors.cardGoldBorder, ...shadows.soft },
     actionTitle: { color: colors.primaryNavy, fontWeight: '900', fontSize: 15, marginBottom: 5 },
     actionSubtitle: { color: colors.slateText, fontWeight: '700', fontSize: 11, lineHeight: 15 },
+    editBox: { backgroundColor: colors.white, borderRadius: 16, padding: 12, borderWidth: 1, borderColor: colors.cardGoldBorder, marginTop: 8 },
     cardEyebrow: { color: colors.deepGold, fontWeight: '900', fontSize: 9, letterSpacing: 1.4, marginBottom: 4 },
     cardTitle: { color: colors.primaryNavy, fontSize: 16, fontWeight: '900', marginBottom: 10 },
     empty: { color: colors.slateText, fontWeight: '800', lineHeight: 20 },
