@@ -1,7 +1,7 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, ImageBackground, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { exportTimetableBinary, getLiveTimetable, getTimetableArchives, getTimetableNotifications, getTimetableOperationsStatus, getTimetableVersions, publishLockTimetable, rollbackTimetableVersion } from '../src/services/timetableOperationsApi';
+import { getTimetableArchives, getTimetableNotifications, getTimetableOperationsStatus, getTimetableVersions, publishLockTimetable, rollbackTimetableVersion } from '../src/services/timetableOperationsApi';
 import { colors, shadows, spacing } from '../src/theme';
 import { TimetableArchiveSummary, TimetableNotification, TimetableOperationsStatus, TimetableVersion } from '../src/types/timetable';
 
@@ -49,19 +49,6 @@ export default function TimetableOperationsScreen() {
         if (cleanBatchId) load();
     }, []);
 
-    const loadActivePublished = async () => {
-        setLoading(true);
-        try {
-            const live = await getLiveTimetable({ role, schoolId: String(params.schoolId || '') });
-            if (live.batchId) setBatchId(live.batchId);
-            setMessage(live.message || `Active published timetable loaded with ${live.entries?.length || 0} visible periods.`);
-        } catch {
-            setMessage('Unable to load active published timetable.');
-        } finally {
-            setLoading(false);
-        }
-    };
-
     const runPublishLock = async () => {
         if (!cleanBatchId) return setMessage('Enter batch ID before publish lock.');
         setLoading(true);
@@ -71,19 +58,6 @@ export default function TimetableOperationsScreen() {
             await load();
         } catch {
             setMessage('Publish lock failed. Check conflicts and role.');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const runExport = async (format: 'PDF' | 'EXCEL') => {
-        if (!cleanBatchId) return setMessage('Enter batch ID before export.');
-        setLoading(true);
-        try {
-            const response = await exportTimetableBinary(cleanBatchId, format);
-            setMessage(`${response.fileName} generated • ${response.byteSize} bytes • ${response.contentType}`);
-        } catch {
-            setMessage(`${format} export failed. Please try again.`);
         } finally {
             setLoading(false);
         }
@@ -112,7 +86,7 @@ export default function TimetableOperationsScreen() {
             </View>
 
             <View style={styles.heroCard}>
-                <Text style={styles.heroTitle}>Publish Lock + Export + Timetable Readiness</Text>
+                <Text style={styles.heroTitle}>Publish Lock + Active Timetable</Text>
                 <Text style={styles.heroText}>{message}</Text>
             </View>
 
@@ -133,13 +107,8 @@ export default function TimetableOperationsScreen() {
                 <Action title="Auto Repair" subtitle="Repair conflicts" onPress={() => router.push({ pathname: '/timetable-repair' as any, params: { generatedBatchId: cleanBatchId, sourceRole } })} />
                 <Action title="Manual Review" subtitle="Editor foundation" onPress={() => router.push({ pathname: '/timetable-review' as any, params: { generatedBatchId: cleanBatchId, sourceRole } })} />
                 <Action title="Publish Lock" subtitle="Admin/Principal only" onPress={runPublishLock} />
-                <Action title="PDF Export" subtitle="Real PDF payload" onPress={() => runExport('PDF')} />
-                <Action title="Excel Export" subtitle="Excel .xls payload" onPress={() => runExport('EXCEL')} />
-                <Action title="Active Published" subtitle="Load latest active" onPress={loadActivePublished} />
-                <Action title="Live Timetable" subtitle="Teacher/student/parent view" onPress={() => router.push({ pathname: '/timetable-live' as any, params: { batchId: cleanBatchId, role, sourceRole } })} />
-                <Action title="Timetable Readiness" subtitle="Final timetable check" onPress={() => router.push({ pathname: '/timetable-rollout-readiness' as any, params: { batchId: cleanBatchId, sourceRole } })} />
                 <Action title="Rollback" subtitle="Unlock to review mode" onPress={runRollback} />
-                <Action title="Intelligence" subtitle="Principal analytics" onPress={() => router.push({ pathname: '/principal-timetable-intelligence' as any, params: { generatedBatchId: cleanBatchId, sourceRole } })} />
+                <Action title="Active Published" subtitle="Open latest active timetable" onPress={() => router.push({ pathname: '/active-published-timetable' as any, params: { sourceRole } })} />
             </View>
 
             <Section title="Version / Rollback History" items={versions.map(v => `V${v.versionNumber} • ${v.changeType} • ${v.createdBy}`)} />
