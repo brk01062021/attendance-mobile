@@ -1,5 +1,5 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, ImageBackground, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { getTimetableArchives, getTimetableBatches, getTimetableBatchSummary, getTimetableNotifications, getTimetableOperationsStatus, getTimetablePublishHistory, getTimetableVersions, publishLockTimetable, restoreTimetableBatchAsActive, rollbackTimetableVersion } from '../src/services/timetableOperationsApi';
 import { colors, shadows, spacing } from '../src/theme';
@@ -12,7 +12,7 @@ export default function TimetableOperationsScreen() {
     const backHome = sourceRole === 'principal' ? '/principal-home' : '/admin-dashboard';
     const [batchId, setBatchId] = useState(String(params.generatedBatchId || params.batchId || ''));
     const [loading, setLoading] = useState(false);
-    const [message, setMessage] = useState('Enter or select a batch ID to manage publish lock, exports, live visibility, timetable readiness, versions, notifications, and archive history.');
+    const [message, setMessage] = useState('Review, repair, publish, rollback, and manage timetable batches.');
     const [status, setStatus] = useState<TimetableOperationsStatus | null>(null);
     const [versions, setVersions] = useState<TimetableVersion[]>([]);
     const [notifications, setNotifications] = useState<TimetableNotification[]>([]);
@@ -20,8 +20,19 @@ export default function TimetableOperationsScreen() {
     const [batches, setBatches] = useState<TimetableBatchSummary[]>([]);
     const [selectedBatch, setSelectedBatch] = useState<TimetableBatchSummary | null>(null);
     const [publishAudit, setPublishAudit] = useState<TimetablePublishAudit[]>([]);
+    const scrollRef = useRef<ScrollView>(null);
 
     const cleanBatchId = batchId.trim().toUpperCase();
+
+    const displayStatus = (value?: string | null) => {
+        if (!value) return '—';
+        return value
+            .toLowerCase()
+            .split('_')
+            .filter(Boolean)
+            .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+            .join(' ');
+    };
 
     const load = async (targetBatchId = cleanBatchId) => {
         if (!targetBatchId) {
@@ -102,7 +113,7 @@ export default function TimetableOperationsScreen() {
     };
 
     return <ImageBackground source={require('../assets/branding/splash-gold.png')} style={styles.bg} resizeMode="cover">
-        <ScrollView contentContainerStyle={styles.container}>
+        <ScrollView ref={scrollRef} contentContainerStyle={styles.container}>
             <View style={styles.headerRow}>
                 <TouchableOpacity style={styles.circleButton} onPress={() => router.back()}><Text style={styles.backText}>‹</Text></TouchableOpacity>
                 <View style={styles.headerTextWrap}><Text style={styles.eyebrow}>TIMETABLE OPERATIONS</Text><Text style={styles.title}>Timetable Operations</Text></View>
@@ -110,7 +121,7 @@ export default function TimetableOperationsScreen() {
             </View>
 
             <View style={styles.heroCard}>
-                <Text style={styles.heroTitle}>Publish Lock + Active Timetable</Text>
+                <Text style={styles.heroTitle}>Timetable Operations</Text>
                 <Text style={styles.heroText}>{message}</Text>
             </View>
 
@@ -131,11 +142,12 @@ export default function TimetableOperationsScreen() {
                 <Text style={styles.cardEyebrow}>BATCH SUMMARY</Text>
                 <Text style={styles.cardTitle}>{selectedBatch.batchId}</Text>
                 <Text style={styles.empty}>{selectedBatch.message}</Text>
+                <Text style={styles.summaryMeta}>Completion: {selectedBatch.completionPercentage || 0}%</Text>
                 <View style={styles.grid}>
-                    <Metric title="Status" value={selectedBatch.status} />
-                    <Metric title="Conflicts" value={String(selectedBatch.conflicts || 0)} />
-                    <Metric title="Completion" value={`${selectedBatch.completionPercentage || 0}%`} />
-                    <Metric title="Uploaded By" value={selectedBatch.uploadedBy || 'SYSTEM'} />
+                    <Metric title="Status" value={displayStatus(selectedBatch.status)} compact />
+                    <Metric title="Conflicts" value={String(selectedBatch.conflicts || 0)} compact />
+                    <Metric title="Uploaded By" value={selectedBatch.uploadedBy || 'System'} compact />
+                    <Metric title="Upload Time" value={formatDateTime(selectedBatch.uploadedAt)} compact />
                 </View>
             </View> : null}
 
@@ -147,15 +159,30 @@ export default function TimetableOperationsScreen() {
                 <Action title="Refresh History" subtitle="Reload batch list" onPress={() => load()} />
             </View>
 
-            <BatchHistory batches={batches} currentBatchId={cleanBatchId} onOpen={(id) => { setBatchId(id); load(id); }} />
-            <Section title="Publish Audit Trail" items={publishAudit.map(a => `${a.status} • ${a.batchId} • ${a.approvedBy || 'SYSTEM'} • Previous: ${a.previousActiveBatchId || 'None'} → Active: ${a.newActiveBatchId || a.batchId}`)} />
+            <BatchHistory batches={batches} currentBatchId={cleanBatchId} onOpen={(id) => { setBatchId(id); load(id); scrollRef.current?.scrollTo({ y: 0, animated: true }); }} />
+            <Section title="Publish Audit Trail" items={publishAudit.map(a => `${formatStatus(a.status)} • ${a.batchId} • ${a.approvedBy || 'System'} • Previous: ${a.previousActiveBatchId || 'None'} → Active: ${a.newActiveBatchId || a.batchId}`)} />
             <ArchiveHistory archives={archives} onRestore={restoreActive} />
 
-            <Section title="Version / Rollback History" items={versions.map(v => `V${v.versionNumber} • ${v.changeType} • ${v.createdBy}`)} />
+            <Section title="Version / Rollback History" items={versions.map(v => `Version ${v.versionNumber} • ${formatStatus(v.changeType)} • ${v.createdBy}`)} />
             <Section title="Notifications" items={notifications.map(n => `${n.audience}: ${n.title}`)} />
-            <Section title="Archive History" items={archives.map(a => `${a.batchId} • ${a.status} • ${a.entriesCount} entries`)} />
+            <Section title="Archive History" items={archives.map(a => `${a.batchId} • ${formatStatus(a.status)} • ${a.entriesCount} entries`)} />
         </ScrollView>
     </ImageBackground>;
+}
+
+function formatDateTime(value?: string | null) {
+    if (!value) return '—';
+    return value.replace('T', ' ').slice(0, 16);
+}
+
+function formatStatus(value?: string | null) {
+    if (!value) return '—';
+    return value
+        .toLowerCase()
+        .split('_')
+        .filter(Boolean)
+        .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+        .join(' ');
 }
 
 function BatchHistory({ batches, currentBatchId, onOpen }: { batches: TimetableBatchSummary[]; currentBatchId: string; onOpen: (batchId: string) => void }) {
@@ -164,7 +191,7 @@ function BatchHistory({ batches, currentBatchId, onOpen }: { batches: TimetableB
         <Text style={styles.cardTitle}>Open Previous Batch</Text>
         {batches.length === 0 ? <Text style={styles.empty}>No timetable batches yet.</Text> : batches.slice(0, 12).map(batch => <TouchableOpacity key={batch.batchId} style={[styles.historyRow, batch.batchId === currentBatchId ? styles.historyRowActive : null]} onPress={() => onOpen(batch.batchId)}>
             <View style={{ flex: 1 }}>
-                <Text style={styles.historyTitle}>{batch.batchId} • {batch.status}</Text>
+                <Text style={styles.historyTitle}>{batch.batchId} • {formatStatus(batch.status)}</Text>
                 <Text style={styles.historySub}>{batch.totalEntries} entries • {batch.conflicts} conflicts • {batch.uploadedBy || 'SYSTEM'}</Text>
             </View>
             <Text style={styles.openText}>Open</Text>
@@ -178,7 +205,7 @@ function ArchiveHistory({ archives, onRestore }: { archives: TimetableArchiveSum
         <Text style={styles.cardTitle}>Published Batch History</Text>
         {archives.length === 0 ? <Text style={styles.empty}>No records yet.</Text> : archives.slice(0, 8).map(item => <View key={`${item.batchId}-${item.status}`} style={styles.historyRow}>
             <View style={{ flex: 1 }}>
-                <Text style={styles.historyTitle}>{item.batchId} • {item.status}</Text>
+                <Text style={styles.historyTitle}>{item.batchId} • {formatStatus(item.status)}</Text>
                 <Text style={styles.historySub}>{item.entriesCount} entries • {item.archivedBy}</Text>
             </View>
             {item.status !== 'ACTIVE' ? <TouchableOpacity style={styles.smallButton} onPress={() => onRestore(item.batchId)}><Text style={styles.smallButtonText}>Restore</Text></TouchableOpacity> : null}
@@ -186,8 +213,8 @@ function ArchiveHistory({ archives, onRestore }: { archives: TimetableArchiveSum
     </View>;
 }
 
-function Metric({ title, value }: { title: string; value: string }) {
-    return <View style={styles.metricCard}><Text style={styles.metricValue}>{value}</Text><Text style={styles.metricTitle}>{title}</Text></View>;
+function Metric({ title, value, compact = false }: { title: string; value: string; compact?: boolean }) {
+    return <View style={styles.metricCard}><Text style={[styles.metricValue, compact ? styles.metricValueCompact : null]} numberOfLines={2} adjustsFontSizeToFit>{value}</Text><Text style={styles.metricTitle}>{title}</Text></View>;
 }
 
 function Action({ title, subtitle, onPress }: { title: string; subtitle: string; onPress: () => void }) {
@@ -219,6 +246,7 @@ const styles = StyleSheet.create({
     grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 12 },
     metricCard: { width: '48%', backgroundColor: colors.cardCream, borderRadius: 18, padding: 14, borderWidth: 1, borderColor: colors.cardGoldBorder, ...shadows.soft },
     metricValue: { color: colors.primaryNavy, fontSize: 21, fontWeight: '900' },
+    metricValueCompact: { fontSize: 18, lineHeight: 22 },
     metricTitle: { color: colors.slateText, fontWeight: '800', marginTop: 3 },
     actionCard: { width: '48%', backgroundColor: colors.cardCream, borderRadius: 18, padding: 14, borderWidth: 1, borderColor: colors.cardGoldBorder, ...shadows.soft },
     actionTitle: { color: colors.primaryNavy, fontWeight: '900', fontSize: 15, marginBottom: 5 },
@@ -226,10 +254,11 @@ const styles = StyleSheet.create({
     cardEyebrow: { color: colors.deepGold, fontWeight: '900', fontSize: 9, letterSpacing: 1.4, marginBottom: 4 },
     cardTitle: { color: colors.primaryNavy, fontSize: 16, fontWeight: '900', marginBottom: 10 },
     empty: { color: colors.slateText, fontWeight: '800', lineHeight: 20 },
+    summaryMeta: { color: colors.deepGold, fontWeight: '900', marginTop: 8, marginBottom: 10 },
     listItem: { color: colors.slateText, fontWeight: '800', lineHeight: 22 },
     historyRow: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: 'rgba(255,248,225,0.78)', borderRadius: 15, padding: 12, borderWidth: 1, borderColor: colors.cardGoldBorder, marginBottom: 8 },
     historyRowActive: { backgroundColor: colors.cardCream },
-    historyTitle: { color: colors.primaryNavy, fontWeight: '900' },
+    historyTitle: { color: colors.primaryNavy, fontWeight: '900', flexShrink: 1 },
     historySub: { color: colors.slateText, fontWeight: '700', fontSize: 11, marginTop: 3 },
     openText: { color: colors.deepGold, fontWeight: '900' },
     smallButton: { backgroundColor: colors.primaryNavy, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 8 },
