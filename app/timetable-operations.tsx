@@ -1,9 +1,9 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, ImageBackground, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { getTimetableArchives, getTimetableNotifications, getTimetableOperationsStatus, getTimetableVersions, publishLockTimetable, rollbackTimetableVersion } from '../src/services/timetableOperationsApi';
+import { getTimetableArchives, getTimetableBatches, getTimetableBatchSummary, getTimetableNotifications, getTimetableOperationsStatus, getTimetablePublishHistory, getTimetableVersions, publishLockTimetable, restoreTimetableBatchAsActive, rollbackTimetableVersion } from '../src/services/timetableOperationsApi';
 import { colors, shadows, spacing } from '../src/theme';
-import { TimetableArchiveSummary, TimetableNotification, TimetableOperationsStatus, TimetableVersion } from '../src/types/timetable';
+import { TimetableArchiveSummary, TimetableBatchSummary, TimetableNotification, TimetableOperationsStatus, TimetablePublishAudit, TimetableVersion } from '../src/types/timetable';
 
 export default function TimetableOperationsScreen() {
     const params = useLocalSearchParams();
@@ -17,26 +17,35 @@ export default function TimetableOperationsScreen() {
     const [versions, setVersions] = useState<TimetableVersion[]>([]);
     const [notifications, setNotifications] = useState<TimetableNotification[]>([]);
     const [archives, setArchives] = useState<TimetableArchiveSummary[]>([]);
+    const [batches, setBatches] = useState<TimetableBatchSummary[]>([]);
+    const [selectedBatch, setSelectedBatch] = useState<TimetableBatchSummary | null>(null);
+    const [publishAudit, setPublishAudit] = useState<TimetablePublishAudit[]>([]);
 
     const cleanBatchId = batchId.trim().toUpperCase();
 
-    const load = async () => {
-        if (!cleanBatchId) {
+    const load = async (targetBatchId = cleanBatchId) => {
+        if (!targetBatchId) {
             setMessage('Enter a timetable batch ID first, for example TT-99266EBB.');
             return;
         }
         setLoading(true);
         try {
-            const [nextStatus, nextVersions, nextNotifications, nextArchives] = await Promise.all([
-                getTimetableOperationsStatus(cleanBatchId),
-                getTimetableVersions(cleanBatchId),
-                getTimetableNotifications(cleanBatchId),
+            const [nextStatus, nextVersions, nextNotifications, nextArchives, nextBatches, nextSummary, nextAudit] = await Promise.all([
+                getTimetableOperationsStatus(targetBatchId),
+                getTimetableVersions(targetBatchId),
+                getTimetableNotifications(targetBatchId),
                 getTimetableArchives().catch(() => []),
+                getTimetableBatches().catch(() => []),
+                getTimetableBatchSummary(targetBatchId).catch(() => null),
+                getTimetablePublishHistory(targetBatchId).catch(() => []),
             ]);
             setStatus(nextStatus);
             setVersions(nextVersions || []);
             setNotifications(nextNotifications || []);
             setArchives(nextArchives || []);
+            setBatches(nextBatches || []);
+            setSelectedBatch(nextSummary);
+            setPublishAudit(nextAudit || []);
             setMessage('Timetable operational status loaded.');
         } catch {
             setMessage('Unable to load timetable operations. Confirm the batch ID exists and try again.');
@@ -77,6 +86,21 @@ export default function TimetableOperationsScreen() {
         }
     };
 
+
+    const restoreActive = async (targetBatchId: string) => {
+        setLoading(true);
+        try {
+            const audit = await restoreTimetableBatchAsActive(targetBatchId, role, role === 'PRINCIPAL' ? 'Principal' : 'Admin');
+            setBatchId(targetBatchId);
+            setMessage(audit.message || 'Previous published batch restored as active timetable.');
+            await load(targetBatchId);
+        } catch {
+            setMessage('Unable to restore previous published batch.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     return <ImageBackground source={require('../assets/branding/splash-gold.png')} style={styles.bg} resizeMode="cover">
         <ScrollView contentContainerStyle={styles.container}>
             <View style={styles.headerRow}>
@@ -103,19 +127,63 @@ export default function TimetableOperationsScreen() {
                 <Metric title="Entries" value={String(status.entries)} />
             </View> : null}
 
+            {selectedBatch ? <View style={styles.card}>
+                <Text style={styles.cardEyebrow}>BATCH SUMMARY</Text>
+                <Text style={styles.cardTitle}>{selectedBatch.batchId}</Text>
+                <Text style={styles.empty}>{selectedBatch.message}</Text>
+                <View style={styles.grid}>
+                    <Metric title="Status" value={selectedBatch.status} />
+                    <Metric title="Conflicts" value={String(selectedBatch.conflicts || 0)} />
+                    <Metric title="Completion" value={`${selectedBatch.completionPercentage || 0}%`} />
+                    <Metric title="Uploaded By" value={selectedBatch.uploadedBy || 'SYSTEM'} />
+                </View>
+            </View> : null}
+
             <View style={styles.grid}>
                 <Action title="Auto Repair" subtitle="Repair conflicts" onPress={() => router.push({ pathname: '/timetable-repair' as any, params: { generatedBatchId: cleanBatchId, sourceRole } })} />
                 <Action title="Manual Review" subtitle="Editor foundation" onPress={() => router.push({ pathname: '/timetable-review' as any, params: { generatedBatchId: cleanBatchId, sourceRole } })} />
                 <Action title="Publish Lock" subtitle="Admin/Principal only" onPress={runPublishLock} />
                 <Action title="Rollback" subtitle="Unlock to review mode" onPress={runRollback} />
-                <Action title="Active Published" subtitle="Open latest active timetable" onPress={() => router.push({ pathname: '/active-published-timetable' as any, params: { sourceRole } })} />
+                <Action title="Refresh History" subtitle="Reload batch list" onPress={() => load()} />
             </View>
+
+            <BatchHistory batches={batches} currentBatchId={cleanBatchId} onOpen={(id) => { setBatchId(id); load(id); }} />
+            <Section title="Publish Audit Trail" items={publishAudit.map(a => `${a.status} • ${a.batchId} • ${a.approvedBy || 'SYSTEM'} • Previous: ${a.previousActiveBatchId || 'None'} → Active: ${a.newActiveBatchId || a.batchId}`)} />
+            <ArchiveHistory archives={archives} onRestore={restoreActive} />
 
             <Section title="Version / Rollback History" items={versions.map(v => `V${v.versionNumber} • ${v.changeType} • ${v.createdBy}`)} />
             <Section title="Notifications" items={notifications.map(n => `${n.audience}: ${n.title}`)} />
             <Section title="Archive History" items={archives.map(a => `${a.batchId} • ${a.status} • ${a.entriesCount} entries`)} />
         </ScrollView>
     </ImageBackground>;
+}
+
+function BatchHistory({ batches, currentBatchId, onOpen }: { batches: TimetableBatchSummary[]; currentBatchId: string; onOpen: (batchId: string) => void }) {
+    return <View style={styles.card}>
+        <Text style={styles.cardEyebrow}>BATCH HISTORY</Text>
+        <Text style={styles.cardTitle}>Open Previous Batch</Text>
+        {batches.length === 0 ? <Text style={styles.empty}>No timetable batches yet.</Text> : batches.slice(0, 12).map(batch => <TouchableOpacity key={batch.batchId} style={[styles.historyRow, batch.batchId === currentBatchId ? styles.historyRowActive : null]} onPress={() => onOpen(batch.batchId)}>
+            <View style={{ flex: 1 }}>
+                <Text style={styles.historyTitle}>{batch.batchId} • {batch.status}</Text>
+                <Text style={styles.historySub}>{batch.totalEntries} entries • {batch.conflicts} conflicts • {batch.uploadedBy || 'SYSTEM'}</Text>
+            </View>
+            <Text style={styles.openText}>Open</Text>
+        </TouchableOpacity>)}
+    </View>;
+}
+
+function ArchiveHistory({ archives, onRestore }: { archives: TimetableArchiveSummary[]; onRestore: (batchId: string) => void }) {
+    return <View style={styles.card}>
+        <Text style={styles.cardEyebrow}>ROLLBACK / ARCHIVE</Text>
+        <Text style={styles.cardTitle}>Published Batch History</Text>
+        {archives.length === 0 ? <Text style={styles.empty}>No records yet.</Text> : archives.slice(0, 8).map(item => <View key={`${item.batchId}-${item.status}`} style={styles.historyRow}>
+            <View style={{ flex: 1 }}>
+                <Text style={styles.historyTitle}>{item.batchId} • {item.status}</Text>
+                <Text style={styles.historySub}>{item.entriesCount} entries • {item.archivedBy}</Text>
+            </View>
+            {item.status !== 'ACTIVE' ? <TouchableOpacity style={styles.smallButton} onPress={() => onRestore(item.batchId)}><Text style={styles.smallButtonText}>Restore</Text></TouchableOpacity> : null}
+        </View>)}
+    </View>;
 }
 
 function Metric({ title, value }: { title: string; value: string }) {
@@ -155,7 +223,15 @@ const styles = StyleSheet.create({
     actionCard: { width: '48%', backgroundColor: colors.cardCream, borderRadius: 18, padding: 14, borderWidth: 1, borderColor: colors.cardGoldBorder, ...shadows.soft },
     actionTitle: { color: colors.primaryNavy, fontWeight: '900', fontSize: 15, marginBottom: 5 },
     actionSubtitle: { color: colors.slateText, fontWeight: '700', fontSize: 11, lineHeight: 15 },
+    cardEyebrow: { color: colors.deepGold, fontWeight: '900', fontSize: 9, letterSpacing: 1.4, marginBottom: 4 },
     cardTitle: { color: colors.primaryNavy, fontSize: 16, fontWeight: '900', marginBottom: 10 },
     empty: { color: colors.slateText, fontWeight: '800', lineHeight: 20 },
     listItem: { color: colors.slateText, fontWeight: '800', lineHeight: 22 },
+    historyRow: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: 'rgba(255,248,225,0.78)', borderRadius: 15, padding: 12, borderWidth: 1, borderColor: colors.cardGoldBorder, marginBottom: 8 },
+    historyRowActive: { backgroundColor: colors.cardCream },
+    historyTitle: { color: colors.primaryNavy, fontWeight: '900' },
+    historySub: { color: colors.slateText, fontWeight: '700', fontSize: 11, marginTop: 3 },
+    openText: { color: colors.deepGold, fontWeight: '900' },
+    smallButton: { backgroundColor: colors.primaryNavy, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 8 },
+    smallButtonText: { color: colors.white, fontWeight: '900', fontSize: 11 },
 });

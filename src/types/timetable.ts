@@ -160,13 +160,15 @@ export type TimetablePublishResponse = {
 export type TimetablePublishAudit = {
     auditId: string;
     batchId: string;
-    status: 'PUBLISHED' | 'BLOCKED_BY_CONFLICTS' | 'NOT_PUBLISHED';
+    status: 'PUBLISHED' | 'BLOCKED_BY_CONFLICTS' | 'NOT_PUBLISHED' | string;
     publishedAt?: string | null;
     approvedBy?: string | null;
     publishedEntries: number;
     remainingConflicts: number;
     classSections: number;
     message: string;
+    previousActiveBatchId?: string | null;
+    newActiveBatchId?: string | null;
 };
 
 export type TimetableExportResponse = {
@@ -202,6 +204,11 @@ export type TimetableBatchSummary = {
     lastPublishedAt?: string | null;
     approvedBy?: string | null;
     message: string;
+    uploadedAt?: string | null;
+    uploadedBy?: string | null;
+    locked?: boolean | null;
+    latestPublished?: boolean | null;
+    archived?: boolean | null;
 };
 
 export type TimetableLiveResponse = {

@@ -1,9 +1,12 @@
 import {
+    TimetableArchiveSummary,
+    TimetableBatchSummary,
     TimetableBinaryExportResponse,
     TimetableLiveResponse,
     TimetableManualEditRequest,
     TimetableNotification,
     TimetableOperationsStatus,
+    TimetablePublishAudit,
     TimetablePublishResponse,
     TimetableRolloutReadiness,
     TimetableVersion
@@ -118,9 +121,39 @@ export async function getTimetableNotifications(batchId: string): Promise<Timeta
     return safeJson<TimetableNotification[]>(response);
 }
 
+
+export async function getTimetableArchives(): Promise<TimetableArchiveSummary[]> {
+    const response = await fetch(`${API_BASE_URL}/timetable/operations/archives`);
+    return safeJson<TimetableArchiveSummary[]>(response);
+}
+
 export async function getTimetableRoleNotifications(role: string, schoolId?: string): Promise<TimetableNotification[]> {
     const response = await fetch(`${API_BASE_URL}/timetable/role-notifications?role=${encodeURIComponent(role)}`, {
         headers: schoolId ? { 'X-School-Id': schoolId } : undefined,
     });
     return safeJson<TimetableNotification[]>(response);
+}
+
+export async function getTimetableBatches(): Promise<TimetableBatchSummary[]> {
+    const response = await fetch(`${API_BASE_URL}/timetable/operations/batches`);
+    return safeJson<TimetableBatchSummary[]>(response);
+}
+
+export async function getTimetableBatchSummary(batchId: string): Promise<TimetableBatchSummary> {
+    const response = await fetch(`${API_BASE_URL}/timetable/operations/batch-summary/${encodeURIComponent(batchId)}`);
+    return safeJson<TimetableBatchSummary>(response);
+}
+
+export async function getTimetablePublishHistory(batchId?: string): Promise<TimetablePublishAudit[]> {
+    const path = batchId ? `/timetable/operations/publish-history/${encodeURIComponent(batchId)}` : '/timetable/operations/publish-history';
+    const response = await fetch(`${API_BASE_URL}${path}`);
+    return safeJson<TimetablePublishAudit[]>(response);
+}
+
+export async function restoreTimetableBatchAsActive(batchId: string, role = 'ADMIN', approvedBy = 'Admin'): Promise<TimetablePublishAudit> {
+    const response = await fetch(
+        `${API_BASE_URL}/timetable/operations/rollback-to-active/${encodeURIComponent(batchId)}?role=${encodeURIComponent(role)}&approvedBy=${encodeURIComponent(approvedBy)}`,
+        { method: 'POST', headers: { 'Content-Type': 'application/json' } }
+    );
+    return safeJson<TimetablePublishAudit>(response);
 }
