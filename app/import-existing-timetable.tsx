@@ -29,10 +29,10 @@ export default function ImportExistingTimetableScreen() {
                     <View style={styles.heroCard}>
                         <Text style={styles.heroTitle}>Web ERP Import Guidance</Text>
                         <Text style={styles.heroText}>
-                            Use Web ERP to upload, validate, preview, and publish the active school timetable.
+                            Use Web ERP to upload, validate, auto repair conflicts, revalidate, publish, and manage rollback for the active school timetable.
                         </Text>
                         <View style={styles.statusPill}>
-                            <Text style={styles.statusText}>After publish, Teacher, Student, and Parent timetable visibility is updated.</Text>
+                            <Text style={styles.statusText}>After successful publish, Mobile shows Active Published Timetable, Published Version History, and Rollback History.</Text>
                         </View>
                     </View>
 
@@ -47,8 +47,9 @@ export default function ImportExistingTimetableScreen() {
                         <Text style={styles.cardLabel}>PRODUCTION FLOW</Text>
                         <Step number="1" title="Open Web ERP" subtitle="Go to Timetable → Import Existing Timetable." />
                         <Step number="2" title="Upload Excel" subtitle="Select the active timetable file." />
-                        <Step number="3" title="Validate and Preview" subtitle="Review summary cards and preview records." />
-                        <Step number="4" title="Publish" subtitle="Publish after validation passes." last />
+                        <Step number="3" title="Validate and Auto Repair" subtitle="Run Auto Repair until blocking conflicts are resolved." />
+                        <Step number="4" title="Revalidate" subtitle="Confirm zero errors and zero conflicts before publish." />
+                        <Step number="5" title="Publish from Web ERP" subtitle="Use Publish Confirmation after status becomes Ready to Publish. Mobile remains read-only." last />
                     </View>
 
                     <TouchableOpacity style={styles.primaryButton} onPress={() => router.push({ pathname: '/timetable-operations' as any, params: { role: roleLabel.toUpperCase(), sourceRole } })} activeOpacity={0.88}>

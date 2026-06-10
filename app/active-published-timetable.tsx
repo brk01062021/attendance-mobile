@@ -2,9 +2,9 @@ import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, ImageBackground, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { getSession, normalizeSchoolId } from '../src/services/sessionService';
-import { getLiveTimetable } from '../src/services/timetableOperationsApi';
+import { getLiveTimetable, getTimetableArchives, getTimetablePublishHistory } from '../src/services/timetableOperationsApi';
 import { colors, shadows, spacing } from '../src/theme';
-import { TimetableEntry, TimetableLiveResponse } from '../src/types/timetable';
+import { TimetableArchiveSummary, TimetableEntry, TimetableLiveResponse, TimetablePublishAudit } from '../src/types/timetable';
 
 const DAYS = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'];
 
@@ -12,13 +12,15 @@ export default function ActivePublishedTimetableScreen() {
     const params = useLocalSearchParams();
     const session = getSession();
     const sourceRole = String(params.sourceRole || session?.role?.toLowerCase() || 'admin');
-    const role = sourceRole === 'principal' ? 'PRINCIPAL' : 'ADMIN';
-    const backHome = sourceRole === 'principal' ? '/principal-home' : '/admin-dashboard';
+    const role = ['teacher', 'student', 'parent', 'principal'].includes(sourceRole) ? sourceRole.toUpperCase() : 'ADMIN';
+    const backHome = sourceRole === 'principal' ? '/principal-home' : sourceRole === 'teacher' ? '/teacher-dashboard' : sourceRole === 'student' ? '/student-dashboard' : sourceRole === 'parent' ? '/parent-dashboard' : '/admin-dashboard';
     const schoolId = normalizeSchoolId(String(params.schoolId || session?.schoolId || 'BRK1'));
 
     const [loading, setLoading] = useState(true);
     const [message, setMessage] = useState('Loading latest active published timetable...');
     const [data, setData] = useState<TimetableLiveResponse | null>(null);
+    const [publishHistory, setPublishHistory] = useState<TimetablePublishAudit[]>([]);
+    const [rollbackHistory, setRollbackHistory] = useState<TimetableArchiveSummary[]>([]);
     const [classFilter, setClassFilter] = useState('ALL');
     const [sectionFilter, setSectionFilter] = useState('ALL');
     const [dayFilter, setDayFilter] = useState('ALL');
@@ -26,8 +28,14 @@ export default function ActivePublishedTimetableScreen() {
     const load = async () => {
         setLoading(true);
         try {
-            const response = await getLiveTimetable({ role, schoolId });
+            const [response, history, archives] = await Promise.all([
+                getLiveTimetable({ role, schoolId }),
+                getTimetablePublishHistory(),
+                getTimetableArchives(),
+            ]);
             setData(response);
+            setPublishHistory(history || []);
+            setRollbackHistory(archives || []);
             setMessage(response.message || 'Latest active published timetable loaded.');
         } catch {
             setData(null);
@@ -86,6 +94,26 @@ export default function ActivePublishedTimetableScreen() {
             <View style={styles.chipRow}><FilterChip label="All Days" active={dayFilter === 'ALL'} onPress={() => setDayFilter('ALL')} />{days.map(day => <FilterChip key={day} label={day} active={dayFilter === day} onPress={() => setDayFilter(day)} />)}</View>
 
             <View style={styles.card}>
+                <Text style={styles.cardTitle}>Published Version History</Text>
+                {publishHistory.length === 0 ? <Text style={styles.empty}>No published version history found yet.</Text> : publishHistory.slice(0, 6).map((item, index) => <View key={item.auditId || `${item.batchId}-${index}`} style={styles.historyCard}>
+                    <Text style={styles.historyTitle}>V{item.versionNumber || '-'} • {item.batchId} • {item.status}</Text>
+                    <Text style={styles.periodText}>Published By: {item.approvedBy || 'SYSTEM'}</Text>
+                    <Text style={styles.periodText}>Published Time: {item.publishedAt ? item.publishedAt.slice(0, 16).replace('T', ' ') : 'Not published'}</Text>
+                    <Text style={styles.periodText}>Readiness: {item.readinessPercentage ?? '-'}% • Errors: {item.errorCount ?? item.remainingConflicts ?? 0} • Conflicts: {item.remainingConflicts ?? 0}</Text>
+                </View>)}
+            </View>
+
+            <View style={styles.card}>
+                <Text style={styles.cardTitle}>Rollback History</Text>
+                {rollbackHistory.length === 0 ? <Text style={styles.empty}>No rollback/archive history found yet.</Text> : rollbackHistory.slice(0, 6).map((item, index) => <View key={`${item.batchId}-${item.status}-${index}`} style={styles.historyCard}>
+                    <Text style={styles.historyTitle}>{item.batchId} • {item.status}</Text>
+                    <Text style={styles.periodText}>Changed By: {item.archivedBy || 'SYSTEM'}</Text>
+                    <Text style={styles.periodText}>Changed Time: {item.archivedAt ? item.archivedAt.slice(0, 16).replace('T', ' ') : '-'}</Text>
+                    <Text style={styles.periodText}>{item.message}</Text>
+                </View>)}
+            </View>
+
+            <View style={styles.card}>
                 <Text style={styles.cardTitle}>Day-wise Timetable</Text>
                 <Text style={styles.note}>Source: latest active published imported timetable.</Text>
                 {visible.length === 0 ? <Text style={styles.empty}>No active published timetable periods found for the selected filters.</Text> : Object.entries(grouped).map(([day, items]) => <View key={day} style={styles.dayBlock}>
@@ -142,6 +170,8 @@ const styles = StyleSheet.create({
     dayBlock: { marginTop: 12 },
     dayTitle: { color: colors.deepGold, fontWeight: '900', letterSpacing: 1, marginBottom: 8 },
     periodCard: { backgroundColor: colors.white, borderRadius: 16, borderWidth: 1, borderColor: colors.cardGoldBorder, padding: 12, marginBottom: 8 },
+    historyCard: { backgroundColor: colors.white, borderRadius: 16, borderWidth: 1, borderColor: colors.cardGoldBorder, padding: 12, marginTop: 8 },
+    historyTitle: { color: colors.primaryNavy, fontSize: 13, fontWeight: '900', marginBottom: 4 },
     periodTitle: { color: colors.primaryNavy, fontWeight: '900', marginBottom: 5 },
     periodText: { color: colors.slateText, fontWeight: '800', lineHeight: 20 },
 });

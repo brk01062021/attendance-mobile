@@ -148,7 +148,7 @@ export type TimetableManualEditRequest = {
 export type TimetablePublishResponse = {
     success: boolean;
     batchId: string;
-    status: 'PUBLISHED' | 'BLOCKED_BY_CONFLICTS';
+    status: 'PUBLISHED' | 'BLOCKED_BY_CONFLICTS' | 'PUBLISH_BLOCKED' | string;
     message: string;
     publishedEntries: number;
     remainingConflicts: number;
@@ -169,6 +169,9 @@ export type TimetablePublishAudit = {
     message: string;
     previousActiveBatchId?: string | null;
     newActiveBatchId?: string | null;
+    versionNumber?: number | null;
+    readinessPercentage?: number | null;
+    errorCount?: number | null;
 };
 
 export type TimetableExportResponse = {

@@ -1,9 +1,9 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, ImageBackground, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { getTimetableArchives, getTimetableBatches, getTimetableBatchSummary, getTimetableNotifications, getTimetableOperationsStatus, getTimetablePublishHistory, getTimetableVersions, openManualEditBatch, publishLockTimetable, restoreTimetableBatchAsActive, revalidateManualEditBatch, rollbackTimetableVersion, saveManualEditBatch } from '../src/services/timetableOperationsApi';
+import { getTimetableArchives, getTimetableBatches, getTimetableBatchSummary, getTimetableNotifications, getTimetableOperationsStatus, getTimetablePublishHistory, getTimetableVersions } from '../src/services/timetableOperationsApi';
 import { colors, shadows, spacing } from '../src/theme';
-import { TimetableArchiveSummary, TimetableBatchSummary, TimetableEntry, TimetableNotification, TimetableOperationsStatus, TimetablePublishAudit, TimetableVersion } from '../src/types/timetable';
+import { TimetableArchiveSummary, TimetableBatchSummary, TimetableNotification, TimetableOperationsStatus, TimetablePublishAudit, TimetableVersion } from '../src/types/timetable';
 
 export default function TimetableOperationsScreen() {
     const params = useLocalSearchParams();
@@ -20,10 +20,6 @@ export default function TimetableOperationsScreen() {
     const [batches, setBatches] = useState<TimetableBatchSummary[]>([]);
     const [selectedBatch, setSelectedBatch] = useState<TimetableBatchSummary | null>(null);
     const [publishAudit, setPublishAudit] = useState<TimetablePublishAudit[]>([]);
-    const [manualOpen, setManualOpen] = useState(false);
-    const [manualEntries, setManualEntries] = useState<TimetableEntry[]>([]);
-    const [selectedEntry, setSelectedEntry] = useState<TimetableEntry | null>(null);
-    const [editForm, setEditForm] = useState({ teacherName: '', teacherId: '', subjectName: '', roomNumber: '', dayOfWeek: '', periodNumber: '' });
     const scrollRef = useRef<ScrollView>(null);
 
     const cleanBatchId = batchId.trim().toUpperCase();
@@ -73,113 +69,8 @@ export default function TimetableOperationsScreen() {
         if (cleanBatchId) load();
     }, []);
 
-    const selectEntry = (entry: TimetableEntry) => {
-        setSelectedEntry(entry);
-        setEditForm({
-            teacherName: entry.teacherName || '',
-            teacherId: entry.teacherId == null ? '' : String(entry.teacherId),
-            subjectName: entry.subjectName || '',
-            roomNumber: entry.roomNumber || '',
-            dayOfWeek: entry.dayOfWeek || '',
-            periodNumber: entry.periodNumber == null ? '' : String(entry.periodNumber),
-        });
-    };
-
-    const openManualEdit = async () => {
-        if (!cleanBatchId) return setMessage('Enter or open a batch ID before Manual Edit.');
-        setLoading(true);
-        try {
-            const batch = await openManualEditBatch(cleanBatchId);
-            setManualEntries(batch.entries || []);
-            setManualOpen(true);
-            if ((batch.entries || []).length > 0) selectEntry((batch.entries || [])[0]);
-            setMessage('Manual Edit opened. Edits save to batch only until publish.');
-        } catch {
-            setMessage('Unable to open Manual Edit for this batch.');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const saveManualEdit = async () => {
-        if (!cleanBatchId || !selectedEntry) return setMessage('Select an entry before saving.');
-        setLoading(true);
-        try {
-            const batch = await saveManualEditBatch(cleanBatchId, {
-                entryId: String(selectedEntry.id),
-                teacherName: editForm.teacherName,
-                teacherId: editForm.teacherId ? Number(editForm.teacherId) : undefined,
-                subjectName: editForm.subjectName,
-                roomNumber: editForm.roomNumber,
-                dayOfWeek: editForm.dayOfWeek,
-                periodNumber: editForm.periodNumber ? Number(editForm.periodNumber) : undefined,
-            }, role, role === 'PRINCIPAL' ? 'Principal' : 'Admin');
-            setManualEntries(batch.entries || []);
-            setMessage((batch.conflictsDetected || 0) > 0 ? 'Saved to batch. Conflicts remain, so publish is disabled.' : 'Saved and revalidated. Batch is ready to publish.');
-            await load(cleanBatchId);
-        } catch {
-            setMessage('Manual Edit save failed.');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const revalidateManualBatch = async () => {
-        if (!cleanBatchId) return setMessage('Open a batch before revalidation.');
-        setLoading(true);
-        try {
-            const batch = await revalidateManualEditBatch(cleanBatchId, role);
-            setManualEntries(batch.entries || []);
-            setMessage((batch.conflictsDetected || 0) > 0 ? 'Revalidated. Blocking conflicts remain.' : 'Revalidated. Ready to publish.');
-            await load(cleanBatchId);
-        } catch {
-            setMessage('Revalidation failed.');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const runPublishLock = async () => {
-        if (!cleanBatchId) return setMessage('Enter batch ID before publish lock.');
-        setLoading(true);
-        try {
-            const response = await publishLockTimetable(cleanBatchId, role, role === 'PRINCIPAL' ? 'Principal' : 'Admin');
-            setMessage(response.message || response.notificationMessage || 'Publish lock completed.');
-            await load();
-        } catch {
-            setMessage('Publish lock failed. Check conflicts and role.');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const runRollback = async () => {
-        if (!cleanBatchId) return setMessage('Enter batch ID before rollback.');
-        setLoading(true);
-        try {
-            const version = await rollbackTimetableVersion(cleanBatchId, 1, role);
-            setMessage(version.notes || 'Rollback marker created.');
-            await load();
-        } catch {
-            setMessage('Rollback failed. Only Admin/Principal can rollback.');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-
-    const restoreActive = async (targetBatchId: string) => {
-        setLoading(true);
-        try {
-            const audit = await restoreTimetableBatchAsActive(targetBatchId, role, role === 'PRINCIPAL' ? 'Principal' : 'Admin');
-            setBatchId(targetBatchId);
-            setMessage(audit.message || 'Previous published batch restored as active timetable.');
-            await load(targetBatchId);
-        } catch {
-            setMessage('Unable to restore previous published batch.');
-        } finally {
-            setLoading(false);
-        }
+    const openActivePublishedTimetable = () => {
+        router.push({ pathname: '/active-published-timetable' as any, params: { role, sourceRole } });
     };
 
     return <ImageBackground source={require('../assets/branding/splash-gold.png')} style={styles.bg} resizeMode="cover">
@@ -191,8 +82,9 @@ export default function TimetableOperationsScreen() {
             </View>
 
             <View style={styles.heroCard}>
-                <Text style={styles.heroTitle}>Timetable Operations</Text>
+                <Text style={styles.heroTitle}>Mobile Timetable Visibility</Text>
                 <Text style={styles.heroText}>{message}</Text>
+                <Text style={styles.heroNote}>Mobile is read-only for publish lifecycle. Use Web ERP for Auto Repair, Revalidate, Publish Confirmation, Publish, and Rollback actions.</Text>
             </View>
 
             <View style={styles.card}>
@@ -222,40 +114,19 @@ export default function TimetableOperationsScreen() {
             </View> : null}
 
             <View style={styles.grid}>
-                <Action title="Auto Repair" subtitle="Repair conflicts" onPress={() => router.push({ pathname: '/timetable-repair' as any, params: { generatedBatchId: cleanBatchId, sourceRole } })} />
-                <Action title="Manual Edit" subtitle="Edit batch rows" onPress={openManualEdit} />
-                <Action title="Publish Lock" subtitle="Admin/Principal only" onPress={runPublishLock} />
-                <Action title="Rollback" subtitle="Unlock to review mode" onPress={runRollback} />
-                <Action title="Refresh History" subtitle="Reload batch list" onPress={() => load()} />
+                <Action title="Active Published Timetable" subtitle="Read-only latest active version" onPress={openActivePublishedTimetable} />
+                <Action title="Refresh History" subtitle="Reload publish and rollback history" onPress={() => load()} />
             </View>
 
-            {manualOpen ? <View style={styles.card}>
-                <Text style={styles.cardEyebrow}>MANUAL EDIT WORKFLOW</Text>
-                <Text style={styles.cardTitle}>Save changes to batch only</Text>
-                <Text style={styles.empty}>Change Teacher, Subject, Room, Day, or Period. Revalidate before publish. Active timetable changes only after successful Publish.</Text>
-                <TouchableOpacity style={[styles.primaryButton, { marginTop: 10, marginBottom: 10 }]} onPress={revalidateManualBatch} disabled={loading}><Text style={styles.primaryText}>Revalidate Batch</Text></TouchableOpacity>
-                {manualEntries.slice(0, 16).map(entry => <TouchableOpacity key={String(entry.id)} style={[styles.historyRow, selectedEntry?.id === entry.id ? styles.historyRowActive : null]} onPress={() => selectEntry(entry)}>
-                    <View style={{ flex: 1 }}>
-                        <Text style={styles.historyTitle}>{entry.className}-{entry.section} • {entry.dayOfWeek} P{entry.periodNumber}</Text>
-                        <Text style={styles.historySub}>{entry.subjectName} • {entry.teacherName}{entry.conflict ? ' • CONFLICT' : ''}</Text>
-                    </View>
-                    <Text style={styles.openText}>Edit</Text>
-                </TouchableOpacity>)}
-                {selectedEntry ? <View style={styles.editBox}>
-                    <Text style={styles.cardTitle}>Selected: {selectedEntry.className}-{selectedEntry.section}</Text>
-                    <EditInput label="Teacher" value={editForm.teacherName} onChangeText={(v) => setEditForm(c => ({ ...c, teacherName: v }))} />
-                    <EditInput label="Teacher ID" value={editForm.teacherId} onChangeText={(v) => setEditForm(c => ({ ...c, teacherId: v }))} />
-                    <EditInput label="Subject" value={editForm.subjectName} onChangeText={(v) => setEditForm(c => ({ ...c, subjectName: v }))} />
-                    <EditInput label="Room" value={editForm.roomNumber} onChangeText={(v) => setEditForm(c => ({ ...c, roomNumber: v }))} />
-                    <EditInput label="Day" value={editForm.dayOfWeek} onChangeText={(v) => setEditForm(c => ({ ...c, dayOfWeek: v.toUpperCase() }))} />
-                    <EditInput label="Period" value={editForm.periodNumber} onChangeText={(v) => setEditForm(c => ({ ...c, periodNumber: v }))} />
-                    <TouchableOpacity style={[styles.primaryButton, { marginTop: 10 }]} onPress={saveManualEdit} disabled={loading}><Text style={styles.primaryText}>Save Changes to Batch</Text></TouchableOpacity>
-                </View> : null}
-            </View> : null}
+            <View style={styles.readOnlyCard}>
+                <Text style={styles.cardEyebrow}>WEB-FIRST ACTIONS</Text>
+                <Text style={styles.cardTitle}>Publish lifecycle actions are disabled on mobile</Text>
+                <Text style={styles.empty}>Run Auto Repair, Revalidate, Publish Confirmation, Publish, and Rollback from Web ERP. Mobile shows Active Published Timetable, Published Version History, and Rollback History only.</Text>
+            </View>
 
             <BatchHistory batches={batches} currentBatchId={cleanBatchId} onOpen={(id) => { setBatchId(id); load(id); scrollRef.current?.scrollTo({ y: 0, animated: true }); }} />
             <Section title="Publish Audit Trail" items={publishAudit.map(a => `${formatStatus(a.status)} • ${a.batchId} • ${a.approvedBy || 'System'} • Previous: ${a.previousActiveBatchId || 'None'} → Active: ${a.newActiveBatchId || a.batchId}`)} />
-            <ArchiveHistory archives={archives} onRestore={restoreActive} />
+            <ArchiveHistory archives={archives} />
 
             <Section title="Version / Rollback History" items={versions.map(v => `Version ${v.versionNumber} • ${formatStatus(v.changeType)} • ${v.createdBy}`)} />
             <Section title="Notifications" items={notifications.map(n => `${n.audience}: ${n.title}`)} />
@@ -293,27 +164,20 @@ function BatchHistory({ batches, currentBatchId, onOpen }: { batches: TimetableB
     </View>;
 }
 
-function ArchiveHistory({ archives, onRestore }: { archives: TimetableArchiveSummary[]; onRestore: (batchId: string) => void }) {
+function ArchiveHistory({ archives }: { archives: TimetableArchiveSummary[] }) {
     return <View style={styles.card}>
-        <Text style={styles.cardEyebrow}>ROLLBACK / ARCHIVE</Text>
+        <Text style={styles.cardEyebrow}>ROLLBACK HISTORY</Text>
         <Text style={styles.cardTitle}>Published Batch History</Text>
-        {archives.length === 0 ? <Text style={styles.empty}>No records yet.</Text> : archives.slice(0, 8).map(item => <View key={`${item.batchId}-${item.status}`} style={styles.historyRow}>
+        {archives.length === 0 ? <Text style={styles.empty}>No rollback/archive records yet.</Text> : archives.slice(0, 8).map(item => <View key={`${item.batchId}-${item.status}`} style={styles.historyRow}>
             <View style={{ flex: 1 }}>
                 <Text style={styles.historyTitle}>{item.batchId} • {formatStatus(item.status)}</Text>
-                <Text style={styles.historySub}>{item.entriesCount} entries • {item.archivedBy}</Text>
+                <Text style={styles.historySub}>{item.entriesCount} entries • {item.archivedBy || 'SYSTEM'} • {formatDateTime(item.archivedAt)}</Text>
+                <Text style={styles.historySub}>{item.message}</Text>
             </View>
-            {item.status !== 'ACTIVE' ? <TouchableOpacity style={styles.smallButton} onPress={() => onRestore(item.batchId)}><Text style={styles.smallButtonText}>Restore</Text></TouchableOpacity> : null}
         </View>)}
     </View>;
 }
 
-
-function EditInput({ label, value, onChangeText }: { label: string; value: string; onChangeText: (value: string) => void }) {
-    return <View style={{ marginBottom: 8 }}>
-        <Text style={styles.label}>{label}</Text>
-        <TextInput value={value} onChangeText={onChangeText} style={styles.input} placeholderTextColor={colors.mutedText} />
-    </View>;
-}
 
 function Metric({ title, value, compact = false }: { title: string; value: string; compact?: boolean }) {
     return <View style={styles.metricCard}><Text style={[styles.metricValue, compact ? styles.metricValueCompact : null]} numberOfLines={2} adjustsFontSizeToFit>{value}</Text><Text style={styles.metricTitle}>{title}</Text></View>;
@@ -340,7 +204,9 @@ const styles = StyleSheet.create({
     heroCard: { backgroundColor: 'rgba(13, 33, 57, 0.94)', borderRadius: 24, padding: 18, marginBottom: 12, borderWidth: 1, borderColor: 'rgba(212,175,55,0.42)', ...shadows.medium },
     heroTitle: { color: colors.white, fontSize: 21, fontWeight: '900', marginBottom: 6 },
     heroText: { color: 'rgba(255,255,255,0.82)', fontWeight: '800', lineHeight: 20 },
+    heroNote: { color: colors.cardCream, fontWeight: '900', lineHeight: 18, marginTop: 10 },
     card: { backgroundColor: 'rgba(255,253,247,0.96)', borderRadius: 20, padding: 14, borderWidth: 1, borderColor: colors.cardGoldBorder, marginBottom: 12, ...shadows.medium },
+    readOnlyCard: { backgroundColor: 'rgba(255,253,247,0.96)', borderRadius: 20, padding: 14, borderWidth: 1, borderColor: colors.cardGoldBorder, marginBottom: 12, ...shadows.medium },
     label: { color: colors.primaryNavy, fontWeight: '900', marginBottom: 8 },
     input: { backgroundColor: colors.white, borderRadius: 14, borderWidth: 1, borderColor: colors.cardGoldBorder, paddingHorizontal: 14, paddingVertical: 12, color: colors.primaryNavy, fontWeight: '900', letterSpacing: 0.5, marginBottom: 10 },
     primaryButton: { backgroundColor: colors.primaryNavy, borderRadius: 15, padding: 14, alignItems: 'center' },
