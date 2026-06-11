@@ -12,7 +12,7 @@ export default function TimetableOperationsScreen() {
     const backHome = sourceRole === 'principal' ? '/principal-home' : '/admin-dashboard';
     const [batchId, setBatchId] = useState(String(params.generatedBatchId || params.batchId || ''));
     const [loading, setLoading] = useState(false);
-    const [message, setMessage] = useState('Review, repair, publish, rollback, and manage timetable batches.');
+    const [message, setMessage] = useState('Review existing timetable repair status, publish readiness, rollback history, and timetable batches.');
     const [status, setStatus] = useState<TimetableOperationsStatus | null>(null);
     const [versions, setVersions] = useState<TimetableVersion[]>([]);
     const [notifications, setNotifications] = useState<TimetableNotification[]>([]);
@@ -84,13 +84,13 @@ export default function TimetableOperationsScreen() {
             <View style={styles.heroCard}>
                 <Text style={styles.heroTitle}>Mobile Timetable Visibility</Text>
                 <Text style={styles.heroText}>{message}</Text>
-                <Text style={styles.heroNote}>Mobile is read-only for publish lifecycle. Use Web ERP for Auto Repair, Revalidate, Publish Confirmation, Publish, and Rollback actions.</Text>
+                <Text style={styles.heroNote}>Mobile is read-only for publish lifecycle. Use Web ERP for existing timetable Auto Repair, same-day period reshuffle, Revalidate, Publish Confirmation, Publish, and Rollback actions.</Text>
             </View>
 
             <View style={styles.card}>
                 <Text style={styles.label}>Batch ID</Text>
                 <TextInput value={batchId} onChangeText={setBatchId} autoCapitalize="characters" placeholder="Example: TT-99266EBB" placeholderTextColor={colors.mutedText} style={styles.input} />
-                <TouchableOpacity style={styles.primaryButton} onPress={load}>{loading ? <ActivityIndicator color={colors.white} /> : <Text style={styles.primaryText}>Load Operations Status</Text>}</TouchableOpacity>
+                <TouchableOpacity style={styles.primaryButton} onPress={() => load()}>{loading ? <ActivityIndicator color={colors.white} /> : <Text style={styles.primaryText}>Load Operations Status</Text>}</TouchableOpacity>
             </View>
 
             {status ? <View style={styles.grid}>
