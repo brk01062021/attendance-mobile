@@ -140,8 +140,8 @@ function label(value?: string) {
 
 function displayTimetableLabel(status?: TimetableImportStatus | null) {
   const raw = String(status?.status || status?.label || "").toUpperCase();
+  if (raw === "PUBLISHED_ACTIVE" || raw === "PUBLISHED" || raw.includes("PUBLISHED ACTIVE")) return "Published Active";
   if (raw === "READY_TO_PUBLISH" || raw.includes("READY TO PUBLISH")) return "Ready to Publish";
-  if (raw === "PUBLISHED") return "Published";
   if (raw === "NO_TIMETABLE_IMPORTED") return "No Timetable Imported";
   if (raw === "VALIDATION_PENDING" || raw.includes("VALIDATION PENDING")) return "Validation Pending";
   return titleStatus(status?.label || status?.status);
@@ -149,8 +149,85 @@ function displayTimetableLabel(status?: TimetableImportStatus | null) {
 
 function displayTimetableMessage(status?: TimetableImportStatus | null) {
   const raw = String(status?.status || status?.label || "").toUpperCase();
+  if (raw === "PUBLISHED_ACTIVE" || raw === "PUBLISHED" || raw.includes("PUBLISHED ACTIVE")) {
+    return "Final timetable is published and active. Visible to Teachers, Students, and Parents.";
+  }
   if (raw === "READY_TO_PUBLISH" || raw.includes("READY TO PUBLISH")) return "Validation completed. Ready for publishing.";
   return status?.message || "No imported timetable status available.";
+}
+
+
+function isPublishedTimetable(status?: TimetableImportStatus | null) {
+  const raw = String(status?.status || status?.label || "").toUpperCase();
+  return raw === "PUBLISHED_ACTIVE" || raw === "PUBLISHED" || raw.includes("PUBLISHED ACTIVE");
+}
+
+function workbookStatusLabel(
+  summary?: ActivationSummary | null,
+  timetableStatus?: TimetableImportStatus | null,
+  intel?: WorkbookErrorIntelligence | null,
+) {
+  if (isPublishedTimetable(timetableStatus)) return "Published Active";
+  if (summary?.importCommitted || isActiveSummary(summary)) return "Workbook Committed";
+  return label(intel?.status || "Validation Required");
+}
+
+function workbookHeadline(
+  summary?: ActivationSummary | null,
+  timetableStatus?: TimetableImportStatus | null,
+) {
+  if (isPublishedTimetable(timetableStatus)) return "Workspace Fully Active";
+  if (summary?.importCommitted || isActiveSummary(summary)) return "Workbook Imported";
+  return "Workbook Validation Required";
+}
+
+function workbookMessage(
+  summary?: ActivationSummary | null,
+  timetableStatus?: TimetableImportStatus | null,
+) {
+  if (isPublishedTimetable(timetableStatus)) {
+    return "Validation passed, workbook committed, workspace is active, and timetable is published.";
+  }
+  if (summary?.importCommitted || isActiveSummary(summary)) {
+    return "Validation passed, workbook committed, and workspace is active.";
+  }
+  return "Resolve workbook validation issues before activation.";
+}
+
+function missingSheetsMessage(intel?: WorkbookErrorIntelligence | null) {
+  return (intel?.missingSheets || []).length
+    ? "These workbook tabs are required before activation."
+    : "No missing required sheets found.";
+}
+
+function latestActivationItems(
+  ops?: ActivationOperationsCenter | null,
+  summary?: ActivationSummary | null,
+  timetableStatus?: TimetableImportStatus | null,
+) {
+  if (isPublishedTimetable(timetableStatus)) {
+    return [
+      {
+        stepKey: "TIMETABLE_PUBLISHED_ACTIVE",
+        title: "Timetable Published Active",
+        status: "PUBLISHED_ACTIVE",
+        note: "Final timetable is published and visible to Teachers, Students, and Parents.",
+        eventAt: undefined,
+      },
+    ];
+  }
+  if (isActiveSummary(summary) && summary?.importCommitted) {
+    return [
+      {
+        stepKey: "WORKSPACE_ACTIVE",
+        title: "Workspace Active",
+        status: "ACTIVE",
+        note: "100% readiness completed. Workbook committed and workspace is active.",
+        eventAt: summary.activatedAt,
+      },
+    ];
+  }
+  return ops?.timeline || [];
 }
 
 function titleStatus(value?: string) {
@@ -198,6 +275,7 @@ function activationCtaLabel(
   intel?: WorkbookErrorIntelligence | null,
 ) {
   if (!summary) return "Activation Pending";
+  if (isActiveSummary(summary)) return "Workspace Active";
   if (summary.readyForActivation)
     return summary.activationButtonLabel || "Activate Workspace";
   if (intel?.activationBlocked || (intel?.totalErrors || 0) > 0)
@@ -642,12 +720,12 @@ export default function WorkspaceHealthScreen() {
                   Workbook Error Intelligence
                 </Text>
                 <View style={styles.rowCard}>
-                  <Text style={styles.blockedPill}>
-                    {label(errorIntel.status)}
+                  <Text style={styles.pill}>
+                    {workbookStatusLabel(summary, timetableImportStatus, errorIntel)}
                   </Text>
-                  <Text style={styles.rowTitle}>Workbook Validation Required</Text>
+                  <Text style={styles.rowTitle}>{workbookHeadline(summary, timetableImportStatus)}</Text>
                   <Text style={styles.cardText}>
-                    Resolve workbook validation issues before activation.
+                    {workbookMessage(summary, timetableImportStatus)}
                   </Text>
                 </View>
                 <View style={styles.summaryGrid}>
@@ -673,7 +751,7 @@ export default function WorkspaceHealthScreen() {
                 <View style={styles.rowCard}>
                   <Text style={styles.rowTitle}>Missing Sheets Summary</Text>
                   <Text style={styles.cardText}>
-                    These workbook tabs are required before activation.
+                    {missingSheetsMessage(errorIntel)}
                   </Text>
                   <View style={styles.chipWrap}>
                     {(errorIntel.missingSheets || []).map((sheet) => (
@@ -735,7 +813,7 @@ export default function WorkspaceHealthScreen() {
               <View style={styles.card}>
                 <View style={styles.sectionHeaderRow}>
                   <Text style={styles.sectionTitle}>Activation History</Text>
-                  {operations.timeline.length > 1 ? (
+                  {latestActivationItems(operations, summary, timetableImportStatus).length > 1 ? (
                     <TouchableOpacity
                       style={styles.expandButton}
                       onPress={() => setShowFullProgress((value) => !value)}
@@ -747,8 +825,8 @@ export default function WorkspaceHealthScreen() {
                   ) : null}
                 </View>
                 {(showFullProgress
-                  ? operations.timeline
-                  : operations.timeline.slice(0, 1)
+                  ? latestActivationItems(operations, summary, timetableImportStatus)
+                  : latestActivationItems(operations, summary, timetableImportStatus).slice(0, 1)
                 ).map((item, index) => (
                   <View key={`${item.stepKey}-${index}`} style={styles.rowCard}>
                     <Text style={styles.pillSmall}>{label(item.status)}</Text>
