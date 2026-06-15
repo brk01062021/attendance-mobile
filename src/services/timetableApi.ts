@@ -10,6 +10,7 @@ import {
     TimetableExportResponse,
     TimetableGenerationRequest,
     TimetableGenerationResponse,
+    TimetableLiveResponse,
     TimetableManualEditRequest,
     TimetablePublishAudit,
     TimetablePublishResponse,
@@ -147,6 +148,19 @@ export async function getLatestPublishedTimetable(): Promise<TimetablePublishAud
     return safeJson<TimetablePublishAudit>(response);
 }
 
+export async function getActivePublishedTimetableForRole(role: 'TEACHER' | 'STUDENT' | 'PARENT', params: { schoolId?: string; teacherId?: number; teacherName?: string; className?: string; section?: string } = {}): Promise<TimetableLiveResponse> {
+    const query = new URLSearchParams();
+    if (params.schoolId) query.set('schoolId', params.schoolId);
+    if (params.teacherId) query.set('teacherId', String(params.teacherId));
+    if (params.teacherName) query.set('teacherName', params.teacherName);
+    if (params.className) query.set('className', params.className);
+    if (params.section) query.set('section', params.section);
+    const path = role === 'TEACHER' ? '/timetable/live/teacher' : role === 'PARENT' ? '/timetable/live/parent' : '/timetable/live/student';
+    const response = await fetch(`${API_BASE_URL}${path}?${query.toString()}`, {
+        headers: params.schoolId ? { 'X-School-Id': params.schoolId } : undefined,
+    });
+    return safeJson<TimetableLiveResponse>(response);
+}
 
 export async function getTimetableBatches(): Promise<TimetableBatchSummary[]> {
     const response = await fetch(`${API_BASE_URL}/timetable/batches`);
