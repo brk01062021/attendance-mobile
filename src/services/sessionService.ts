@@ -11,6 +11,7 @@ export type VidyaSetuSession = {
   forcePasswordChange?: boolean;
   teacherId?: string | number | null;
   studentId?: string | number | null;
+  studentName?: string | null;
 };
 
 let activeSession: VidyaSetuSession | null = null;

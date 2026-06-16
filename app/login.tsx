@@ -26,28 +26,28 @@ export default function LoginScreen() {
 
     const roles: LoginRole[] = ['ADMIN', 'PRINCIPAL', 'TEACHER', 'PARENT', 'STUDENT'];
 
-    const routeAfterLogin = (role: LoginRole, cleanUsername: string, cleanSchoolId: string, userId: string, teacherId?: string | number | null, studentId?: string | number | null) => {
+    const routeAfterLogin = (role: LoginRole, displayName: string, cleanSchoolId: string, userId: string, teacherId?: string | number | null, studentId?: string | number | null, studentName?: string | null) => {
         if (role === 'ADMIN') {
-            router.replace({ pathname: '/admin-dashboard', params: { role, adminName: cleanUsername || 'Admin', userId, schoolId: cleanSchoolId } } as any);
+            router.replace({ pathname: '/admin-dashboard', params: { role, adminName: displayName || 'Admin', userId, schoolId: cleanSchoolId } } as any);
             return;
         }
 
         if (role === 'PRINCIPAL') {
-            router.replace({ pathname: '/principal-home', params: { role, principalName: cleanUsername || 'Principal', userId, schoolId: cleanSchoolId } } as any);
+            router.replace({ pathname: '/principal-home', params: { role, principalName: displayName || 'Principal', userId, schoolId: cleanSchoolId } } as any);
             return;
         }
 
         if (role === 'TEACHER') {
-            router.replace({ pathname: '/teacher-dashboard', params: { role, teacherId: String(teacherId || userId || '1'), teacherName: cleanUsername, schoolId: cleanSchoolId } } as any);
+            router.replace({ pathname: '/teacher-dashboard', params: { role, teacherId: String(teacherId || userId || '1'), teacherName: displayName, schoolId: cleanSchoolId } } as any);
             return;
         }
 
         if (role === 'PARENT') {
-            router.replace({ pathname: '/parent-dashboard', params: { role, parentId: userId || '1', parentName: cleanUsername, studentId: String(studentId || '1'), studentName: cleanUsername, schoolId: cleanSchoolId } } as any);
+            router.replace({ pathname: '/parent-dashboard', params: { role, parentId: userId || '1', parentName: displayName, studentId: String(studentId || '1'), studentName: studentName || 'Student', schoolId: cleanSchoolId } } as any);
             return;
         }
 
-        router.replace({ pathname: '/student-dashboard', params: { role, studentId: String(studentId || userId || '1'), studentName: cleanUsername, schoolId: cleanSchoolId } } as any);
+        router.replace({ pathname: '/student-dashboard', params: { role, studentId: String(studentId || userId || '1'), studentName: studentName || displayName, schoolId: cleanSchoolId } } as any);
     };
 
     const handleLogin = async () => {
@@ -88,7 +88,7 @@ Use Check Registration Status with your reference ID.`));
                 return;
             }
 
-            routeAfterLogin(session.role, session.displayName || cleanUsername, session.schoolId, session.userId, session.teacherId, session.studentId);
+            routeAfterLogin(session.role, session.displayName || cleanUsername, session.schoolId, session.userId, session.teacherId, session.studentId, session.studentName);
         } catch (error: any) {
             Alert.alert('Login Failed', error?.response?.data?.message || error?.response?.data || error?.message || 'Invalid username, password, or school ID');
         }

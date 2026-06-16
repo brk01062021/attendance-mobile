@@ -56,7 +56,8 @@ export function authResponseToSession(response: AuthResponse, requestedRole: Vid
     schoolName: response.schoolName || resolveSchoolName(schoolId),
     token: response.token,
     teacherId: role === 'TEACHER' ? response.teacherId || response.userId || '1' : null,
-    studentId: role === 'STUDENT' ? response.studentId || response.userId || '1' : null,
+    studentId: role === 'STUDENT' || role === 'PARENT' ? response.studentId || (role === 'STUDENT' ? response.userId : null) : null,
+    studentName: response.studentName || (role === 'STUDENT' ? displayName : null),
     forcePasswordChange: Boolean(response.forcePasswordChange),
   };
 }

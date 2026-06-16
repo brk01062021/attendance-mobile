@@ -80,8 +80,8 @@ export default function ParentDashboard() {
     const schoolId = normalizeSchoolId(String(params.schoolId || session?.schoolId || ''));
     const schoolName = resolveSchoolName(schoolId, session?.schoolName);
 
-    const parentName = String(params.parentName || 'Parent');
-    const studentName = String(params.studentName || 'Student');
+    const parentName = String(params.parentName || session?.displayName || 'Parent');
+    const studentName = String(params.studentName || session?.studentName || 'Student');
     const parentId = String(params.parentId || params.userId || '101');
 
     const [menuOpen, setMenuOpen] = useState(false);
@@ -355,9 +355,10 @@ const HomeScreen = memo(function HomeScreen({
                 <Text style={styles.heroText}>Today Attendance: Present</Text>
             </View>
 
-            <Text style={[styles.sectionTitle, { marginTop: 18 }]}>Attendance</Text>
+            <View style={styles.attendanceSection}>
+                <Text style={styles.sectionTitle}>Attendance</Text>
 
-            <View style={styles.grid}>
+                <View style={styles.grid}>
                 <AttendanceCard
                     title="Today"
                     value="Present"
@@ -377,9 +378,10 @@ const HomeScreen = memo(function HomeScreen({
                     onPress={openMonthly}
                 />
 
-                <View style={styles.infoCard}>
-                    <Text style={styles.infoTitle}>% Attendance</Text>
-                    <Text style={styles.infoValue}>87.5%</Text>
+                    <View style={styles.infoCard}>
+                        <Text style={styles.infoTitle}>% Attendance</Text>
+                        <Text style={styles.infoValue}>87.5%</Text>
+                    </View>
                 </View>
             </View>
 
@@ -793,17 +795,22 @@ const styles = StyleSheet.create({
         color: colors.primaryNavy,
         marginTop: spacing.md,
     },
+    attendanceSection: {
+        marginTop: 76,
+        paddingTop: 4,
+    },
     sectionTitle: {
         fontSize: 26,
         fontWeight: '900',
         color: colors.premiumGold,
-        marginTop: spacing.lg,
-        marginBottom: spacing.md,
+        marginTop: 0,
+        marginBottom: 18,
         textShadowColor: 'rgba(0,0,0,0.35)',
         textShadowOffset: { width: 1, height: 1 },
         textShadowRadius: 2,
     },
     grid: {
+        marginTop: 8,
         flexDirection: 'row',
         flexWrap: 'wrap',
         gap: 10,
