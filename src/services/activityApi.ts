@@ -14,6 +14,11 @@ export type ActivityMedia = {
   mediaType?: ActivityMediaType | string;
   thumbnailKey?: string;
   uploadedAt?: string;
+  url?: string;
+  mediaUrl?: string;
+  publicUrl?: string;
+  signedUrl?: string;
+  thumbnailUrl?: string;
 };
 
 export type Activity = {
@@ -31,6 +36,12 @@ export type Activity = {
   mediaItems?: ActivityMedia[];
   likeCount?: number;
   viewCount?: number;
+  mediaCount?: number;
+  totalMediaCount?: number;
+  photoCount?: number;
+  photosCount?: number;
+  videoCount?: number;
+  videosCount?: number;
   createdAt?: string;
   updatedAt?: string;
 };
@@ -158,6 +169,16 @@ export async function createActivityDraft(payload: ActivityCreateRequest): Promi
 export async function submitActivity(activityId: string | number): Promise<Activity> {
   const session = getSession();
   return request<Activity>(`/api/activities/${activityId}/submit`, { method: 'POST' });
+}
+
+
+export async function fetchPendingActivityApprovals(): Promise<Activity[]> {
+  const data = await request<Activity[] | { content?: Activity[]; activities?: Activity[] }>(
+    `/api/activities/pending`
+  );
+
+  if (Array.isArray(data)) return data;
+  return data?.content || data?.activities || [];
 }
 
 export async function approveActivity(activityId: string | number, remarks?: string): Promise<Activity> {

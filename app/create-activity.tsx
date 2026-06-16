@@ -14,13 +14,15 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import ActivityMediaUploader, { ActivityMediaDraft } from '../components/ActivityMediaUploader';
+import ActivityVisibilityDropdown, { ActivityVisibilityOption } from '../components/ActivityVisibilityDropdown';
 import MobileWorkflowHeader from '../components/layout/MobileWorkflowHeader';
 import { ActivityVisibilityType, createActivityDraft, submitActivity } from '../src/services/activityApi';
 import { getSession } from '../src/services/sessionService';
 import { shadows, spacing } from '../src/theme';
 import { resolveSchoolName } from '../src/utils/schoolUtils';
 
-const visibilityOptions: Array<{ label: string; value: ActivityVisibilityType; helper: string }> = [
+const visibilityOptions: ActivityVisibilityOption<ActivityVisibilityType>[] = [
   { label: 'Whole School', value: 'WHOLE_SCHOOL', helper: 'Visible to all school users.' },
   { label: 'Selected Classes', value: 'SELECTED_CLASSES', helper: 'Visible to selected class students and parents.' },
   { label: 'Selected Students', value: 'SELECTED_STUDENTS', helper: 'Visible only to selected students and mapped parents.' },
@@ -45,8 +47,8 @@ export default function CreateActivityScreen() {
   const [studentIds, setStudentIds] = useState('');
   const [submitAfterCreate, setSubmitAfterCreate] = useState(role === 'TEACHER');
   const [saving, setSaving] = useState(false);
+  const [mediaDrafts, setMediaDrafts] = useState<ActivityMediaDraft[]>([]);
 
-  const selectedVisibility = visibilityOptions.find((item) => item.value === visibilityType);
 
   const validate = () => {
     if (!canCreate) {
@@ -147,29 +149,12 @@ export default function CreateActivityScreen() {
             <Text style={styles.label}>Activity Date</Text>
             <TextInput style={styles.input} value={activityDate} onChangeText={setActivityDate} placeholder="YYYY-MM-DD" placeholderTextColor="#98A2B3" />
 
-            <Text style={styles.label}>Visibility</Text>
-            <View style={styles.visibilityGrid}>
-              {visibilityOptions.map((option) => {
-                const isSelected = visibilityType === option.value;
-                return (
-                  <TouchableOpacity
-                    key={option.value}
-                    style={[styles.visibilityOption, isSelected && styles.visibilityOptionSelected]}
-                    onPress={() => setVisibilityType(option.value)}
-                    activeOpacity={0.9}
-                  >
-                    <View style={[styles.radioOuter, isSelected && styles.radioOuterSelected]}>
-                      {isSelected ? <View style={styles.radioInner} /> : null}
-                    </View>
-                    <View style={styles.visibilityTextWrap}>
-                      <Text style={[styles.visibilityLabel, isSelected && styles.visibilityLabelSelected]}>{option.label}</Text>
-                      <Text style={styles.visibilityHelper}>{option.helper}</Text>
-                    </View>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-            <Text style={styles.helperText}>Selected: {selectedVisibility?.label}</Text>
+            <ActivityVisibilityDropdown
+              label="Visibility"
+              value={visibilityType}
+              options={visibilityOptions}
+              onChange={setVisibilityType}
+            />
 
             {visibilityType === 'SELECTED_CLASSES' ? (
               <>
@@ -184,6 +169,11 @@ export default function CreateActivityScreen() {
                 <TextInput style={styles.input} value={studentIds} onChangeText={setStudentIds} placeholder="Example: ST1019, ST1044" placeholderTextColor="#98A2B3" />
               </>
             ) : null}
+
+            <ActivityMediaUploader
+              value={mediaDrafts}
+              onChange={setMediaDrafts}
+            />
 
             {role === 'TEACHER' ? (
               <TouchableOpacity style={styles.checkRow} onPress={() => setSubmitAfterCreate((value) => !value)} activeOpacity={0.9}>

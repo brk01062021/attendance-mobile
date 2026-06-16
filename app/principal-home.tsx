@@ -443,6 +443,11 @@ export default function PrincipalHomeScreen() {
                             />
 
                             <MenuItem
+                                title="Activity Approvals"
+                                onPress={() => openRoute('/activity-approvals', { role: 'PRINCIPAL', sourceRole: 'principal' })}
+                            />
+
+                            <MenuItem
                                 title="Create Activity"
                                 onPress={() => openRoute('/create-activity', { role: 'PRINCIPAL', sourceRole: 'principal' })}
                             />

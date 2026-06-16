@@ -550,6 +550,11 @@ export default function AdminDashboardScreen() {
                             />
 
                             <MenuItem
+                                title="Activity Approvals"
+                                onPress={() => openRoute('/activity-approvals', { role: 'ADMIN', sourceRole: 'admin' })}
+                            />
+
+                            <MenuItem
                                 title="Create Activity"
                                 onPress={() => openRoute('/create-activity', { role: 'ADMIN', sourceRole: 'admin' })}
                             />
