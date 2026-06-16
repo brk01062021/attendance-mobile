@@ -301,6 +301,8 @@ export default function ParentDashboard() {
                             <MenuItem title="Child Timetable" onPress={() => router.push({ pathname: '/timetable-live', params: { role: 'PARENT', className: '10', section: 'A', sourceRole: 'parent', schoolId } } as any)} />
                             <MenuItem title="Exam Results" onPress={openExamResults} />
                             <MenuItem title="School Notices" onPress={openSchoolNotices} />
+                            <MenuItem title="School Activities" onPress={() => { closeMenu(); router.push('/activity-feed' as any); }} />
+                            <MenuItem title="School Memories" onPress={() => { closeMenu(); router.push('/school-memories' as any); }} />
 
                             <MenuSectionTitle title="Account" />
                             <MenuItem title="Logout" danger onPress={goLogin} />

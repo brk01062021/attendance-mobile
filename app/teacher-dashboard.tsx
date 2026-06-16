@@ -310,6 +310,27 @@ export default function TeacherDashboard() {
                                 }}
                             />
                             <MenuItem
+                                title="Create Activity"
+                                onPress={() => {
+                                    setMenuVisible(false);
+                                    router.push('/create-activity' as any);
+                                }}
+                            />
+                            <MenuItem
+                                title="Activity Feed"
+                                onPress={() => {
+                                    setMenuVisible(false);
+                                    router.push('/activity-feed' as any);
+                                }}
+                            />
+                            <MenuItem
+                                title="School Memories"
+                                onPress={() => {
+                                    setMenuVisible(false);
+                                    router.push('/school-memories' as any);
+                                }}
+                            />
+                            <MenuItem
                                 title="Request Leave / Leave Enquiry"
                                 onPress={() => {
                                     setMenuVisible(false);

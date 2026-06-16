@@ -234,6 +234,8 @@ export default function StudentDashboard() {
                             <MenuItem title="My Timetable" onPress={() => router.push({ pathname: '/timetable-live', params: { role: 'STUDENT', className: '10', section: 'A', sourceRole: 'student', schoolId } } as any)} />
                             <MenuItem title="Exam Results" onPress={openExamResults} />
                             <MenuItem title="School Notices" onPress={openSchoolNotices} />
+                            <MenuItem title="School Activities" onPress={() => { closeMenu(); router.push('/activity-feed' as any); }} />
+                            <MenuItem title="School Memories" onPress={() => { closeMenu(); router.push('/school-memories' as any); }} />
 
                             <MenuSectionTitle title="Account" />
                             <MenuItem title="Logout" danger onPress={goLogin} />

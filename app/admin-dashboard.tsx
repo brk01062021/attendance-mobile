@@ -545,6 +545,21 @@ export default function AdminDashboardScreen() {
                             <MenuSectionTitle title="Communication" />
 
                             <MenuItem
+                                title="School Activities"
+                                onPress={() => openRoute('/activity-feed', { role: 'ADMIN', sourceRole: 'admin' })}
+                            />
+
+                            <MenuItem
+                                title="Create Activity"
+                                onPress={() => openRoute('/create-activity', { role: 'ADMIN', sourceRole: 'admin' })}
+                            />
+
+                            <MenuItem
+                                title="School Memories"
+                                onPress={() => openRoute('/school-memories', { role: 'ADMIN', sourceRole: 'admin' })}
+                            />
+
+                            <MenuItem
                                 title="Create School Notice"
                                 onPress={() => openRoute('/create-school-notice')}
                             />

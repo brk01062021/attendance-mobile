@@ -438,6 +438,21 @@ export default function PrincipalHomeScreen() {
                             <MenuSectionTitle title="Communication" />
 
                             <MenuItem
+                                title="School Activities"
+                                onPress={() => openRoute('/activity-feed', { role: 'PRINCIPAL', sourceRole: 'principal' })}
+                            />
+
+                            <MenuItem
+                                title="Create Activity"
+                                onPress={() => openRoute('/create-activity', { role: 'PRINCIPAL', sourceRole: 'principal' })}
+                            />
+
+                            <MenuItem
+                                title="School Memories"
+                                onPress={() => openRoute('/school-memories', { role: 'PRINCIPAL', sourceRole: 'principal' })}
+                            />
+
+                            <MenuItem
                                 title="Create School Notice"
                                 onPress={() =>
                                     openRoute('/create-school-notice')
