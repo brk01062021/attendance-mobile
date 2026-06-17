@@ -40,6 +40,7 @@ export default function ActivityFeedScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
+  const [showAll, setShowAll] = useState(false);
 
   const loadFeed = useCallback(async (isRefresh = false) => {
     try {
@@ -59,6 +60,8 @@ export default function ActivityFeedScreen() {
   useEffect(() => {
     loadFeed();
   }, [loadFeed]);
+
+  const visibleActivities = showAll ? activities : activities.slice(0, 5);
 
   return (
     <ImageBackground source={require('../assets/branding/splash-gold.png')} style={styles.background} resizeMode="cover">
@@ -116,7 +119,8 @@ export default function ActivityFeedScreen() {
             <Text style={styles.stateText}>Published activities will appear here for students and parents.</Text>
           </View>
         ) : (
-          activities.map((activity) => (
+          <>
+            {visibleActivities.map((activity) => (
             <TouchableOpacity
               key={String(activity.id)}
               style={styles.activityCard}
@@ -140,7 +144,13 @@ export default function ActivityFeedScreen() {
                 </View>
               </View>
             </TouchableOpacity>
-          ))
+            ))}
+            {activities.length > 5 ? (
+              <TouchableOpacity style={styles.viewMoreButton} onPress={() => setShowAll((current) => !current)} activeOpacity={0.9}>
+                <Text style={styles.viewMoreText}>{showAll ? 'Show Less' : 'View More'}</Text>
+              </TouchableOpacity>
+            ) : null}
+          </>
         )}
       </ScrollView>
       </SafeAreaView>
@@ -176,16 +186,18 @@ const styles = StyleSheet.create({
   emptyIcon: { fontSize: 38 },
   retryButton: { backgroundColor: '#10223A', borderRadius: 14, paddingVertical: 10, paddingHorizontal: 18, marginTop: spacing.md },
   retryText: { color: '#FFFFFF', fontWeight: '900' },
-  activityCard: { backgroundColor: 'rgba(255,255,255,0.97)', borderRadius: 24, marginBottom: spacing.md, overflow: 'hidden', ...shadows.medium },
-  mediaPlaceholder: { minHeight: 132, backgroundColor: '#EAF1F8', alignItems: 'center', justifyContent: 'center' },
-  mediaIcon: { fontSize: 42 },
-  cardBody: { padding: spacing.md },
+  activityCard: { backgroundColor: 'rgba(255,255,255,0.97)', borderRadius: 18, marginBottom: spacing.sm, overflow: 'hidden', ...shadows.medium },
+  mediaPlaceholder: { minHeight: 78, backgroundColor: '#EAF1F8', alignItems: 'center', justifyContent: 'center' },
+  mediaIcon: { fontSize: 30 },
+  cardBody: { padding: spacing.sm },
   cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
   dateText: { color: '#667085', fontSize: 12, fontWeight: '800' },
   statusPill: { backgroundColor: '#E8F7EF', color: '#157347', overflow: 'hidden', borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4, fontSize: 11, fontWeight: '900' },
-  cardTitle: { color: '#10223A', fontSize: 19, fontWeight: '900' },
+  cardTitle: { color: '#10223A', fontSize: 17, fontWeight: '900' },
   cardText: { color: '#475467', fontSize: 14, lineHeight: 20, marginTop: 6 },
   metricRow: { flexDirection: 'row', alignItems: 'center', marginTop: 12, flexWrap: 'wrap' },
   metricText: { color: '#667085', fontSize: 12, fontWeight: '700', marginRight: 14 },
   openText: { color: '#0B5CAD', fontSize: 13, fontWeight: '900', marginLeft: 'auto' },
+  viewMoreButton: { backgroundColor: '#10223A', borderRadius: 16, paddingVertical: 12, alignItems: 'center', marginTop: spacing.sm },
+  viewMoreText: { color: '#FFFFFF', fontWeight: '900' },
 });

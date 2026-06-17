@@ -25,6 +25,7 @@ export default function ActivityGalleryScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
+  const [showAll, setShowAll] = useState(false);
 
   const load = useCallback(async (refresh = false) => {
     try {
@@ -42,6 +43,8 @@ export default function ActivityGalleryScreen() {
   useEffect(() => {
     load();
   }, [load]);
+
+  const visibleActivities = showAll ? activities : activities.slice(0, 5);
 
   return (
     <ImageBackground source={require('../assets/branding/splash-gold.png')} style={styles.background} resizeMode="cover">
@@ -68,8 +71,8 @@ export default function ActivityGalleryScreen() {
           <View style={styles.stateCard}><Text style={styles.emptyIcon}>🖼️</Text><Text style={styles.errorTitle}>No gallery items yet</Text><Text style={styles.stateText}>Photos and videos will appear here after activities are published.</Text></View>
         ) : (
           <View style={styles.grid}>
-            {activities.map((item) => (
-              <TouchableOpacity key={String(item.id)} style={styles.tile} onPress={() => router.push({ pathname: '/activity-detail' as any, params: { activityId: String(item.id) } })} activeOpacity={0.88}>
+            {visibleActivities.map((item) => (
+              <TouchableOpacity key={String(item.id)} style={styles.tile} onPress={() => router.push({ pathname: '/activity-media-preview' as any, params: { activityId: String(item.id) } })} activeOpacity={0.88}>
                 <Text style={styles.tileIcon}>📸</Text>
                 <Text style={styles.tileTitle} numberOfLines={2}>{item.title}</Text>
                 <Text style={styles.tileMeta}>{item.media?.length || item.mediaItems?.length || 0} media</Text>
@@ -77,6 +80,11 @@ export default function ActivityGalleryScreen() {
             ))}
           </View>
         )}
+        {!loading && !error && activities.length > 5 ? (
+          <TouchableOpacity style={styles.viewMoreButton} onPress={() => setShowAll((current) => !current)} activeOpacity={0.9}>
+            <Text style={styles.viewMoreText}>{showAll ? 'Show Less' : 'View More'}</Text>
+          </TouchableOpacity>
+        ) : null}
       </ScrollView>
       </SafeAreaView>
     </ImageBackground>
@@ -96,8 +104,10 @@ const styles = StyleSheet.create({
   errorTitle: { color: '#10223A', fontSize: 18, fontWeight: '900', marginTop: 8 },
   emptyIcon: { fontSize: 38 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
-  tile: { width: '48%', backgroundColor: 'rgba(255,255,255,0.97)', borderRadius: 22, padding: spacing.md, marginBottom: spacing.md, minHeight: 160, ...shadows.medium },
-  tileIcon: { fontSize: 38, marginBottom: 16 },
+  tile: { width: '48%', backgroundColor: 'rgba(255,255,255,0.97)', borderRadius: 18, padding: spacing.sm, marginBottom: spacing.sm, minHeight: 118, ...shadows.medium },
+  tileIcon: { fontSize: 30, marginBottom: 10 },
   tileTitle: { color: '#10223A', fontSize: 15, fontWeight: '900', lineHeight: 20 },
   tileMeta: { color: '#667085', fontSize: 12, fontWeight: '800', marginTop: 8 },
+  viewMoreButton: { backgroundColor: '#10223A', borderRadius: 16, paddingVertical: 12, alignItems: 'center', marginTop: spacing.sm },
+  viewMoreText: { color: '#FFFFFF', fontWeight: '900' },
 });

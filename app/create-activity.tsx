@@ -17,7 +17,7 @@ import {
 import ActivityMediaUploader, { ActivityMediaDraft } from '../components/ActivityMediaUploader';
 import ActivityVisibilityDropdown, { ActivityVisibilityOption } from '../components/ActivityVisibilityDropdown';
 import MobileWorkflowHeader from '../components/layout/MobileWorkflowHeader';
-import { ActivityVisibilityType, createActivityDraft, submitActivity } from '../src/services/activityApi';
+import { ActivityVisibilityType, createActivityDraft, submitActivity, uploadActivityMedia } from '../src/services/activityApi';
 import { getSession } from '../src/services/sessionService';
 import { shadows, spacing } from '../src/theme';
 import { resolveSchoolName } from '../src/utils/schoolUtils';
@@ -98,6 +98,10 @@ export default function CreateActivityScreen() {
         studentIds: visibilityType === 'SELECTED_STUDENTS' || visibilityType === 'STUDENT_PARENTS_ONLY' ? parseIds(studentIds) : [],
       });
 
+      if (created?.id && mediaDrafts.length > 0) {
+        await uploadActivityMedia(created.id, mediaDrafts);
+      }
+
       if (submitAfterCreate && created?.id) {
         await submitActivity(created.id);
       }
@@ -105,7 +109,7 @@ export default function CreateActivityScreen() {
       Alert.alert(
         role === 'TEACHER' ? 'Submitted for Approval' : 'Activity Saved',
         role === 'TEACHER'
-          ? 'Your activity has been submitted to Admin/Principal for approval.'
+          ? `Your activity and ${mediaDrafts.length} media item(s) have been submitted to Admin/Principal for approval.`
           : 'Activity has been created. Publish it from approval workflow after review.',
         [{ text: 'OK', onPress: () => router.replace('/activity-feed' as any) }]
       );

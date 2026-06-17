@@ -1,26 +1,17 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import {
-  ActivityIndicator,
-  ImageBackground,
-  SafeAreaView,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View
-} from 'react-native';
+import { ActivityIndicator, Image, ImageBackground, Linking, Modal, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import MobileWorkflowHeader from '../components/layout/MobileWorkflowHeader';
-import { Activity, fetchActivityDetail } from '../src/services/activityApi';
+import { Activity, ActivityMedia, fetchActivityDetail, fetchActivityMedia } from '../src/services/activityApi';
+import { API_BASE_URL } from '../src/services/api';
 import { getSession } from '../src/services/sessionService';
 import { shadows, spacing } from '../src/theme';
 import { resolveSchoolName } from '../src/utils/schoolUtils';
 
-function formatDate(value?: string) {
-  if (!value) return 'Date not set';
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return date.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
-}
+function formatDate(value?: string) { if (!value) return 'Date not set'; const date = new Date(value); return Number.isNaN(date.getTime()) ? value : date.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }); }
+function getMediaItems(activity?: Activity | null): ActivityMedia[] { const media = activity?.media || activity?.mediaItems || (activity as any)?.mediaList || []; return Array.isArray(media) ? media : []; }
+function isVideo(item: ActivityMedia) { return String(item.mediaType || '').toUpperCase() === 'VIDEO' || String(item.contentType || '').toLowerCase().startsWith('video/'); }
+function mediaUri(item: ActivityMedia) { const anyItem = item as any; const uri = anyItem.url || anyItem.mediaUrl || anyItem.publicUrl || anyItem.signedUrl || anyItem.thumbnailUrl; if (!uri) return undefined; return String(uri).startsWith('http') ? String(uri) : `${API_BASE_URL}${uri}`; }
 
 export default function ActivityDetailScreen() {
   const params = useLocalSearchParams();
@@ -28,120 +19,34 @@ export default function ActivityDetailScreen() {
   const session = getSession();
   const role = session?.role || 'PARENT';
   const schoolId = session?.schoolId || 'TST2';
-
   const [activity, setActivity] = useState<Activity | null>(null);
   const [loading, setLoading] = useState(Boolean(activityId));
   const [error, setError] = useState('');
+  const [mediaIndex, setMediaIndex] = useState(0);
+  const [previewIndex, setPreviewIndex] = useState<number | null>(null);
 
-  useEffect(() => {
-    let mounted = true;
-    async function load() {
-      if (!activityId) {
-        setError('Missing activity id.');
-        setLoading(false);
-        return;
-      }
-      try {
-        setLoading(true);
-        const data = await fetchActivityDetail(activityId);
-        if (mounted) setActivity(data);
-      } catch (err: any) {
-        if (mounted) setError(err?.message || 'Unable to load activity.');
-      } finally {
-        if (mounted) setLoading(false);
-      }
-    }
-    load();
-    return () => {
-      mounted = false;
-    };
-  }, [activityId]);
+  useEffect(() => { let mounted = true; async function load() { if (!activityId) { setError('Missing activity id.'); setLoading(false); return; } try { setLoading(true); const data = await fetchActivityDetail(activityId); const existingMedia = getMediaItems(data); const media = existingMedia.length ? existingMedia : await fetchActivityMedia(activityId); if (mounted) setActivity({ ...data, media, mediaItems: media, mediaList: media } as any); } catch (err: any) { if (mounted) setError(err?.message || 'Unable to load activity.'); } finally { if (mounted) setLoading(false); } } load(); return () => { mounted = false; }; }, [activityId]);
 
-  return (
-    <ImageBackground source={require('../assets/branding/splash-gold.png')} style={styles.background} resizeMode="cover">
-      <SafeAreaView style={styles.safeArea}>
-      <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
-          <MobileWorkflowHeader
-            title={resolveSchoolName(schoolId)}
-            eyebrow="VidyaSetu ERP • Activity Details"
-            sourceRole={role}
-            onBackPress={() => router.back()}
-          />
+  const media = getMediaItems(activity);
+  const photos = media.filter((item) => !isVideo(item)).length;
+  const videos = media.filter(isVideo).length;
 
-        {loading ? (
-          <View style={styles.stateCard}>
-            <ActivityIndicator />
-            <Text style={styles.stateText}>Loading activity...</Text>
-          </View>
-        ) : error ? (
-          <View style={styles.stateCard}>
-            <Text style={styles.errorTitle}>Unable to open activity</Text>
-            <Text style={styles.stateText}>{error}</Text>
-          </View>
-        ) : activity ? (
-          <>
-            <View style={styles.coverCard}>
-              <Text style={styles.coverIcon}>🎉</Text>
-            </View>
-
-            <View style={styles.detailCard}>
-              <Text style={styles.dateText}>{formatDate(activity.activityDate)}</Text>
-              <Text style={styles.title}>{activity.title}</Text>
-              <Text style={styles.description}>{activity.description || 'School activity update'}</Text>
-
-              <View style={styles.divider} />
-
-              <Text style={styles.sectionTitle}>Visibility</Text>
-              <Text style={styles.metaText}>{String(activity.visibilityType || 'WHOLE_SCHOOL').replace(/_/g, ' ')}</Text>
-
-              <View style={styles.metrics}>
-                <View style={styles.metricBox}>
-                  <Text style={styles.metricValue}>{activity.viewCount || 0}</Text>
-                  <Text style={styles.metricLabel}>Views</Text>
-                </View>
-                <View style={styles.metricBox}>
-                  <Text style={styles.metricValue}>{activity.likeCount || 0}</Text>
-                  <Text style={styles.metricLabel}>Likes</Text>
-                </View>
-                <View style={styles.metricBox}>
-                  <Text style={styles.metricValue}>{activity.media?.length || activity.mediaItems?.length || 0}</Text>
-                  <Text style={styles.metricLabel}>Media</Text>
-                </View>
-              </View>
-            </View>
-
-            <View style={styles.detailCard}>
-              <Text style={styles.sectionTitle}>Gallery</Text>
-              <Text style={styles.metaText}>
-                Photos and videos uploaded for this activity will be shown here after media upload is enabled.
-              </Text>
-            </View>
-          </>
-        ) : null}
-      </ScrollView>
-      </SafeAreaView>
-    </ImageBackground>
-  );
+  return <ImageBackground source={require('../assets/branding/splash-gold.png')} style={styles.background} resizeMode="cover"><SafeAreaView style={styles.safeArea}><ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
+    <MobileWorkflowHeader title={resolveSchoolName(schoolId)} eyebrow="VidyaSetu ERP • Activity Details" sourceRole={role} onBackPress={() => router.back()} />
+    {loading ? <View style={styles.stateCard}><ActivityIndicator /><Text style={styles.stateText}>Loading activity...</Text></View> : error ? <View style={styles.stateCard}><Text style={styles.errorTitle}>Unable to open activity</Text><Text style={styles.stateText}>{error}</Text></View> : activity ? <>
+      <View style={styles.coverCard}><Text style={styles.coverIcon}>🎉</Text></View>
+      <View style={styles.detailCard}><Text style={styles.dateText}>{formatDate(activity.activityDate)}</Text><Text style={styles.title}>{activity.title}</Text><Text style={styles.description}>{activity.description || 'School activity update'}</Text><View style={styles.divider} /><Text style={styles.sectionTitle}>Visibility</Text><Text style={styles.metaText}>{String(activity.visibilityType || 'WHOLE_SCHOOL').replace(/_/g, ' ')}</Text><View style={styles.metrics}><View style={styles.metricBox}><Text style={styles.metricValue}>{activity.viewCount || 0}</Text><Text style={styles.metricLabel}>Views</Text></View><View style={styles.metricBox}><Text style={styles.metricValue}>{activity.likeCount || 0}</Text><Text style={styles.metricLabel}>Likes</Text></View><View style={styles.metricBox}><Text style={styles.metricValue}>{activity.mediaCount || media.length}</Text><Text style={styles.metricLabel}>Media</Text></View></View></View>
+      <View style={styles.detailCard}><Text style={styles.sectionTitle}>Gallery</Text><Text style={styles.metaText}>{media.length} item(s) • {photos} Photos • {videos} Video</Text>{media.length ? <View style={styles.mediaIconGrid}>{media.map((item, index) => { const uri = mediaUri(item); const video = isVideo(item); return <TouchableOpacity key={`${item.id || item.fileName || index}`} style={styles.mediaIconTile} activeOpacity={0.85} onPress={() => { setMediaIndex(index); setPreviewIndex(index); }}><View style={styles.mediaIconPreview}>{uri && !video ? <Image source={{ uri }} style={styles.mediaIconImage} resizeMode="cover" /> : <Text style={styles.placeholderIcon}>{video ? '🎥' : '📷'}</Text>}{video ? <View style={styles.videoBadge}><Text style={styles.videoBadgeText}>▶</Text></View> : null}</View><Text style={styles.mediaName} numberOfLines={2}>{item.fileName || `${video ? 'Video' : 'Photo'} ${index + 1}`}</Text><Text style={styles.mediaType}>{video ? 'Video' : 'Photo'}</Text></TouchableOpacity>; })}</View> : <Text style={styles.metaText}>No media uploaded yet.</Text>}</View>
+      <Modal visible={previewIndex !== null} transparent animationType="fade" onRequestClose={() => setPreviewIndex(null)}><View style={styles.previewBackdrop}><View style={styles.previewModal}><TouchableOpacity style={styles.previewClose} onPress={() => setPreviewIndex(null)}><Text style={styles.previewCloseText}>×</Text></TouchableOpacity>{previewIndex !== null && media.length ? (() => { const safeIndex = Math.max(0, Math.min(previewIndex, media.length - 1)); const item = media[safeIndex]; const uri = mediaUri(item); const video = isVideo(item); return <><View style={styles.previewRow}><TouchableOpacity style={styles.arrowButton} onPress={() => setPreviewIndex((current) => current === null || current <= 0 ? media.length - 1 : current - 1)} disabled={media.length <= 1}><Text style={styles.arrowText}>‹</Text></TouchableOpacity><TouchableOpacity style={styles.previewStage} activeOpacity={0.9} onPress={() => video && uri ? Linking.openURL(uri) : undefined}>{uri && !video ? <Image source={{ uri }} style={styles.carouselImage} resizeMode="contain" /> : <View style={styles.placeholder}><Text style={styles.placeholderIcon}>{video ? '🎥' : '📷'}</Text>{video ? <Text style={styles.mediaType}>Tap to play video</Text> : null}</View>}</TouchableOpacity><TouchableOpacity style={styles.arrowButton} onPress={() => setPreviewIndex((current) => current === null || current >= media.length - 1 ? 0 : current + 1)} disabled={media.length <= 1}><Text style={styles.arrowText}>›</Text></TouchableOpacity></View><View style={styles.mediaInfo}><Text style={styles.mediaName} numberOfLines={1}>{item.fileName || `${video ? 'Video' : 'Photo'} ${safeIndex + 1}`}</Text><Text style={styles.mediaType}>{safeIndex + 1} / {media.length} • {video ? 'Video' : 'Photo'}</Text></View></>; })() : null}</View></View></Modal>
+    </> : null}
+  </ScrollView></SafeAreaView></ImageBackground>;
 }
 
 const styles = StyleSheet.create({
-  background: { flex: 1, backgroundColor: '#F5BC42' },
-  safeArea: { flex: 1 },
-  container: { padding: spacing.lg, paddingBottom: spacing.xxl },
-  stateCard: { backgroundColor: 'rgba(255,255,255,0.96)', borderRadius: 24, padding: spacing.lg, alignItems: 'center', marginTop: spacing.md },
-  stateText: { color: '#42526E', textAlign: 'center', marginTop: 10, lineHeight: 20 },
-  errorTitle: { color: '#10223A', fontSize: 18, fontWeight: '900', marginTop: 8 },
-  coverCard: { minHeight: 190, backgroundColor: '#EAF1F8', borderRadius: 28, alignItems: 'center', justifyContent: 'center', marginTop: spacing.md, ...shadows.medium },
-  coverIcon: { fontSize: 58 },
-  detailCard: { backgroundColor: 'rgba(255,255,255,0.97)', borderRadius: 26, padding: spacing.lg, marginTop: spacing.md, ...shadows.medium },
-  dateText: { color: '#667085', fontSize: 13, fontWeight: '800' },
-  title: { color: '#10223A', fontSize: 26, fontWeight: '900', marginTop: 8 },
-  description: { color: '#344054', fontSize: 15, lineHeight: 23, marginTop: 12 },
-  divider: { height: 1, backgroundColor: '#E4E7EC', marginVertical: spacing.md },
-  sectionTitle: { color: '#10223A', fontSize: 17, fontWeight: '900' },
-  metaText: { color: '#667085', fontSize: 14, lineHeight: 21, marginTop: 8 },
-  metrics: { flexDirection: 'row', marginTop: spacing.md },
-  metricBox: { flex: 1, backgroundColor: '#F8FAFC', borderRadius: 18, padding: spacing.md, marginRight: 8, alignItems: 'center' },
-  metricValue: { color: '#10223A', fontSize: 22, fontWeight: '900' },
-  metricLabel: { color: '#667085', fontSize: 12, fontWeight: '800', marginTop: 4 },
+  background: { flex: 1, backgroundColor: '#F5BC42' }, safeArea: { flex: 1 }, container: { padding: spacing.lg, paddingBottom: spacing.xxl },
+  stateCard: { backgroundColor: 'rgba(255,255,255,0.96)', borderRadius: 24, padding: spacing.lg, alignItems: 'center', marginTop: spacing.md }, stateText: { color: '#42526E', textAlign: 'center', marginTop: 10, lineHeight: 20 }, errorTitle: { color: '#10223A', fontSize: 18, fontWeight: '900', marginTop: 8 },
+  coverCard: { minHeight: 130, backgroundColor: '#EAF1F8', borderRadius: 24, alignItems: 'center', justifyContent: 'center', marginTop: spacing.md, ...shadows.medium }, coverIcon: { fontSize: 46 },
+  detailCard: { backgroundColor: 'rgba(255,255,255,0.97)', borderRadius: 22, padding: spacing.md, marginTop: spacing.md, ...shadows.medium }, dateText: { color: '#667085', fontSize: 13, fontWeight: '800' }, title: { color: '#10223A', fontSize: 24, fontWeight: '900', marginTop: 8 }, description: { color: '#344054', fontSize: 15, lineHeight: 23, marginTop: 12 }, divider: { height: 1, backgroundColor: '#E4E7EC', marginVertical: spacing.md }, sectionTitle: { color: '#10223A', fontSize: 17, fontWeight: '900' }, metaText: { color: '#667085', fontSize: 14, lineHeight: 21, marginTop: 8 },
+  metrics: { flexDirection: 'row', marginTop: spacing.md }, metricBox: { flex: 1, backgroundColor: '#F8FAFC', borderRadius: 16, padding: spacing.sm, marginRight: 8, alignItems: 'center' }, metricValue: { color: '#10223A', fontSize: 20, fontWeight: '900' }, metricLabel: { color: '#667085', fontSize: 12, fontWeight: '800', marginTop: 4 },
+  mediaIconGrid: { flexDirection: 'row', flexWrap: 'wrap', marginTop: spacing.md, gap: 12 }, mediaIconTile: { width: 94, minHeight: 132, alignItems: 'center', padding: 6, borderRadius: 14 }, mediaIconPreview: { width: 84, height: 74, borderRadius: 12, backgroundColor: '#EAF1F8', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', borderWidth: 1, borderColor: '#E4E7EC' }, mediaIconImage: { width: '100%', height: '100%' }, videoBadge: { position: 'absolute', right: 5, bottom: 5, width: 24, height: 24, borderRadius: 12, backgroundColor: '#10223A', alignItems: 'center', justifyContent: 'center' }, videoBadgeText: { color: '#FFFFFF', fontSize: 10, fontWeight: '900' }, previewBackdrop: { flex: 1, backgroundColor: 'rgba(8,18,32,0.72)', alignItems: 'center', justifyContent: 'center', padding: spacing.md }, previewModal: { width: '94%', maxHeight: '82%', borderRadius: 24, backgroundColor: '#FFFFFF', padding: spacing.md, alignItems: 'center' }, previewClose: { alignSelf: 'flex-end', width: 42, height: 42, borderRadius: 21, backgroundColor: '#10223A', alignItems: 'center', justifyContent: 'center' }, previewCloseText: { color: '#FFFFFF', fontSize: 26, fontWeight: '900', marginTop: -2 }, previewRow: { width: '100%', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: spacing.sm }, previewStage: { width: '58%', maxWidth: 240, height: 150, borderRadius: 18, backgroundColor: '#EAF1F8', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', marginHorizontal: 8 }, carouselImage: { width: '100%', height: '100%' }, placeholder: { width: '100%', height: '100%', borderRadius: 18, backgroundColor: '#EAF1F8', alignItems: 'center', justifyContent: 'center' }, placeholderIcon: { fontSize: 34 }, arrowButton: { width: 42, height: 42, borderRadius: 21, backgroundColor: '#10223A', alignItems: 'center', justifyContent: 'center' }, arrowText: { color: '#FFFFFF', fontSize: 28, fontWeight: '900', marginTop: -2 }, mediaInfo: { paddingHorizontal: 10, alignItems: 'center', marginTop: 8 }, mediaName: { color: '#10223A', fontSize: 12, fontWeight: '900', textAlign: 'center' }, mediaType: { color: '#667085', fontSize: 12, fontWeight: '800', marginTop: 3 },
 });

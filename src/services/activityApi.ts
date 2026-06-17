@@ -19,6 +19,8 @@ export type ActivityMedia = {
   publicUrl?: string;
   signedUrl?: string;
   thumbnailUrl?: string;
+  fileSize?: number;
+  displayOrder?: number;
 };
 
 export type Activity = {
@@ -62,12 +64,12 @@ type ApiEnvelope<T> = {
   errorCode?: string;
 };
 
-function getAuthHeaders() {
+function getBaseHeaders(isFormData = false) {
   const session = getSession();
   const schoolId = normalizeSchoolId(session?.schoolId || 'TST2');
 
   return {
-    'Content-Type': 'application/json',
+    ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
     'X-School-Id': schoolId,
     ...(session?.token ? { Authorization: `Bearer ${session.token}` } : {}),
   };
@@ -81,10 +83,11 @@ function unwrap<T>(payload: T | ApiEnvelope<T>): T {
 }
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
+  const isFormData = typeof FormData !== 'undefined' && options.body instanceof FormData;
   const response = await fetch(`${API_BASE_URL}${path}`, {
     ...options,
     headers: {
-      ...getAuthHeaders(),
+      ...getBaseHeaders(isFormData),
       ...(options.headers || {}),
     },
   });
@@ -166,8 +169,36 @@ export async function createActivityDraft(payload: ActivityCreateRequest): Promi
   });
 }
 
+export async function uploadActivityMedia(activityId: string | number, mediaDrafts: Array<{ uri: string; fileName: string; mediaType: ActivityMediaType | string; mimeType?: string; sizeBytes?: number }>): Promise<ActivityMedia[]> {
+  const uploaded: ActivityMedia[] = [];
+
+  for (let index = 0; index < mediaDrafts.length; index += 1) {
+    const draft = mediaDrafts[index];
+    const formData = new FormData();
+    formData.append('file', {
+      uri: draft.uri,
+      name: draft.fileName || `${String(draft.mediaType).toLowerCase()}-${index + 1}`,
+      type: draft.mimeType || (String(draft.mediaType).toUpperCase() === 'VIDEO' ? 'video/mp4' : 'image/jpeg'),
+    } as any);
+    formData.append('mediaType', String(draft.mediaType).toUpperCase());
+    formData.append('displayOrder', String(index));
+
+    uploaded.push(await request<ActivityMedia>(`/api/activities/${activityId}/media`, {
+      method: 'POST',
+      body: formData,
+    }));
+  }
+
+  return uploaded;
+}
+
+export async function fetchActivityMedia(activityId: string | number): Promise<ActivityMedia[]> {
+  const data = await request<ActivityMedia[] | { content?: ActivityMedia[]; media?: ActivityMedia[]; mediaList?: ActivityMedia[] }>(`/api/activities/${activityId}/media`);
+  if (Array.isArray(data)) return data;
+  return data?.content || data?.media || data?.mediaList || [];
+}
+
 export async function submitActivity(activityId: string | number): Promise<Activity> {
-  const session = getSession();
   return request<Activity>(`/api/activities/${activityId}/submit`, { method: 'POST' });
 }
 
@@ -197,4 +228,8 @@ export async function rejectActivity(activityId: string | number, remarks: strin
 
 export async function publishActivity(activityId: string | number): Promise<Activity> {
   return request<Activity>(`/api/activities/${activityId}/publish`, { method: 'POST' });
+}
+
+export async function deleteActivityMedia(activityId: string | number, mediaId: string | number): Promise<void> {
+  await request<void>(`/api/activities/${activityId}/media/${mediaId}`, { method: 'DELETE' });
 }
