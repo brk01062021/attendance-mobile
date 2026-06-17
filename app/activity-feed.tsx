@@ -85,15 +85,15 @@ export default function ActivityFeedScreen() {
             Private school timeline for celebrations, achievements, classroom activities and campus memories.
           </Text>
           <View style={styles.heroActions}>
-            <TouchableOpacity style={styles.secondaryButton} onPress={() => router.push('/school-memories' as any)} activeOpacity={0.9}>
-              <Text style={styles.secondaryButtonText}>Memories</Text>
+            <TouchableOpacity style={styles.headerPill} onPress={() => router.push('/school-memories' as any)} activeOpacity={0.9}>
+              <Text style={styles.headerPillText}>Memories</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.secondaryButton} onPress={() => router.push('/activity-gallery' as any)} activeOpacity={0.9}>
-              <Text style={styles.secondaryButtonText}>Gallery</Text>
+            <TouchableOpacity style={styles.headerPill} onPress={() => router.push('/activity-gallery' as any)} activeOpacity={0.9}>
+              <Text style={styles.headerPillText}>Gallery</Text>
             </TouchableOpacity>
             {canCreate ? (
-              <TouchableOpacity style={styles.primaryButton} onPress={() => router.push('/create-activity' as any)} activeOpacity={0.9}>
-                <Text style={styles.primaryButtonText}>Create</Text>
+              <TouchableOpacity style={[styles.headerPill, styles.headerPillGold]} onPress={() => router.push('/create-activity' as any)} activeOpacity={0.9}>
+                <Text style={styles.headerPillGoldText}>Create New</Text>
               </TouchableOpacity>
             ) : null}
           </View>
@@ -176,10 +176,10 @@ const styles = StyleSheet.create({
   heroTitle: { color: '#FFFFFF', fontSize: 28, fontWeight: '900', marginTop: 6 },
   heroText: { color: '#D8E2EF', fontSize: 14, lineHeight: 21, marginTop: 8 },
   heroActions: { flexDirection: 'row', flexWrap: 'wrap', marginTop: spacing.md },
-  primaryButton: { backgroundColor: '#F5BC42', borderRadius: 16, paddingVertical: 11, paddingHorizontal: 18, marginRight: 8, marginTop: 8 },
-  primaryButtonText: { color: '#10223A', fontWeight: '900' },
-  secondaryButton: { backgroundColor: 'rgba(255,255,255,0.10)', borderRadius: 16, paddingVertical: 11, paddingHorizontal: 16, marginRight: 8, marginTop: 8 },
-  secondaryButtonText: { color: '#FFFFFF', fontWeight: '800' },
+  headerPill: { minHeight: 40, minWidth: 104, borderRadius: 999, paddingVertical: 11, paddingHorizontal: 16, marginRight: 10, marginTop: 8, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.12)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.22)' },
+  headerPillText: { color: '#FFFFFF', fontWeight: '900', fontSize: 13 },
+  headerPillGold: { minWidth: 126, backgroundColor: '#F5BC42', borderColor: '#F5BC42' },
+  headerPillGoldText: { color: '#10223A', fontWeight: '900', fontSize: 13 },
   stateCard: { backgroundColor: 'rgba(255,255,255,0.96)', borderRadius: 24, padding: spacing.lg, alignItems: 'center', marginTop: spacing.md },
   stateText: { color: '#42526E', textAlign: 'center', marginTop: 10, lineHeight: 20 },
   errorTitle: { color: '#10223A', fontSize: 18, fontWeight: '900', marginTop: 8 },
