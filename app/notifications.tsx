@@ -94,6 +94,8 @@ const getTypeIcon = (type: string) => {
         case 'EXAM_RESULT':
         case 'EXAM_RESULT_PUBLISHED':
             return '📘';
+        case 'FEE_REMINDER':
+            return '💰';
         default:
             return '🔔';
     }

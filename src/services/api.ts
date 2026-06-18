@@ -69,6 +69,7 @@ export const API_ENDPOINTS = {
 
     schoolNotices: `${API_BASE_URL}/school-notices`,
     notifications: `${API_BASE_URL}/notifications`,
+    feeReminderParentHistory: `${API_BASE_URL}/api/finance/fee-reminders/parent-history`,
     timetableRoleNotifications: `${API_BASE_URL}/timetable/role-notifications`,
     timetableLive: `${API_BASE_URL}/timetable/operations/live`,
     notificationUnreadCount: `${API_BASE_URL}/notifications/unread-count`,
