@@ -15,14 +15,24 @@ import {
     TouchableOpacity,
     View,
 } from "react-native";
+import MobileWorkflowHeader from "../components/layout/MobileWorkflowHeader";
 
-const NOTICE_TYPES = ["GENERAL", "HOLIDAY", "EXAM", "EVENT", "EMERGENCY"];
+const NOTICE_TYPES = ["GENERAL", "HOLIDAY", "ACADEMIC", "ACHIEVEMENT", "EVENT", "EMERGENCY"];
+const AUDIENCES = [
+    { label: "All / Parents / Teachers / Students", value: "ALL" },
+    { label: "Parents only", value: "PARENT" },
+    { label: "Teachers only", value: "TEACHER" },
+    { label: "Students only", value: "STUDENT" },
+];
 
 export default function CreateSchoolNoticeScreen() {
     const [title, setTitle] = useState("");
     const [message, setMessage] = useState("");
     const [noticeType, setNoticeType] = useState("GENERAL");
+    const [targetRole, setTargetRole] = useState("ALL");
+    const [publishMode, setPublishMode] = useState("Immediate");
     const [showTypeModal, setShowTypeModal] = useState(false);
+    const [showAudienceModal, setShowAudienceModal] = useState(false);
     const [loading, setLoading] = useState(false);
 
     const validateForm = () => {
@@ -60,13 +70,13 @@ export default function CreateSchoolNoticeScreen() {
                 title: title.trim(),
                 message: message.trim(),
                 noticeType,
-                createdByRole: "ADMIN",
-                createdByUserId: 1,
+                targetRole,
+                createdBy: "ADMIN",
             });
 
             Alert.alert(
                 "Notice Published",
-                "School notice has been published successfully to Parents, Teachers and Students.",
+                "School notice has been published successfully for the selected audience.",
                 [
                     {
                         text: "OK",
@@ -96,16 +106,11 @@ export default function CreateSchoolNoticeScreen() {
                 behavior={Platform.OS === "ios" ? "padding" : undefined}
             >
                 <ScrollView contentContainerStyle={styles.scrollContent}>
-                    <View style={styles.headerRow}>
-                        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-                            <Text style={styles.backButtonText}>‹</Text>
-                        </TouchableOpacity>
-
-                        <View style={styles.headerTextBox}>
-                            <Text style={styles.title}>Create Notice</Text>
-                            <Text style={styles.subtitle}>Publish school-wide announcement</Text>
-                        </View>
-                    </View>
+                    <MobileWorkflowHeader
+                        title="Create Notice"
+                        eyebrow="SCHOOL NOTICE"
+                        subtitle="Publish school-wide announcement"
+                    />
 
                     <View style={styles.formCard}>
                         <Text style={styles.label}>Notice Title</Text>
@@ -128,6 +133,34 @@ export default function CreateSchoolNoticeScreen() {
                             <Text style={styles.dropdownArrow}>⌄</Text>
                         </TouchableOpacity>
 
+                        <Text style={styles.label}>Audience</Text>
+                        <TouchableOpacity
+                            style={styles.dropdown}
+                            onPress={() => setShowAudienceModal(true)}
+                            disabled={loading}
+                        >
+                            <Text style={styles.dropdownText}>
+                                {AUDIENCES.find((item) => item.value === targetRole)?.label ?? targetRole}
+                            </Text>
+                            <Text style={styles.dropdownArrow}>⌄</Text>
+                        </TouchableOpacity>
+
+                        <Text style={styles.label}>Publish Date</Text>
+                        <View style={styles.segmentRow}>
+                            {["Immediate", "Scheduled"].map((mode) => (
+                                <TouchableOpacity
+                                    key={mode}
+                                    style={[styles.segmentButton, publishMode === mode && styles.segmentButtonActive]}
+                                    onPress={() => setPublishMode(mode)}
+                                    disabled={loading}
+                                >
+                                    <Text style={[styles.segmentButtonText, publishMode === mode && styles.segmentButtonTextActive]}>
+                                        {mode}
+                                    </Text>
+                                </TouchableOpacity>
+                            ))}
+                        </View>
+
                         <Text style={styles.label}>Message</Text>
                         <TextInput
                             style={styles.messageInput}
@@ -145,7 +178,7 @@ export default function CreateSchoolNoticeScreen() {
                             <Text style={styles.previewTitle}>
                                 {title.trim() || "Notice title will appear here"}
                             </Text>
-                            <Text style={styles.previewType}>{noticeType}</Text>
+                            <Text style={styles.previewType}>{noticeType} • {targetRole} • {publishMode}</Text>
                             <Text style={styles.previewMessage}>
                                 {message.trim() || "Notice message will appear here."}
                             </Text>
@@ -164,8 +197,8 @@ export default function CreateSchoolNoticeScreen() {
                         </TouchableOpacity>
 
                         <Text style={styles.noteText}>
-                            This notice will auto-broadcast to Parent, Teacher and Student
-                            notifications.
+                            This notice will publish to the Notice Center and create in-app
+                            notification records for the selected audience.
                         </Text>
                     </View>
                 </ScrollView>
@@ -207,6 +240,44 @@ export default function CreateSchoolNoticeScreen() {
                         </View>
                     </View>
                 </Modal>
+
+                <Modal visible={showAudienceModal} transparent animationType="fade">
+                    <View style={styles.modalOverlay}>
+                        <View style={styles.modalBox}>
+                            <Text style={styles.modalTitle}>Select Audience</Text>
+
+                            {AUDIENCES.map((audience) => (
+                                <TouchableOpacity
+                                    key={audience.value}
+                                    style={[
+                                        styles.typeOption,
+                                        targetRole === audience.value && styles.selectedTypeOption,
+                                    ]}
+                                    onPress={() => {
+                                        setTargetRole(audience.value);
+                                        setShowAudienceModal(false);
+                                    }}
+                                >
+                                    <Text
+                                        style={[
+                                            styles.typeOptionText,
+                                            targetRole === audience.value && styles.selectedTypeOptionText,
+                                        ]}
+                                    >
+                                        {audience.label}
+                                    </Text>
+                                </TouchableOpacity>
+                            ))}
+
+                            <TouchableOpacity
+                                style={styles.modalCancelButton}
+                                onPress={() => setShowAudienceModal(false)}
+                            >
+                                <Text style={styles.modalCancelText}>Cancel</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </Modal>
             </KeyboardAvoidingView>
         </ImageBackground>
     );
@@ -222,7 +293,7 @@ const styles = StyleSheet.create({
     },
     scrollContent: {
         padding: 22,
-        paddingTop: 72,
+        paddingTop: 64,
         paddingBottom: 60,
     },
     headerRow: {
@@ -302,6 +373,31 @@ const styles = StyleSheet.create({
         fontSize: 24,
         color: "#7a4f01",
         fontWeight: "bold",
+    },
+    segmentRow: {
+        flexDirection: "row",
+        gap: 10,
+    },
+    segmentButton: {
+        flex: 1,
+        backgroundColor: "#fff8e7",
+        borderWidth: 1.5,
+        borderColor: "#f0d58a",
+        borderRadius: 14,
+        padding: 14,
+        alignItems: "center",
+    },
+    segmentButtonActive: {
+        backgroundColor: "#7a4f01",
+        borderColor: "#7a4f01",
+    },
+    segmentButtonText: {
+        fontSize: 15,
+        fontWeight: "900",
+        color: "#7a4f01",
+    },
+    segmentButtonTextActive: {
+        color: "#fff",
     },
     messageInput: {
         backgroundColor: "#fff8e7",

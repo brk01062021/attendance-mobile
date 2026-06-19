@@ -5,8 +5,8 @@ export type CreateSchoolNoticeRequest = {
     title: string;
     message: string;
     noticeType: string;
-    createdByRole: string;
-    createdByUserId: number;
+    targetRole?: string;
+    createdBy?: string;
 };
 
 export async function createSchoolNotice(payload: CreateSchoolNoticeRequest) {
