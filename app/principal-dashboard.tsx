@@ -14,6 +14,7 @@ import { BarChart, LineChart } from 'react-native-chart-kit';
 
 import AnalyticsChartCard from '../components/admin/AnalyticsChartCard';
 import AnalyticsKpiCard from '../components/admin/AnalyticsKpiCard';
+import MobileWorkflowHeader from '../components/layout/MobileWorkflowHeader';
 
 import { DEV_DEFAULTS } from '../src/services/api';
 
@@ -269,25 +270,18 @@ export default function PrincipalDashboardScreen() {
 
     return (
         <ImageBackground
-            source={require('../assets/branding/splash-dark.png')}
+            source={require('../assets/branding/splash-gold.png')}
             style={styles.background}
             resizeMode="cover"
         >
             <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
-                <View style={styles.topHeader}>
-                    <TouchableOpacity style={styles.circleButton} onPress={() => router.back()} activeOpacity={0.85}>
-                        <Text style={styles.circleButtonText}>‹</Text>
-                    </TouchableOpacity>
-
-                    <View style={styles.headerTextBox}>
-                        <Text style={styles.headerTitle}>School Intelligence</Text>
-                        <Text style={styles.headerSubtitle}>Executive risk, workload and comparison center</Text>
-                    </View>
-
-                    <TouchableOpacity style={styles.circleButton} onPress={loadDashboard} activeOpacity={0.85}>
-                        <Text style={styles.circleButtonText}>↻</Text>
-                    </TouchableOpacity>
-                </View>
+                <MobileWorkflowHeader
+                    title="School Intelligence"
+                    eyebrow="SCHOOL INTELLIGENCE"
+                    subtitle="Executive risk, workload and comparison center"
+                    rightAction="refresh"
+                    onRightPress={loadDashboard}
+                />
 
                 <View style={styles.heroCard}>
                     <Text style={styles.heroEyebrow}>School Intelligence</Text>
