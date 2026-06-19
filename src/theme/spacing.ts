@@ -8,3 +8,5 @@ export const spacing = {
     xxxl: 32,
     screenPadding: 25,
 };
+
+export const dashboardSpacing = spacing;

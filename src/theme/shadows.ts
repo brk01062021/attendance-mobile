@@ -14,3 +14,5 @@ export const shadows = {
         elevation: 5,
     },
 };
+
+export const dashboardShadows = shadows;

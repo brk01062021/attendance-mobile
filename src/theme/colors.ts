@@ -30,3 +30,5 @@ export const colors = {
     divider: '#E5E7EB',
     transparent: 'transparent',
 };
+
+export const dashboardColors = colors;

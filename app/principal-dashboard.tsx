@@ -10,10 +10,7 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
-import { BarChart, LineChart } from 'react-native-chart-kit';
 
-import AnalyticsChartCard from '../components/admin/AnalyticsChartCard';
-import AnalyticsKpiCard from '../components/admin/AnalyticsKpiCard';
 import MobileWorkflowHeader from '../components/layout/MobileWorkflowHeader';
 
 import { DEV_DEFAULTS } from '../src/services/api';
@@ -24,10 +21,13 @@ import {
     fetchExecutiveAlerts,
     fetchExecutiveOverview,
     fetchPrincipalSummary,
+    fetchSchoolIntelligenceSnapshot,
     fetchTeacherFatigueAlerts,
     fetchTeacherWorkload,
     fetchTeacherWorkloadSummary,
 } from '../src/services/principalApi';
+
+import type { SchoolIntelligenceSnapshot } from '../src/services/principalApi';
 
 import type {
     ClassComparison,
@@ -43,7 +43,7 @@ import type {
 const screenWidth = Dimensions.get('window').width;
 const chartWidth = Math.max(300, screenWidth - 56);
 const DEFAULT_MONTH = DEV_DEFAULTS.analyticsEndDate.slice(0, 7);
-const DEFAULT_DATE = DEV_DEFAULTS.dashboardDate;
+const DEFAULT_DATE = new Date().toISOString().slice(0, 10);
 
 type PrincipalActionKey =
     | 'monthly-report'
@@ -98,6 +98,7 @@ export default function PrincipalDashboardScreen() {
     const [teacherWorkload, setTeacherWorkload] = useState<TeacherWorkload[]>([]);
     const [workloadSummary, setWorkloadSummary] = useState<TeacherWorkloadInsight[]>([]);
     const [fatigueAlerts, setFatigueAlerts] = useState<TeacherFatigueAlert[]>([]);
+    const [schoolIntelligence, setSchoolIntelligence] = useState<SchoolIntelligenceSnapshot | null>(null);
     const [loading, setLoading] = useState(false);
 
     const monthOptions = useMemo(() => buildMonthOptions(DEFAULT_MONTH), []);
@@ -110,7 +111,7 @@ export default function PrincipalDashboardScreen() {
         setLoading(true);
 
         try {
-            const [summaryData, executiveData, alertsData, trendData, comparisonData, workloadData, dailyWorkloadData, fatigueAlertData] = await Promise.all([
+            const [summaryData, executiveData, alertsData, trendData, comparisonData, workloadData, dailyWorkloadData, fatigueAlertData, intelligenceData] = await Promise.all([
                 fetchPrincipalSummary(DEFAULT_DATE),
                 fetchExecutiveOverview(selectedMonth),
                 fetchExecutiveAlerts(selectedMonth),
@@ -119,6 +120,7 @@ export default function PrincipalDashboardScreen() {
                 fetchTeacherWorkload(selectedMonth),
                 fetchTeacherWorkloadSummary(DEFAULT_DATE),
                 fetchTeacherFatigueAlerts(DEFAULT_DATE),
+                fetchSchoolIntelligenceSnapshot(DEFAULT_DATE),
             ]);
 
             setSummary(summaryData ?? fallbackSummary);
@@ -129,6 +131,7 @@ export default function PrincipalDashboardScreen() {
             setTeacherWorkload(Array.isArray(workloadData) ? workloadData : []);
             setWorkloadSummary(Array.isArray(dailyWorkloadData) ? dailyWorkloadData : []);
             setFatigueAlerts(Array.isArray(fatigueAlertData) ? fatigueAlertData : []);
+            setSchoolIntelligence(intelligenceData ?? null);
         } finally {
             setLoading(false);
         }
@@ -316,97 +319,7 @@ export default function PrincipalDashboardScreen() {
                     </View>
                 ) : null}
 
-
-                <View style={styles.healthCard}>
-                    <View style={styles.healthHeaderRow}>
-                        <View style={styles.healthScoreCircle}>
-                            <Text style={styles.healthScoreValue}>{schoolHealthScore}</Text>
-                            <Text style={styles.healthScoreLabel}>Score</Text>
-                        </View>
-                        <View style={styles.healthTextBox}>
-                            <Text style={styles.sectionEyebrow}>School Health Score</Text>
-                            <Text style={styles.healthTitle}>{getHealthLabel(schoolHealthScore)}</Text>
-                            <Text style={styles.healthSubtitle}>
-                                Combined view of attendance, replacement coverage, teacher fatigue and student risk.
-                            </Text>
-                        </View>
-                    </View>
-
-                    <View style={styles.healthMetricGrid}>
-                        <HealthMetric label="Attendance" value={`${Math.round(executive.overallAttendancePercentage || summary.todayAttendancePercentage)}%`} />
-                        <HealthMetric label="Coverage" value={`${replacementCoveragePercent}%`} />
-                        <HealthMetric label="Overload" value={`${uncoveredLoad}`} />
-                        <HealthMetric label="Risk" value={`${executive.lowAttendanceRiskStudents || summary.lowAttendanceStudents || 0}`} />
-                    </View>
-                </View>
-
-                <View style={styles.operationalAlertsCard}>
-                    <View style={styles.sectionHeaderRow}>
-                        <View>
-                            <Text style={styles.sectionEyebrow}>Operational Alerts</Text>
-                            <Text style={styles.sectionTitle}>Today's Principal Watchlist</Text>
-                        </View>
-                        <Text style={styles.alertCount}>{operationalAlerts.length}</Text>
-                    </View>
-
-                    {operationalAlerts.length > 0 ? (
-                        operationalAlerts.map((alert, index) => (
-                            <View key={`${alert.title}-${index}`} style={styles.operationalAlertRow}>
-                                <View style={[styles.operationalAlertIconBox, alert.severity === 'HIGH' && styles.operationalAlertHigh]}>
-                                    <Text style={styles.operationalAlertIcon}>{alert.icon}</Text>
-                                </View>
-                                <View style={styles.alertTextBox}>
-                                    <Text style={styles.alertTitle}>{alert.title}</Text>
-                                    <Text style={styles.alertDescription}>{alert.description}</Text>
-                                    <Text style={styles.recommendationText}>{alert.action}</Text>
-                                </View>
-                            </View>
-                        ))
-                    ) : (
-                        <Text style={styles.emptyText}>No critical operational alerts for the selected date.</Text>
-                    )}
-                </View>
-
-                <View style={styles.kpiGrid}>
-                    <AnalyticsKpiCard
-                        title="Overall Attendance"
-                        value={`${Math.round(executive.overallAttendancePercentage || summary.todayAttendancePercentage)}%`}
-                        subtitle="Selected month"
-                    />
-                    <AnalyticsKpiCard
-                        title="Risk Students"
-                        value={executive.lowAttendanceRiskStudents || summary.lowAttendanceStudents}
-                        subtitle="Below safe threshold"
-                    />
-                    <AnalyticsKpiCard title="Class Risk" value={executive.classesBelowThreshold} subtitle="Below 75%" />
-                    <AnalyticsKpiCard title="Critical Alerts" value={highAlerts + dailyHighFatigue} subtitle="High priority" />
-                    <AnalyticsKpiCard
-                        title="Teacher Leave Load"
-                        value={executive.teachersWithLeaveLoad || summary.teachersOnLeave}
-                        subtitle="Needs attention"
-                    />
-                    <AnalyticsKpiCard
-                        title="Replacement Stress"
-                        value={executive.replacementStressTeachers || summary.replacementPeriodsToday}
-                        subtitle={`Index ${Math.round(executive.replacementStressIndex || 0)}`}
-                    />
-                    <AnalyticsKpiCard title="Daily Overload" value={uncoveredLoad} subtitle="Teachers ≥ 80 score" />
-                    <AnalyticsKpiCard title="Fatigue Alerts" value={fatigueAlerts.length} subtitle="Today workload watch" />
-                    <AnalyticsKpiCard title="Top Class" value={executive.topPerformingClass || 'No data'} subtitle="Attendance rank" />
-                    <AnalyticsKpiCard title="Weak Section" value={executive.weakestPerformingSection || 'No data'} subtitle="Needs support" />
-                </View>
-
-
-                {fatigueAlerts.length > 0 ? (
-                    <View style={styles.actionFocusPanel}>
-                        <Text style={styles.focusTitle}>Operational Alerts</Text>
-                        {fatigueAlerts.slice(0, 3).map((alert) => (
-                            <Text key={`${alert.teacherId}-${alert.overloadScore}`} style={styles.focusDescription}>
-                                • {alert.teacherName}: {alert.reason} Action: {alert.actionRequired}
-                            </Text>
-                        ))}
-                    </View>
-                ) : null}
+                {schoolIntelligence ? <SchoolIntelligenceLiveCard snapshot={schoolIntelligence} /> : null}
 
                 <View style={styles.actionCard}>
                     <View style={styles.sectionHeaderRowCompact}>
@@ -439,8 +352,8 @@ export default function PrincipalDashboardScreen() {
                                             <Text style={styles.actionBadgeText}>{action.badge}</Text>
                                         </View>
                                     </View>
-                                    <Text style={styles.actionTitle}>{action.title}</Text>
-                                    <Text style={styles.actionSubtitle}>{action.subtitle}</Text>
+                                    <Text style={styles.actionTitle} numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.82}>{action.title}</Text>
+                                    <Text style={styles.actionSubtitle} numberOfLines={2}>{action.subtitle}</Text>
                                     <View style={styles.actionFooterRow}>
                                         <Text style={styles.actionViewText}>{isActive ? 'Selected' : 'View'}</Text>
                                         <Text style={styles.actionArrow}>›</Text>
@@ -464,128 +377,59 @@ export default function PrincipalDashboardScreen() {
                     </View>
                 </View>
 
-                {selectedAction !== 'teacher-workload' ? (
-                    <AnalyticsChartCard title="Monthly Attendance Trend">
-                        {trendChartData.labels.length > 0 ? (
-                            <LineChart
-                                data={trendChartData}
-                                width={chartWidth}
-                                height={220}
-                                yAxisSuffix="%"
-                                fromZero
-                                chartConfig={chartConfig}
-                                bezier
-                                style={styles.chart}
-                            />
-                        ) : (
-                            <Text style={styles.emptyText}>No attendance trend available for this month.</Text>
-                        )}
-                    </AnalyticsChartCard>
-                ) : null}
-
-                {(selectedAction === 'monthly-report' || selectedAction === 'compare-classes') ? (
-                    <AnalyticsChartCard title="Class / Section Comparison">
-                        {classChartData.labels.length > 0 ? (
-                            <BarChart
-                                data={classChartData}
-                                width={chartWidth}
-                                height={230}
-                                yAxisLabel=""
-                                yAxisSuffix="%"
-                                fromZero
-                                chartConfig={chartConfig}
-                                style={styles.chart}
-                                showValuesOnTopOfBars
-                            />
-                        ) : (
-                            <Text style={styles.emptyText}>No class comparison data available.</Text>
-                        )}
-                    </AnalyticsChartCard>
-                ) : null}
-
-                {selectedAction === 'teacher-workload' ? (
-                    <View style={styles.focusModuleCard}>
-                        <Text style={styles.sectionEyebrow}>Teacher Workload Module</Text>
-                        <Text style={styles.sectionTitle}>Teacher Intelligence</Text>
-                        <Text style={styles.moduleIntro}>
-                            Detailed workload, replacement pressure and priority decisions are shown here only after selecting Teacher Workload.
-                        </Text>
-
-                        <AnalyticsChartCard title="Teacher Workload Stress">
-                            {workloadChartData.labels.length > 0 ? (
-                                <BarChart
-                                    data={workloadChartData}
-                                    width={chartWidth}
-                                    height={230}
-                                    yAxisLabel=""
-                                    yAxisSuffix=""
-                                    fromZero
-                                    chartConfig={chartConfig}
-                                    style={styles.chart}
-                                    showValuesOnTopOfBars
-                                />
-                            ) : (
-                                <Text style={styles.emptyText}>No teacher workload data available.</Text>
-                            )}
-                        </AnalyticsChartCard>
-
-                        <View style={styles.alertsCardInner}>
-                            <View style={styles.sectionHeaderRow}>
-                                <View>
-                                    <Text style={styles.sectionEyebrow}>Executive Alerts</Text>
-                                    <Text style={styles.sectionTitle}>Priority Decisions</Text>
-                                </View>
-                                <Text style={styles.alertCount}>{riskAlerts.length}</Text>
-                            </View>
-
-                            {riskAlerts.length > 0 ? (
-                                riskAlerts.map((alert, index) => (
-                                    <View key={`${alert.type}-${alert.title}-${index}`} style={styles.alertRow}>
-                                        <View style={[styles.alertIconBox, alert.severity === 'HIGH' && styles.alertIconHigh]}>
-                                            <Text style={styles.alertIcon}>{alert.severity === 'HIGH' ? '!' : '•'}</Text>
-                                        </View>
-                                        <View style={styles.alertTextBox}>
-                                            <Text style={styles.alertTitle}>{alert.title || alert.type}</Text>
-                                            <Text style={styles.alertDescription}>{alert.description}</Text>
-                                            <Text style={styles.recommendationText}>{buildRecommendation(alert)}</Text>
-                                            <Text style={styles.alertMeta}>
-                                                {alert.type} • {alert.severity}
-                                            </Text>
-                                        </View>
-                                    </View>
-                                ))
-                            ) : (
-                                <Text style={styles.emptyText}>No major teacher workload alerts for the selected month.</Text>
-                            )}
-                        </View>
-
-                        <View style={styles.workloadCardInner}>
-                            <Text style={styles.sectionEyebrow}>Teacher Intelligence</Text>
-                            <Text style={styles.sectionTitle}>Top Workload Attention</Text>
-                            {teacherWorkload.slice(0, 5).map((teacher) => (
-                                <View key={`${teacher.teacherId}-${teacher.teacherName}`} style={styles.teacherRow}>
-                                    <View style={styles.teacherMainText}>
-                                        <Text style={styles.teacherName}>{teacher.teacherName || 'Teacher'}</Text>
-                                        <Text style={styles.teacherMeta}>
-                                            Scheduled {teacher.scheduledPeriods} • Replacement {teacher.replacementPeriods} • Leave{' '}
-                                            {teacher.plannedLeaves + teacher.unplannedLeaves}
-                                        </Text>
-                                    </View>
-                                    <View style={styles.scoreBox}>
-                                        <Text style={styles.scoreText}>{Math.round(teacher.workloadScore)}</Text>
-                                        <Text style={styles.scoreMeta}>{teacher.riskLevel}</Text>
-                                    </View>
-                                </View>
-                            ))}
-                            {teacherWorkload.length === 0 ? <Text style={styles.emptyText}>No workload records found.</Text> : null}
-                        </View>
-                    </View>
-                ) : null}
             </ScrollView>
         </ImageBackground>
     );
 }
 
+
+
+function SchoolIntelligenceLiveCard({ snapshot }: { snapshot: SchoolIntelligenceSnapshot }) {
+    const metrics = [
+        { label: 'Workspace', value: snapshot.activationStatus || 'ACTIVE', helper: `Readiness ${Math.round(snapshot.readinessPercent || 0)}%` },
+        { label: 'Students', value: snapshot.totalStudents || '—', helper: `Present ${snapshot.presentStudents || 0} • Absent ${snapshot.absentStudents || 0}` },
+        { label: 'Teachers', value: snapshot.totalTeachers || '—', helper: 'From principal summary or active timetable' },
+        { label: 'Timetable', value: snapshot.timetableLive ? 'LIVE' : 'NO', helper: `${snapshot.totalPeriodAllocations || 0} period allocations` },
+        { label: 'Batch', value: snapshot.timetableBatchId || '—', helper: `${snapshot.totalClasses || 0} classes / ${snapshot.totalSections || 0} sections` },
+        { label: 'Activities', value: snapshot.publishedActivities || 0, helper: `${snapshot.pendingActivities || 0} pending approvals` },
+        { label: 'Workbook', value: snapshot.workbookStatus || 'WAIT', helper: snapshot.latestWorkbookRows ? `${snapshot.latestWorkbookRows} committed rows` : 'Commit gate' },
+        { label: 'Attendance', value: `${Math.round(snapshot.attendancePercentage || 0)}%`, helper: 'Whole-school current day signal' },
+    ];
+
+    return (
+        <View style={styles.liveIntelligenceCard}>
+            <View style={styles.liveHeaderRow}>
+                <View style={styles.liveHeaderTextWrap}>
+                    <Text style={styles.sectionEyebrow}>Live School Intelligence</Text>
+                    <Text style={styles.sectionTitle}>Principal/Admin Command Center</Text>
+                </View>
+                <View style={styles.liveBadgeSafe}><Text style={styles.liveBadgeSafeText}>LIVE</Text></View>
+            </View>
+            <Text style={styles.liveIntro}>Same operational data used by the web command center.</Text>
+            <View style={styles.liveMetricGrid}>
+                {metrics.map((metric) => (
+                    <View key={metric.label} style={styles.liveMetricTile}>
+                        <Text style={styles.liveMetricLabel}>{metric.label}</Text>
+                        <Text style={styles.liveMetricValue} numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.68}>{metric.value}</Text>
+                        <Text style={styles.liveMetricHelper}>{metric.helper}</Text>
+                    </View>
+                ))}
+            </View>
+            <View style={styles.liveAlertsBox}>
+                <Text style={styles.liveAlertsTitle}>Operational Alerts</Text>
+                {snapshot.alerts.slice(0, 3).map((alert) => (
+                    <View key={alert.title} style={styles.liveAlertRow}>
+                        <Text style={styles.liveAlertPill}>{alert.tone === 'success' ? 'HEALTHY' : alert.tone === 'warning' ? 'REVIEW' : 'ACTION'}</Text>
+                        <View style={styles.liveAlertTextWrap}>
+                            <Text style={styles.liveAlertTitle}>{alert.title}</Text>
+                            <Text style={styles.liveAlertMessage}>{alert.message}</Text>
+                        </View>
+                    </View>
+                ))}
+            </View>
+        </View>
+    );
+}
 
 type SchoolHealthInput = {
     attendancePercentage: number;
@@ -948,6 +792,132 @@ const styles = StyleSheet.create({
         color: '#14345A',
         fontWeight: '700',
     },
+    liveIntelligenceCard: {
+        backgroundColor: 'rgba(255,255,255,0.97)',
+        borderRadius: 28,
+        padding: 16,
+        marginBottom: 18,
+        borderWidth: 1,
+        borderColor: '#F1D48A',
+    },
+    liveHeaderRow: {
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+        justifyContent: 'space-between',
+        flexWrap: 'wrap',
+        rowGap: 8,
+        marginBottom: 8,
+    },
+    liveHeaderTextWrap: {
+        flex: 1,
+        minWidth: 210,
+        paddingRight: 8,
+    },
+    liveBadgeSafe: {
+        backgroundColor: '#14345A',
+        borderRadius: 999,
+        paddingHorizontal: 12,
+        paddingVertical: 7,
+        alignSelf: 'flex-start',
+    },
+    liveBadgeSafeText: {
+        color: '#FFFFFF',
+        fontSize: 10,
+        fontWeight: '900',
+        letterSpacing: 1,
+    },
+    liveIntro: {
+        color: '#64748B',
+        fontSize: 12,
+        fontWeight: '800',
+        lineHeight: 18,
+        marginBottom: 12,
+    },
+    liveMetricGrid: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        justifyContent: 'space-between',
+    },
+    liveMetricTile: {
+        width: '48%',
+        minHeight: 98,
+        borderRadius: 18,
+        padding: 12,
+        marginBottom: 10,
+        backgroundColor: '#08131F',
+        borderWidth: 1,
+        borderColor: 'rgba(212,175,55,0.35)',
+    },
+    liveMetricLabel: {
+        color: '#D4AF37',
+        fontSize: 9,
+        fontWeight: '900',
+        letterSpacing: 1.1,
+        textTransform: 'uppercase',
+    },
+    liveMetricValue: {
+        color: '#FFF8DB',
+        fontSize: 22,
+        fontWeight: '900',
+        lineHeight: 27,
+        marginTop: 6,
+    },
+    liveMetricHelper: {
+        color: 'rgba(248,243,223,0.72)',
+        fontSize: 10,
+        fontWeight: '800',
+        lineHeight: 14,
+        marginTop: 4,
+    },
+    liveAlertsBox: {
+        borderRadius: 20,
+        borderWidth: 1,
+        borderColor: '#F1D48A',
+        backgroundColor: '#FFF7E6',
+        padding: 12,
+        marginTop: 4,
+    },
+    liveAlertsTitle: {
+        color: '#14345A',
+        fontSize: 14,
+        fontWeight: '900',
+        marginBottom: 8,
+    },
+    liveAlertRow: {
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+        gap: 8,
+        paddingVertical: 7,
+        borderTopWidth: 1,
+        borderTopColor: 'rgba(212,175,55,0.28)',
+    },
+    liveAlertPill: {
+        overflow: 'hidden',
+        borderRadius: 999,
+        backgroundColor: '#166534',
+        color: '#FFFFFF',
+        fontSize: 8,
+        fontWeight: '900',
+        paddingHorizontal: 7,
+        paddingVertical: 4,
+        minWidth: 54,
+        textAlign: 'center',
+    },
+    liveAlertTextWrap: {
+        flex: 1,
+    },
+    liveAlertTitle: {
+        color: '#14345A',
+        fontSize: 12,
+        fontWeight: '900',
+    },
+    liveAlertMessage: {
+        color: '#64748B',
+        fontSize: 11,
+        fontWeight: '700',
+        lineHeight: 15,
+        marginTop: 2,
+    },
     kpiGrid: {
         flexDirection: 'row',
         flexWrap: 'wrap',
@@ -964,19 +934,26 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'flex-start',
         justifyContent: 'space-between',
+        flexWrap: 'wrap',
         marginBottom: 14,
+        rowGap: 8,
+        columnGap: 8,
     },
     actionSectionTitle: {
         color: '#14345A',
         fontSize: 18,
         fontWeight: '900',
         marginTop: 2,
+        maxWidth: 245,
+        lineHeight: 23,
     },
     tapBadge: {
         backgroundColor: '#14345A',
         borderRadius: 999,
         paddingHorizontal: 10,
         paddingVertical: 6,
+        alignSelf: 'flex-start',
+        marginLeft: 8,
     },
     tapBadgeText: {
         color: '#FFFFFF',
@@ -991,7 +968,7 @@ const styles = StyleSheet.create({
     },
     actionTile: {
         width: '48%',
-        minHeight: 132,
+        minHeight: 146,
         borderRadius: 22,
         padding: 13,
         marginBottom: 12,
@@ -1020,7 +997,9 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        marginBottom: 10,
+        marginBottom: 12,
+        gap: 6,
+        minHeight: 34,
     },
     actionIcon: {
         fontSize: 24,
@@ -1054,7 +1033,9 @@ const styles = StyleSheet.create({
         color: '#14345A',
         fontSize: 15,
         fontWeight: '900',
-        lineHeight: 19,
+        lineHeight: 20,
+        flexShrink: 1,
+        includeFontPadding: false,
     },
     actionSubtitle: {
         color: '#64748B',

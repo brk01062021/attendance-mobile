@@ -454,6 +454,11 @@ export default function AdminDashboardScreen() {
                                 onPress={() => openRoute('/principal-dashboard')}
                             />
 
+                            <MenuItem
+                                title="Operational Analytics"
+                                onPress={() => openRoute('/operational-analytics')}
+                            />
+
                             <MenuSectionTitle title="Operations" />
 
                             <MenuItem

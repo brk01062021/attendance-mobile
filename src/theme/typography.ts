@@ -28,3 +28,5 @@ export const typography = {
         fontWeight: '600' as const,
     },
 };
+
+export const dashboardTypography = typography;
