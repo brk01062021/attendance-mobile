@@ -481,6 +481,11 @@ export default function AdminDashboardScreen() {
                                 onPress={() => openRoute('/teacher-assignments')}
                             />
 
+                            <MenuItem
+                                title="Fee Reminder"
+                                onPress={() => openRoute('/fee-reminders', { role: 'ADMIN', sourceRole: 'admin' })}
+                            />
+
                             <MenuSectionTitle title="Scheduling" />
 
                             <MenuItem

@@ -372,6 +372,16 @@ export default function PrincipalHomeScreen() {
                                 }
                             />
 
+                            <MenuItem
+                                title="Fee Reminder"
+                                onPress={() =>
+                                    openRoute('/fee-reminders', {
+                                        role: 'PRINCIPAL',
+                                        sourceRole: 'principal',
+                                    })
+                                }
+                            />
+
                             <MenuSectionTitle title="Scheduling" />
 
                             <MenuItem
