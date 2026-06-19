@@ -18,6 +18,13 @@ type Metric = {
     helper: string;
 };
 
+type ComparisonCard = {
+    title: string;
+    subtitle: string;
+    signal: string;
+    action: string;
+};
+
 type AnalyticsSection = {
     eyebrow: string;
     title: string;
@@ -26,66 +33,104 @@ type AnalyticsSection = {
 };
 
 const executiveMetrics: Metric[] = [
-    { label: 'Attendance', value: '0%', helper: 'Whole-school current day signal' },
-    { label: 'Coverage', value: '100%', helper: 'Timetable coverage readiness' },
-    { label: 'Risk Students', value: '0', helper: 'Below safe threshold' },
-    { label: 'School Health', value: '55', helper: 'Needs Principal Review' },
+    { label: 'Health', value: '55', helper: 'Needs Principal Review' },
+    { label: 'Attendance', value: '0%', helper: 'Current day signal' },
+    { label: 'Coverage', value: '100%', helper: 'Timetable readiness' },
+    { label: 'Risk', value: '0', helper: 'Below threshold' },
+    { label: 'Teachers', value: '15', helper: 'Active tenant' },
+    { label: 'Students', value: '240', helper: 'Active tenant' },
+];
+
+const comparisonCards: ComparisonCard[] = [
+    {
+        title: 'Compare Classes',
+        subtitle: 'Class-wise attendance, risk and coverage review.',
+        signal: '4 active classes',
+        action: 'Class ranking and weak-area review',
+    },
+    {
+        title: 'Compare Sections',
+        subtitle: 'Section-wise attendance and timetable coverage signals.',
+        signal: '8 active sections',
+        action: 'Section-level intervention planning',
+    },
+    {
+        title: 'Compare Students',
+        subtitle: 'Student attendance, risk and follow-up prioritization.',
+        signal: '240 active students',
+        action: 'Review after attendance submissions',
+    },
+    {
+        title: 'Compare Teachers',
+        subtitle: 'Teacher workload, leave pressure and replacement load.',
+        signal: '15 active teachers',
+        action: 'Workload balancing decisions',
+    },
+    {
+        title: 'Compare Months',
+        subtitle: 'Month-over-month operating progress and trends.',
+        signal: '2026-05 active month',
+        action: 'Principal monthly review',
+    },
+    {
+        title: 'Compare Coverage',
+        subtitle: 'Timetable allocation and class-section readiness.',
+        signal: '280 live allocations',
+        action: 'Timetable quality checks',
+    },
 ];
 
 const sections: AnalyticsSection[] = [
     {
         eyebrow: 'ATTENDANCE ANALYTICS',
-        title: 'Attendance Trends',
-        description: 'Daily and monthly attendance movement by school, class, and section.',
+        title: 'Attendance and Class Comparison',
+        description: 'Comparison views stay here, not in School Intelligence. Trend cards appear only after attendance is submitted.',
         metrics: [
-            { label: 'Monthly Trend', value: 'No data', helper: 'Appears after daily attendance submissions' },
-            { label: 'Top Class', value: 'No data', helper: 'Attendance rank' },
-            { label: 'Weak Section', value: 'No data', helper: 'Needs support' },
+            { label: 'Attendance', value: '0%', helper: 'Current day signal' },
             { label: 'Class Risk', value: '0', helper: 'Classes below 75%' },
+            { label: 'Follow-ups', value: '1', helper: 'Pending submission' },
         ],
     },
     {
         eyebrow: 'RISK ANALYTICS',
         title: 'Student Risk Signals',
-        description: 'Student, class, and section risk indicators for follow-up decisions.',
+        description: 'Student, class and section risk indicators for follow-up decisions.',
         metrics: [
-            { label: 'Risk Students', value: '0', helper: 'Below safe threshold' },
+            { label: 'Risk Students', value: '0', helper: 'Below threshold' },
             { label: 'Critical Alerts', value: '0', helper: 'High priority' },
             { label: 'Academic Insights', value: '0', helper: 'Priority decisions' },
-            { label: 'Follow-ups', value: '1', helper: 'Pending attendance submission' },
+            { label: 'Follow-ups', value: '1', helper: 'Attendance follow-up' },
         ],
     },
     {
         eyebrow: 'TEACHER ANALYTICS',
         title: 'Workload and Fatigue',
-        description: 'Teacher leave load, daily overload, replacement pressure, and fatigue watch.',
+        description: 'Teacher comparison belongs here: leave load, overload, replacement pressure and fatigue watch.',
         metrics: [
-            { label: 'Teacher Leave Load', value: '0', helper: 'Needs attention' },
+            { label: 'Leave Load', value: '0', helper: 'Needs attention' },
             { label: 'Daily Overload', value: '0', helper: 'Teachers ≥ 80 score' },
-            { label: 'Fatigue Alerts', value: '0', helper: 'Today workload watch' },
+            { label: 'Fatigue Alerts', value: '0', helper: 'Workload watch' },
             { label: 'Replacement Stress', value: '0', helper: 'Index 0' },
         ],
     },
     {
         eyebrow: 'TIMETABLE ANALYTICS',
         title: 'Coverage and Readiness',
-        description: 'Published timetable health, coverage quality, replacement pressure, and utilization.',
+        description: 'Coverage, allocation and class-section readiness from the active published timetable.',
         metrics: [
-            { label: 'Timetable', value: 'LIVE', helper: '280 period allocations' },
+            { label: 'Timetable', value: 'LIVE', helper: '280 allocations' },
             { label: 'Coverage', value: '100%', helper: 'Active published timetable' },
-            { label: 'Classes', value: '4', helper: 'Detected in active batch' },
-            { label: 'Sections', value: '8', helper: 'Detected in active batch' },
+            { label: 'Classes', value: '4', helper: 'Active batch' },
+            { label: 'Sections', value: '8', helper: 'Active batch' },
         ],
     },
     {
         eyebrow: 'COMMUNICATION ANALYTICS',
-        title: 'Activity and Notice Signals',
-        description: 'Published activities, approval backlog, notices, and future parent engagement indicators.',
+        title: 'Activities and Approvals',
+        description: 'Only active communication signals are shown. Notice and engagement cards appear after real data exists.',
         metrics: [
             { label: 'Activities', value: '3', helper: 'Published in feed' },
-            { label: 'Approvals', value: '0', helper: 'Pending approval queue' },
-            { label: 'Notices', value: 'No data', helper: 'Appears after notices are published' },
-            { label: 'Engagement', value: 'Future', helper: 'Parent engagement metrics' },
+            { label: 'Approvals', value: '0', helper: 'Pending queue' },
         ],
     },
 ];
@@ -102,7 +147,7 @@ export default function OperationalAnalyticsScreen() {
                         <View style={styles.headerCenter}>
                             <Text style={styles.headerEyebrow}>OPERATIONAL ANALYTICS</Text>
                             <Text style={styles.headerTitle}>Operational Analytics</Text>
-                            <Text style={styles.headerSubtitle}>Trends, comparisons, risk, workload and drilldowns.</Text>
+                            <Text style={styles.headerSubtitle}>Comparisons, trends, risk and workload decisions.</Text>
                         </View>
                         <TouchableOpacity style={styles.iconButton} onPress={() => router.replace('/admin-dashboard')} activeOpacity={0.85}>
                             <Text style={styles.homeIcon}>⌂</Text>
@@ -111,8 +156,8 @@ export default function OperationalAnalyticsScreen() {
 
                     <View style={styles.heroCard}>
                         <Text style={styles.heroEyebrow}>ANALYTICS HUB</Text>
-                        <Text style={styles.heroTitle}>Understand trends and drill into operational decisions.</Text>
-                        <Text style={styles.heroBody}>School Intelligence shows what needs attention now. Operational Analytics explains why it is happening and where to act next.</Text>
+                        <Text style={styles.heroTitle}>Compare classes, students, teachers, months and timetable coverage.</Text>
+                        <Text style={styles.heroBody}>School Intelligence stays frozen as the live command center. All comparisons and drilldowns live here.</Text>
                     </View>
 
                     <View style={styles.summaryCard}>
@@ -126,6 +171,17 @@ export default function OperationalAnalyticsScreen() {
                         <View style={styles.metricGrid}>
                             {executiveMetrics.map((metric) => (
                                 <MetricCard key={metric.label} metric={metric} dark />
+                            ))}
+                        </View>
+                    </View>
+
+                    <View style={styles.analyticsCard}>
+                        <Text style={styles.sectionEyebrow}>COMPARISON CENTER</Text>
+                        <Text style={styles.sectionTitle}>School comparison drilldowns</Text>
+                        <Text style={styles.sectionDescription}>Class, section, student, teacher, month and coverage comparisons are centralized here. Empty placeholder cards are hidden until real data is available.</Text>
+                        <View style={styles.comparisonGrid}>
+                            {comparisonCards.map((card) => (
+                                <ComparisonCard key={card.title} card={card} />
                             ))}
                         </View>
                     </View>
@@ -154,6 +210,23 @@ function MetricCard({ metric, dark = false }: { metric: Metric; dark?: boolean }
             <Text style={[styles.metricLabel, dark && styles.darkMetricLabel]}>{metric.label}</Text>
             <Text style={[styles.metricValue, dark && styles.darkMetricValue]}>{metric.value}</Text>
             <Text style={[styles.metricHelper, dark && styles.darkMetricHelper]}>{metric.helper}</Text>
+        </View>
+    );
+}
+
+function ComparisonCard({ card }: { card: ComparisonCard }) {
+    return (
+        <View style={styles.comparisonCard}>
+            <View style={styles.compareHeaderRow}>
+                <Text style={styles.compareEyebrow}>COMPARE</Text>
+                <Text style={styles.drillPill}>DRILL</Text>
+            </View>
+            <Text style={styles.compareTitle}>{card.title}</Text>
+            <Text style={styles.compareSubtitle}>{card.subtitle}</Text>
+            <View style={styles.compareFooter}>
+                <Text style={styles.compareSignal}>{card.signal}</Text>
+                <Text style={styles.compareAction}>{card.action}</Text>
+            </View>
         </View>
     );
 }
@@ -191,4 +264,14 @@ const styles = StyleSheet.create({
     darkMetricValue: { color: '#fff8de' },
     metricHelper: { color: '#93420f', fontSize: 13, fontWeight: '900', lineHeight: 18, marginTop: 6 },
     darkMetricHelper: { color: 'rgba(255,248,222,0.72)' },
+    comparisonGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginTop: 16 },
+    comparisonCard: { width: '48%', minHeight: 188, borderRadius: 22, backgroundColor: '#071421', borderWidth: 1.5, borderColor: '#b99b47', padding: 14 },
+    compareHeaderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
+    compareEyebrow: { color: '#d9bd42', fontSize: 11, fontWeight: '900', letterSpacing: 2 },
+    drillPill: { overflow: 'hidden', backgroundColor: '#123a63', color: '#fff8de', borderRadius: 12, paddingHorizontal: 8, paddingVertical: 4, fontSize: 10, fontWeight: '900' },
+    compareTitle: { color: '#fff8de', fontSize: 21, fontWeight: '900', lineHeight: 26, marginTop: 12 },
+    compareSubtitle: { color: 'rgba(255,248,222,0.72)', fontSize: 13, fontWeight: '800', lineHeight: 18, marginTop: 8 },
+    compareFooter: { marginTop: 'auto', paddingTop: 14 },
+    compareSignal: { color: '#fff8de', fontSize: 13, fontWeight: '900', lineHeight: 18 },
+    compareAction: { color: '#d9bd42', fontSize: 12, fontWeight: '900', lineHeight: 17, marginTop: 4 },
 });
