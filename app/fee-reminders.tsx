@@ -41,6 +41,8 @@ export default function FeeRemindersScreen() {
     const schoolId = normalizeSchoolId(String(params.schoolId || session?.schoolId || 'TST2'));
     const parentUserId = Number(params.parentUserId || params.userId || session?.userId || 101);
     const role = String(params.role || session?.role || 'PARENT').toUpperCase();
+    const isAdminOrPrincipal = role === 'ADMIN' || role === 'PRINCIPAL';
+    const homeRoute = role === 'ADMIN' ? '/admin-dashboard' : role === 'PRINCIPAL' ? '/principal-home' : '/parent-dashboard';
     const [items, setItems] = useState<FeeReminderHistory[]>([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
@@ -49,7 +51,7 @@ export default function FeeRemindersScreen() {
     const load = useCallback(async () => {
         setError('');
         try {
-            if (role === 'ADMIN' || role === 'PRINCIPAL') {
+            if (isAdminOrPrincipal) {
                 setItems([]);
                 return;
             }
@@ -61,7 +63,7 @@ export default function FeeRemindersScreen() {
             setLoading(false);
             setRefreshing(false);
         }
-    }, [parentUserId, role, schoolId]);
+    }, [isAdminOrPrincipal, parentUserId, schoolId]);
 
     useEffect(() => { load(); }, [load]);
 
@@ -73,13 +75,13 @@ export default function FeeRemindersScreen() {
     return (
         <ImageBackground source={background} style={styles.background} resizeMode="cover">
             <ScrollView contentContainerStyle={styles.container} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
-                <MobileWorkflowHeader title="Fee Reminders" eyebrow={role} subtitle={`${schoolId} • Parent notification center`} onBackPress={() => router.back()} onHomePress={() => router.replace('/parent-dashboard' as any)} />
+                <MobileWorkflowHeader title="Fee Reminders" eyebrow={role} subtitle={isAdminOrPrincipal ? `${schoolId} • Web-first finance workflow` : `${schoolId} • Parent notification center`} onBackPress={() => router.back()} onHomePress={() => router.replace(homeRoute as any)} />
 
-                {role === 'ADMIN' || role === 'PRINCIPAL' ? (
+                {isAdminOrPrincipal ? (
                     <View style={styles.card}>
                         <Text style={styles.icon}>💻</Text>
                         <Text style={styles.title}>Fee Reminder Upload is Web-first</Text>
-                        <Text style={styles.body}>Use the ERP Portal Finance menu to upload pending fee Excel files, validate rows, check parent mapping and send reminders.</Text>
+                        <Text style={styles.body}>Use the ERP Portal Fee Reminder menu to upload pending fee Excel files, validate rows, check parent mapping and send reminders.</Text>
                     </View>
                 ) : loading ? (
                     <View style={styles.card}><ActivityIndicator /><Text style={styles.body}>Loading fee reminders...</Text></View>
@@ -98,9 +100,11 @@ export default function FeeRemindersScreen() {
                     </View>)
                 )}
 
-                <TouchableOpacity style={styles.notificationButton} onPress={() => router.push({ pathname: '/notifications', params: { userId: parentUserId, role: 'PARENT', schoolId } } as any)}>
-                    <Text style={styles.notificationButtonText}>Open Notifications</Text>
-                </TouchableOpacity>
+                {!isAdminOrPrincipal && (
+                    <TouchableOpacity style={styles.notificationButton} onPress={() => router.push({ pathname: '/notifications', params: { userId: parentUserId, role: 'PARENT', schoolId } } as any)}>
+                        <Text style={styles.notificationButtonText}>Open Notifications</Text>
+                    </TouchableOpacity>
+                )}
             </ScrollView>
         </ImageBackground>
     );
