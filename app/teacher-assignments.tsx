@@ -212,7 +212,7 @@ const styles = StyleSheet.create({
     clearButton: { alignSelf: 'flex-start', paddingVertical: 9, paddingHorizontal: 13, borderRadius: 999, backgroundColor: colors.primaryNavy, marginTop: 10 },
     clearText: { color: colors.white, fontSize: 11, fontWeight: '900' },
     kpiRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 10 },
-    kpi: { width: '23%', minWidth: 70, flexGrow: 1, backgroundColor: 'rgba(255,253,247,0.96)', borderRadius: 16, padding: 10, borderWidth: 1, borderColor: colors.cardGoldBorder, ...shadows.small },
+    kpi: { width: '23%', minWidth: 70, flexGrow: 1, backgroundColor: 'rgba(255,253,247,0.96)', borderRadius: 16, padding: 10, borderWidth: 1, borderColor: colors.cardGoldBorder, ...shadows.soft },
     kpiValue: { color: colors.primaryNavy, fontSize: 18, fontWeight: '900' },
     kpiLabel: { color: colors.slateText, fontSize: 10, fontWeight: '800', marginTop: 2 },
     assignmentRow: { backgroundColor: colors.white, borderRadius: 14, padding: 10, borderWidth: 1, borderColor: colors.divider, marginBottom: 8 },

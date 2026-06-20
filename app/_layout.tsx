@@ -32,6 +32,7 @@ export default function RootLayout() {
             <Stack.Screen name="student-risk-dashboard" />
             <Stack.Screen name="teacher-assignments" />
             <Stack.Screen name="import-school-data" />
+            <Stack.Screen name="user-credentials" />
             <Stack.Screen name="create-school-notice" />
             <Stack.Screen name="register-teacher" />
             <Stack.Screen name="register-student" />

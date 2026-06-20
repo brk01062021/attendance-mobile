@@ -32,6 +32,17 @@ export type ChangePasswordPayload = {
   newPassword: string;
 };
 
+export type ParentOtpPayload = {
+  schoolId: string;
+  studentId: string;
+  parentMobile: string;
+};
+
+export type ParentActivatePayload = ParentOtpPayload & {
+  otp: string;
+  newPassword: string;
+};
+
 function normalizeRole(value?: string, fallback: VidyaSetuRole = 'ADMIN'): VidyaSetuRole {
   const role = String(value || '').toUpperCase();
   if (role === 'ADMIN' || role === 'PRINCIPAL' || role === 'TEACHER' || role === 'PARENT' || role === 'STUDENT') return role;
@@ -77,6 +88,27 @@ export async function changeTemporaryPassword(payload: ChangePasswordPayload) {
     username: payload.username.trim(),
     schoolId: normalizeSchoolId(payload.schoolId),
     currentPassword: payload.currentPassword,
+    newPassword: payload.newPassword,
+  });
+  return response.data;
+}
+
+
+export async function requestParentOtp(payload: ParentOtpPayload) {
+  const response = await api.post('/auth/parent/request-otp', {
+    schoolId: normalizeSchoolId(payload.schoolId),
+    studentId: payload.studentId.trim(),
+    parentMobile: payload.parentMobile.trim(),
+  });
+  return response.data as { success: boolean; message: string; maskedMobile?: string; devOtp?: string };
+}
+
+export async function activateParentLogin(payload: ParentActivatePayload) {
+  const response = await api.post<AuthResponse>('/auth/parent/activate', {
+    schoolId: normalizeSchoolId(payload.schoolId),
+    studentId: payload.studentId.trim(),
+    parentMobile: payload.parentMobile.trim(),
+    otp: payload.otp.trim(),
     newPassword: payload.newPassword,
   });
   return response.data;

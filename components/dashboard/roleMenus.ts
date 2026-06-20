@@ -22,6 +22,8 @@ export const roleMenus: Record<DashboardRole, DashboardMenuConfig[]> = {
         { icon: '📥', label: 'Import Existing Timetable', route: '/import-existing-timetable?role=ADMIN&sourceRole=admin', description: 'Upload active timetable' },
         { icon: '🗂️', label: 'Timetable Batch Center', route: '/timetable-batch-center?role=ADMIN&sourceRole=admin', description: 'Use, publish, export batches' },
         { icon: '🔒', label: 'Timetable Operations', route: '/timetable-operations?role=ADMIN&sourceRole=admin', description: 'Publish lock, exports, live views' },
+        { icon: '🔐', label: 'User Credentials', route: '/user-credentials?sourceRole=admin&role=ADMIN', description: 'Download teacher/student temporary logins' },
+        { icon: '🔐', label: 'User Credentials', route: '/user-credentials?sourceRole=principal&role=PRINCIPAL', description: 'Download teacher/student temporary logins' },
         { icon: '📝', label: 'Register Here', action: 'register', description: 'Teacher, student, parent' },
         { icon: '🧭', label: 'Workspace Setup', route: '/workspace-setup?sourceRole=admin&role=ADMIN', description: 'Setup progress and import unlock' },
         { icon: '📥', label: 'Import School Data', route: '/import-school-data?sourceRole=admin&role=ADMIN', description: 'Locked until setup is complete' },

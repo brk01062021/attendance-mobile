@@ -51,7 +51,8 @@ type PrincipalActionKey =
     | 'compare-classes'
     | 'teacher-workload'
     | 'replacement-analytics'
-    | 'academic-insights';
+    | 'academic-insights'
+    | 'user-credentials';
 
 type PrincipalAction = {
     key: PrincipalActionKey;
@@ -214,6 +215,17 @@ export default function PrincipalDashboardScreen() {
                 accent: 'amber',
                 focusTitle: 'Replacement analytics selected',
                 focusDescription: 'Track replacement dependency, coverage stress and teachers repeatedly used as substitutes for the selected month.',
+            },
+
+            {
+                key: 'user-credentials',
+                icon: '🔐',
+                title: 'User Credentials',
+                subtitle: 'Teacher/student logins',
+                badge: 'CSV',
+                accent: 'blue',
+                focusTitle: 'User credentials selected',
+                focusDescription: 'Download imported teacher and student temporary credentials. Parents are not exported; parents activate separately using Student ID and parent mobile OTP.',
             },
             {
                 key: 'academic-insights',
@@ -562,6 +574,9 @@ function openPrincipalDrilldown(key: PrincipalActionKey) {
             router.push('/admin-teacher-dashboard' as any);
             break;
         case 'monthly-report':
+        case 'user-credentials':
+            router.push({ pathname: '/user-credentials', params: { role: 'PRINCIPAL', sourceRole: 'principal' } } as any);
+            break;
         case 'academic-insights':
         default:
             router.push('/attendance-report' as any);

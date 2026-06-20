@@ -11,7 +11,7 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
-import { authResponseToSession, loginWithTenant } from '../src/services/authApi';
+import { activateParentLogin, authResponseToSession, loginWithTenant, requestParentOtp } from '../src/services/authApi';
 import { getOnboardingStatusBySchoolId, normalizeOnboardingText } from '../src/services/schoolRegistrationApi';
 import { normalizeSchoolId, saveSession } from '../src/services/sessionService';
 import { colors, shadows, spacing, typography } from '../src/theme';
@@ -23,6 +23,11 @@ export default function LoginScreen() {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [schoolId, setSchoolId] = useState('BRK1');
+    const [parentStudentId, setParentStudentId] = useState('');
+    const [parentMobile, setParentMobile] = useState('');
+    const [parentOtp, setParentOtp] = useState('');
+    const [parentNewPassword, setParentNewPassword] = useState('');
+    const [parentOtpRequested, setParentOtpRequested] = useState(false);
 
     const roles: LoginRole[] = ['ADMIN', 'PRINCIPAL', 'TEACHER', 'PARENT', 'STUDENT'];
 
@@ -48,6 +53,39 @@ export default function LoginScreen() {
         }
 
         router.replace({ pathname: '/student-dashboard', params: { role, studentId: String(studentId || userId || '1'), studentName: studentName || displayName, schoolId: cleanSchoolId } } as any);
+    };
+
+
+
+    const handleParentOtpRequest = async () => {
+        const cleanSchoolId = normalizeSchoolId(schoolId);
+        if (!parentStudentId.trim() || !parentMobile.trim()) {
+            Alert.alert('Validation', 'Enter Student ID and parent mobile number from school import data.');
+            return;
+        }
+        try {
+            const response = await requestParentOtp({ schoolId: cleanSchoolId, studentId: parentStudentId, parentMobile });
+            setParentOtpRequested(true);
+            Alert.alert('OTP Generated', `${response.message}${response.devOtp ? `\nTest OTP: ${response.devOtp}` : ''}`);
+        } catch (error: any) {
+            Alert.alert('OTP Request Failed', error?.response?.data?.message || error?.response?.data || error?.message || 'Student and parent mobile mapping could not be verified.');
+        }
+    };
+
+    const handleParentActivation = async () => {
+        const cleanSchoolId = normalizeSchoolId(schoolId);
+        if (!parentStudentId.trim() || !parentMobile.trim() || !parentOtp.trim() || parentNewPassword.trim().length < 8) {
+            Alert.alert('Validation', 'Enter Student ID, parent mobile, OTP and a new password of at least 8 characters.');
+            return;
+        }
+        try {
+            const authResponse = await activateParentLogin({ schoolId: cleanSchoolId, studentId: parentStudentId, parentMobile, otp: parentOtp, newPassword: parentNewPassword });
+            const session = authResponseToSession(authResponse, 'PARENT', parentMobile.trim(), cleanSchoolId);
+            saveSession(session);
+            routeAfterLogin(session.role, session.displayName || parentMobile.trim(), session.schoolId, session.userId, session.teacherId, session.studentId, session.studentName);
+        } catch (error: any) {
+            Alert.alert('Parent Activation Failed', error?.response?.data?.message || error?.response?.data || error?.message || 'Unable to activate parent login.');
+        }
     };
 
     const handleLogin = async () => {
@@ -152,10 +190,10 @@ Use Check Registration Status with your reference ID.`));
                             })}
                         </View>
 
-                        <Text style={styles.label}>Username</Text>
+                        <Text style={styles.label}>{selectedRole === 'PARENT' ? 'Parent Mobile Number' : 'Username'}</Text>
                         <TextInput
                             style={styles.input}
-                            placeholder="Enter username"
+                            placeholder={selectedRole === 'PARENT' ? 'Enter parent mobile number' : 'Enter username'}
                             placeholderTextColor={colors.mutedText}
                             value={username}
                             onChangeText={setUsername}
@@ -189,9 +227,53 @@ Use Check Registration Status with your reference ID.`));
                             activeOpacity={0.9}
                         >
                             <Text style={styles.loginButtonText}>
-                                Login as {selectedRole}
+                                {selectedRole === 'PARENT' ? 'Login with Parent Password' : `Login as ${selectedRole}`}
                             </Text>
                         </TouchableOpacity>
+
+
+                        {selectedRole === 'PARENT' ? (
+                            <View style={styles.parentSetupBox}>
+                                <Text style={styles.parentSetupTitle}>First-time Parent OTP Setup</Text>
+                                <Text style={styles.parentSetupText}>Use Student ID and parent mobile from school import data. After OTP verification, create the parent password. Future login uses school ID + mobile + password.</Text>
+
+                                <Text style={styles.label}>Student ID</Text>
+                                <TextInput
+                                    style={styles.input}
+                                    placeholder="Imported student ID / admission no"
+                                    placeholderTextColor={colors.mutedText}
+                                    value={parentStudentId}
+                                    onChangeText={setParentStudentId}
+                                    autoCapitalize="characters"
+                                />
+
+                                <Text style={styles.label}>Parent Mobile</Text>
+                                <TextInput
+                                    style={styles.input}
+                                    placeholder="Imported parent mobile"
+                                    placeholderTextColor={colors.mutedText}
+                                    value={parentMobile}
+                                    onChangeText={setParentMobile}
+                                    keyboardType="phone-pad"
+                                />
+
+                                <TouchableOpacity style={styles.secondaryActionButton} onPress={handleParentOtpRequest} activeOpacity={0.9}>
+                                    <Text style={styles.secondaryActionText}>Request OTP</Text>
+                                </TouchableOpacity>
+
+                                {parentOtpRequested ? (
+                                    <>
+                                        <Text style={styles.label}>OTP</Text>
+                                        <TextInput style={styles.input} placeholder="Enter OTP" placeholderTextColor={colors.mutedText} value={parentOtp} onChangeText={setParentOtp} keyboardType="number-pad" />
+                                        <Text style={styles.label}>Create Password</Text>
+                                        <TextInput style={styles.input} placeholder="Minimum 8 characters" placeholderTextColor={colors.mutedText} secureTextEntry value={parentNewPassword} onChangeText={setParentNewPassword} />
+                                        <TouchableOpacity style={styles.loginButton} onPress={handleParentActivation} activeOpacity={0.9}>
+                                            <Text style={styles.loginButtonText}>Verify OTP & Create Parent Password</Text>
+                                        </TouchableOpacity>
+                                    </>
+                                ) : null}
+                            </View>
+                        ) : null}
 
                         <View style={styles.onboardingActions}>
                             <TouchableOpacity
@@ -387,6 +469,26 @@ const styles = StyleSheet.create({
         fontWeight: '900',
         textAlign: 'center',
     },
+    parentSetupBox: {
+        marginTop: spacing.lg,
+        borderRadius: 18,
+        borderWidth: 1,
+        borderColor: 'rgba(230, 180, 91, 0.35)',
+        backgroundColor: 'rgba(230, 180, 91, 0.10)',
+        padding: spacing.md,
+    },
+    parentSetupTitle: { ...typography.subtitle, color: colors.premiumGold, marginBottom: 6 },
+    parentSetupText: { ...typography.small, color: colors.softCream, lineHeight: 19 },
+    secondaryActionButton: {
+        marginTop: spacing.md,
+        minHeight: 48,
+        borderRadius: 16,
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderWidth: 1,
+        borderColor: 'rgba(230, 180, 91, 0.60)',
+    },
+    secondaryActionText: { ...typography.button, color: colors.premiumGold },
     linksRow: {
         flexDirection: 'row',
         justifyContent: 'center',

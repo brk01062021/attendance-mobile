@@ -331,6 +331,14 @@ export default function AdminDashboardScreen() {
                             onPress={() => openRoute('/timetable-operations', { role: 'ADMIN', sourceRole: 'admin' })}
                         />
 
+
+                        <QuickAction
+                            emoji="🔐"
+                            title="User Credentials"
+                            subtitle="Teacher/student login downloads"
+                            onPress={() => openRoute('/user-credentials', { role: 'ADMIN', sourceRole: 'admin' })}
+                        />
+
                         <QuickAction
                             emoji="📝"
                             title="Register Here"
@@ -531,6 +539,12 @@ export default function AdminDashboardScreen() {
                             />
 
                             <MenuSectionTitle title="Management" />
+
+
+                            <MenuItem
+                                title="User Credentials"
+                                onPress={() => openRoute('/user-credentials', { role: 'ADMIN', sourceRole: 'admin' })}
+                            />
 
                             <MenuItem
                                 title="Register Here"
