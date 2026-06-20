@@ -1,277 +1,117 @@
 import { router } from 'expo-router';
-import React from 'react';
-import {
-    ImageBackground,
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
-} from 'react-native';
+import React, { useEffect, useMemo, useState } from 'react';
+import { ImageBackground, Modal, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { API_BASE_URL } from '../src/services/api';
 
 const background = require('../assets/branding/splash-gold.png');
+const SCHOOL_ID = 'TST2';
 
-type Metric = {
-    label: string;
-    value: string;
-    helper: string;
-};
+type Key = 'classes' | 'sections' | 'students' | 'teachers' | 'months' | 'coverage';
+type Option = { id: string; label: string; helper?: string };
+type Metric = { label: string; value: string; helper: string; a?: string; b?: string };
 
-type ComparisonCard = {
-    title: string;
-    subtitle: string;
-    signal: string;
-    action: string;
-};
-
-type AnalyticsSection = {
-    eyebrow: string;
-    title: string;
-    description: string;
-    metrics: Metric[];
-};
-
-const executiveMetrics: Metric[] = [
-    { label: 'Health', value: '55', helper: 'Needs Principal Review' },
-    { label: 'Attendance', value: '0%', helper: 'Current day signal' },
-    { label: 'Coverage', value: '100%', helper: 'Timetable readiness' },
-    { label: 'Risk', value: '0', helper: 'Below threshold' },
-    { label: 'Teachers', value: '15', helper: 'Active tenant' },
-    { label: 'Students', value: '240', helper: 'Active tenant' },
+const cards: { key: Key; title: string; subtitle: string }[] = [
+  { key: 'classes', title: 'Compare Classes', subtitle: 'Class attendance, risk, marks and coverage.' },
+  { key: 'sections', title: 'Compare Sections', subtitle: 'Section attendance, marks, risk and coverage.' },
+  { key: 'students', title: 'Compare Students', subtitle: 'Student attendance, academics, activities and risk.' },
+  { key: 'teachers', title: 'Compare Teachers', subtitle: 'Teacher workload, leave and submissions.' },
+  { key: 'months', title: 'Compare Months', subtitle: 'Month-over-month progress.' },
+  { key: 'coverage', title: 'Compare Coverage', subtitle: 'Timetable allocation readiness.' },
 ];
 
-const comparisonCards: ComparisonCard[] = [
-    {
-        title: 'Compare Classes',
-        subtitle: 'Class-wise attendance, risk and coverage review.',
-        signal: '4 active classes',
-        action: 'Class ranking and weak-area review',
-    },
-    {
-        title: 'Compare Sections',
-        subtitle: 'Section-wise attendance and timetable coverage signals.',
-        signal: '8 active sections',
-        action: 'Section-level intervention planning',
-    },
-    {
-        title: 'Compare Students',
-        subtitle: 'Student attendance, risk and follow-up prioritization.',
-        signal: '240 active students',
-        action: 'Review after attendance submissions',
-    },
-    {
-        title: 'Compare Teachers',
-        subtitle: 'Teacher workload, leave pressure and replacement load.',
-        signal: '15 active teachers',
-        action: 'Workload balancing decisions',
-    },
-    {
-        title: 'Compare Months',
-        subtitle: 'Month-over-month operating progress and trends.',
-        signal: '2026-05 active month',
-        action: 'Principal monthly review',
-    },
-    {
-        title: 'Compare Coverage',
-        subtitle: 'Timetable allocation and class-section readiness.',
-        signal: '280 live allocations',
-        action: 'Timetable quality checks',
-    },
-];
+const copy: Record<Key, { title: string; a: string; b: string }> = {
+  classes: { title: 'Class Comparison Workspace', a: 'Select Class A', b: 'Select Class B' },
+  sections: { title: 'Section Comparison Workspace', a: 'Select Section A', b: 'Select Section B' },
+  students: { title: 'Student Comparison Workspace', a: 'Select Student A', b: 'Select Student B' },
+  teachers: { title: 'Teacher Comparison Workspace', a: 'Select Teacher A', b: 'Select Teacher B' },
+  months: { title: 'Month Comparison Workspace', a: 'Select Month A', b: 'Select Month B' },
+  coverage: { title: 'Coverage Comparison Workspace', a: 'Select Coverage A', b: 'Select Coverage B' },
+};
 
-const sections: AnalyticsSection[] = [
-    {
-        eyebrow: 'ATTENDANCE ANALYTICS',
-        title: 'Attendance and Class Comparison',
-        description: 'Comparison views stay here, not in School Intelligence. Trend cards appear only after attendance is submitted.',
-        metrics: [
-            { label: 'Attendance', value: '0%', helper: 'Current day signal' },
-            { label: 'Class Risk', value: '0', helper: 'Classes below 75%' },
-            { label: 'Follow-ups', value: '1', helper: 'Pending submission' },
-        ],
-    },
-    {
-        eyebrow: 'RISK ANALYTICS',
-        title: 'Student Risk Signals',
-        description: 'Student, class and section risk indicators for follow-up decisions.',
-        metrics: [
-            { label: 'Risk Students', value: '0', helper: 'Below threshold' },
-            { label: 'Critical Alerts', value: '0', helper: 'High priority' },
-            { label: 'Academic Insights', value: '0', helper: 'Priority decisions' },
-            { label: 'Follow-ups', value: '1', helper: 'Attendance follow-up' },
-        ],
-    },
-    {
-        eyebrow: 'TEACHER ANALYTICS',
-        title: 'Workload and Fatigue',
-        description: 'Teacher comparison belongs here: leave load, overload, replacement pressure and fatigue watch.',
-        metrics: [
-            { label: 'Leave Load', value: '0', helper: 'Needs attention' },
-            { label: 'Daily Overload', value: '0', helper: 'Teachers ≥ 80 score' },
-            { label: 'Fatigue Alerts', value: '0', helper: 'Workload watch' },
-            { label: 'Replacement Stress', value: '0', helper: 'Index 0' },
-        ],
-    },
-    {
-        eyebrow: 'TIMETABLE ANALYTICS',
-        title: 'Coverage and Readiness',
-        description: 'Coverage, allocation and class-section readiness from the active published timetable.',
-        metrics: [
-            { label: 'Timetable', value: 'LIVE', helper: '280 allocations' },
-            { label: 'Coverage', value: '100%', helper: 'Active published timetable' },
-            { label: 'Classes', value: '4', helper: 'Active batch' },
-            { label: 'Sections', value: '8', helper: 'Active batch' },
-        ],
-    },
-    {
-        eyebrow: 'COMMUNICATION ANALYTICS',
-        title: 'Activities and Approvals',
-        description: 'Only active communication signals are shown. Notice and engagement cards appear after real data exists.',
-        metrics: [
-            { label: 'Activities', value: '3', helper: 'Published in feed' },
-            { label: 'Approvals', value: '0', helper: 'Pending queue' },
-        ],
-    },
-];
+async function getData<T>(path: string): Promise<T> {
+  const res = await fetch(`${API_BASE_URL}${path}`, { headers: { 'X-School-Id': SCHOOL_ID } });
+  const json = await res.json();
+  return (json?.data ?? json) as T;
+}
+
+function studentOption(s: any): Option {
+  const code = s.admissionNumber || s.rollNumber || `ST${s.studentId ?? s.id ?? ''}`;
+  return { id: String(s.studentId ?? s.id ?? code), label: `${code} · ${s.studentName || s.name}`, helper: `${s.className || ''} - ${s.section || ''}` };
+}
+function teacherOption(t: any): Option {
+  const code = t.teacherId ? `T${String(t.teacherId).padStart(3, '0')}` : 'Teacher';
+  return { id: String(t.teacherId ?? t.id ?? t.teacherName), label: `${code} · ${t.teacherName || t.name}`, helper: 'Active teacher' };
+}
 
 export default function OperationalAnalyticsScreen() {
-    return (
-        <ImageBackground source={background} style={styles.background} resizeMode="cover">
-            <SafeAreaView style={styles.safeArea}>
-                <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-                    <View style={styles.headerRow}>
-                        <TouchableOpacity style={styles.iconButton} onPress={() => router.back()} activeOpacity={0.85}>
-                            <Text style={styles.iconButtonText}>‹</Text>
-                        </TouchableOpacity>
-                        <View style={styles.headerCenter}>
-                            <Text style={styles.headerEyebrow}>OPERATIONAL ANALYTICS</Text>
-                            <Text style={styles.headerTitle}>Operational Analytics</Text>
-                            <Text style={styles.headerSubtitle}>Comparisons, trends, risk and workload decisions.</Text>
-                        </View>
-                        <TouchableOpacity style={styles.iconButton} onPress={() => router.replace('/admin-dashboard')} activeOpacity={0.85}>
-                            <Text style={styles.homeIcon}>⌂</Text>
-                        </TouchableOpacity>
-                    </View>
+  const [active, setActive] = useState<Key>('classes');
+  const [options, setOptions] = useState<Record<Key, Option[]>>({ classes: [], sections: [], students: [], teachers: [], months: [], coverage: [] });
+  const [selected, setSelected] = useState<Record<string, string>>({});
+  const [search, setSearch] = useState<Record<string, string>>({});
+  const [detail, setDetail] = useState<Metric | null>(null);
 
-                    <View style={styles.heroCard}>
-                        <Text style={styles.heroEyebrow}>ANALYTICS HUB</Text>
-                        <Text style={styles.heroTitle}>Compare classes, students, teachers, months and timetable coverage.</Text>
-                        <Text style={styles.heroBody}>School Intelligence stays frozen as the live command center. All comparisons and drilldowns live here.</Text>
-                    </View>
+  useEffect(() => {
+    let alive = true;
+    async function load() {
+      try {
+        const [classes, sections, students, teachers, months] = await Promise.all([
+          getData<string[]>(`/api/operational-lookups/classes?schoolId=${SCHOOL_ID}`),
+          getData<string[]>(`/api/operational-lookups/sections?schoolId=${SCHOOL_ID}`),
+          getData<any[]>(`/api/operational-lookups/students/search?schoolId=${SCHOOL_ID}&query=`),
+          getData<any[]>(`/api/operational-lookups/teachers/search?schoolId=${SCHOOL_ID}&query=`),
+          getData<string[]>(`/api/operational-lookups/months?schoolId=${SCHOOL_ID}`).catch(() => ['2026-05', '2026-04', '2026-03']),
+        ]);
+        if (!alive) return;
+        setOptions({
+          classes: classes.map((c) => ({ id: c, label: c, helper: 'Tenant class' })),
+          sections: sections.map((s) => ({ id: s, label: s, helper: 'Tenant section' })),
+          students: students.map(studentOption),
+          teachers: teachers.map(teacherOption),
+          months: months.map((m, i) => ({ id: m, label: m, helper: i === 0 ? 'Active month' : 'Available month' })),
+          coverage: [
+            { id: 'active', label: 'Active Published Timetable', helper: '280 allocations' },
+            { id: 'current', label: 'Current Timetable Readiness', helper: '100% readiness' },
+          ],
+        });
+      } catch (e) { console.log('Operational analytics lookup load failed', e); }
+    }
+    load();
+    return () => { alive = false; };
+  }, []);
 
-                    <View style={styles.summaryCard}>
-                        <View style={styles.sectionHeaderRow}>
-                            <View style={styles.sectionHeaderText}>
-                                <Text style={styles.sectionEyebrow}>EXECUTIVE SUMMARY</Text>
-                                <Text style={styles.sectionTitle}>Current operational pulse</Text>
-                            </View>
-                            <Text style={styles.livePill}>LIVE</Text>
-                        </View>
-                        <View style={styles.metricGrid}>
-                            {executiveMetrics.map((metric) => (
-                                <MetricCard key={metric.label} metric={metric} dark />
-                            ))}
-                        </View>
-                    </View>
+  const a = selected[`${active}-a`] || '';
+  const b = selected[`${active}-b`] || '';
+  const aOption = options[active].find((o) => o.id === a);
+  const bOption = options[active].find((o) => o.id === b);
+  const ready = Boolean(a && b && a !== b);
+  const metrics = useMemo(() => buildMetrics(active, aOption, bOption), [active, aOption, bOption]);
 
-                    <View style={styles.analyticsCard}>
-                        <Text style={styles.sectionEyebrow}>COMPARISON CENTER</Text>
-                        <Text style={styles.sectionTitle}>School comparison drilldowns</Text>
-                        <Text style={styles.sectionDescription}>Class, section, student, teacher, month and coverage comparisons are centralized here. Empty placeholder cards are hidden until real data is available.</Text>
-                        <View style={styles.comparisonGrid}>
-                            {comparisonCards.map((card) => (
-                                <ComparisonCard key={card.title} card={card} />
-                            ))}
-                        </View>
-                    </View>
-
-                    {sections.map((section) => (
-                        <View key={section.title} style={styles.analyticsCard}>
-                            <Text style={styles.sectionEyebrow}>{section.eyebrow}</Text>
-                            <Text style={styles.sectionTitle}>{section.title}</Text>
-                            <Text style={styles.sectionDescription}>{section.description}</Text>
-                            <View style={styles.metricGrid}>
-                                {section.metrics.map((metric) => (
-                                    <MetricCard key={`${section.title}-${metric.label}`} metric={metric} />
-                                ))}
-                            </View>
-                        </View>
-                    ))}
-                </ScrollView>
-            </SafeAreaView>
-        </ImageBackground>
-    );
+  return (
+    <ImageBackground source={background} style={styles.background} resizeMode="cover">
+      <SafeAreaView style={styles.safeArea}>
+        <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+          <View style={styles.headerRow}>
+            <TouchableOpacity style={styles.iconButton} onPress={() => router.back()}><Text style={styles.iconText}>‹</Text></TouchableOpacity>
+            <View style={styles.headerCenter}><Text style={styles.headerEyebrow}>OPERATIONAL ANALYTICS</Text><Text style={styles.headerTitle}>Operational Analytics</Text><Text style={styles.headerSubtitle}>Search, compare and act on school data.</Text></View>
+            <TouchableOpacity style={styles.iconButton} onPress={() => router.replace('/admin-dashboard')}><Text style={styles.homeText}>⌂</Text></TouchableOpacity>
+          </View>
+          <View style={styles.heroCard}><Text style={styles.heroEyebrow}>ANALYTICS HUB</Text><Text style={styles.heroTitle}>Tenant-driven comparison workspace.</Text><Text style={styles.heroBody}>Executive Summary is read-only. All comparison workspaces below are actionable with search and find selectors.</Text></View>
+          <View style={styles.summaryCard}><Text style={styles.sectionEyebrow}>EXECUTIVE SUMMARY</Text><Text style={styles.sectionTitle}>Current operational pulse</Text><View style={styles.metricGrid}>{[{label:'Health',value:'55',helper:'Needs Review'},{label:'Attendance',value:'0%',helper:'Current day'},{label:'Coverage',value:'100%',helper:'Ready'},{label:'Risk',value:'0',helper:'Below threshold'},{label:'Teachers',value:'15',helper:'Active tenant'},{label:'Students',value:'240',helper:'Active tenant'}].map((m)=><MetricCard key={m.label} metric={m} dark />)}</View></View>
+          <View style={styles.card}><Text style={styles.sectionEyebrow}>COMPARISON CENTER</Text><Text style={styles.sectionTitle}>School comparison drilldowns</Text><View style={styles.compareGrid}>{cards.map((card) => <TouchableOpacity key={card.key} onPress={() => { setActive(card.key); setDetail(null); }} style={[styles.compareCard, active === card.key && styles.compareCardActive]}><Text style={styles.compareEyebrow}>COMPARE</Text><Text style={styles.compareTitle}>{card.title}</Text><Text style={styles.compareSubtitle}>{card.subtitle}</Text><Text style={styles.compareAction}>{active === card.key ? 'OPEN' : 'DRILLDOWN'}</Text></TouchableOpacity>)}</View></View>
+          <View style={styles.card}><Text style={styles.sectionEyebrow}>ACTIVE WORKSPACE</Text><Text style={styles.sectionTitle}>{copy[active].title}</Text><Text style={styles.sectionDescription}>Search and select two different tenant records before comparison cards appear.</Text><Selector label={copy[active].a} options={options[active]} value={a} onSelect={(v)=>setSelected((s)=>({...s,[`${active}-a`]:v}))} search={search[`${active}-a`] || ''} setSearch={(v)=>setSearch((s)=>({...s,[`${active}-a`]:v}))}/><Selector label={copy[active].b} options={options[active]} value={b} onSelect={(v)=>setSelected((s)=>({...s,[`${active}-b`]:v}))} search={search[`${active}-b`] || ''} setSearch={(v)=>setSearch((s)=>({...s,[`${active}-b`]:v}))}/>{!ready ? <Text style={styles.waitingText}>Select both dropdowns to view actionable comparison cards.</Text> : <><Text style={styles.readyTitle}>{aOption?.label} vs {bOption?.label}</Text><View style={styles.metricGrid}>{metrics.map((m)=><TouchableOpacity key={m.label} onPress={()=>setDetail(m)}><MetricCard metric={m}/><Text style={styles.openDetail}>OPEN DETAIL</Text></TouchableOpacity>)}</View></>}</View>
+        </ScrollView>
+        <DetailModal metric={detail} a={aOption} b={bOption} onClose={()=>setDetail(null)} />
+      </SafeAreaView>
+    </ImageBackground>
+  );
 }
 
-function MetricCard({ metric, dark = false }: { metric: Metric; dark?: boolean }) {
-    return (
-        <View style={[styles.metricCard, dark && styles.darkMetricCard]}>
-            <Text style={[styles.metricLabel, dark && styles.darkMetricLabel]}>{metric.label}</Text>
-            <Text style={[styles.metricValue, dark && styles.darkMetricValue]}>{metric.value}</Text>
-            <Text style={[styles.metricHelper, dark && styles.darkMetricHelper]}>{metric.helper}</Text>
-        </View>
-    );
+function Selector({ label, options, value, onSelect, search, setSearch }: { label: string; options: Option[]; value: string; onSelect: (v: string) => void; search: string; setSearch: (v: string) => void }) {
+  const filtered = options.filter((o)=>`${o.label} ${o.helper || ''}`.toLowerCase().includes(search.toLowerCase())).slice(0, 30);
+  return <View style={styles.selector}><Text style={styles.selectorLabel}>{label}</Text><TextInput value={search} onChangeText={setSearch} placeholder="Search / find tenant records" placeholderTextColor="#8b95a7" style={styles.searchInput}/><ScrollView style={styles.optionList} nestedScrollEnabled>{filtered.map((o)=><TouchableOpacity key={o.id} onPress={()=>onSelect(o.id)} style={[styles.optionRow, value===o.id && styles.optionRowActive]}><Text style={styles.optionLabel}>{o.label}</Text><Text style={styles.optionHelper}>{o.helper}</Text></TouchableOpacity>)}</ScrollView><Text style={styles.countText}>{filtered.length} visible / {options.length} loaded</Text></View>;
 }
+function MetricCard({ metric, dark=false }: { metric: Metric; dark?: boolean }) { return <View style={[styles.metricCard, dark && styles.darkMetricCard]}><Text style={styles.metricLabel}>{metric.label}</Text><Text style={styles.metricValue}>{metric.value}</Text><Text style={styles.metricHelper}>{metric.helper}</Text></View>; }
+function buildMetrics(key: Key, a?: Option, b?: Option): Metric[] { const av=a?.label||'A', bv=b?.label||'B'; if(key==='months') return [{label:'Attendance',value:'0% vs 0%',helper:'Month trend',a:av,b:bv},{label:'Risk',value:'0 vs 0',helper:'Risk trend',a:av,b:bv},{label:'Activities',value:'3 vs 0',helper:'Published activities trend',a:av,b:bv},{label:'School Health',value:'55 vs 55',helper:'Executive health trend',a:av,b:bv}]; if(key==='teachers') return [{label:'Workload',value:'0 vs 0',helper:'Overload comparison',a:av,b:bv},{label:'Leave Load',value:'0 vs 0',helper:'Leave pressure',a:av,b:bv},{label:'Submissions',value:'0 vs 0',helper:'Attendance submissions',a:av,b:bv},{label:'Recommendation',value:'Review',helper:'Workload balancing notes',a:av,b:bv}]; if(key==='coverage') return [{label:'Coverage',value:'100% vs 100%',helper:'Readiness',a:av,b:bv},{label:'Allocations',value:'280 vs 280',helper:'Live periods',a:av,b:bv},{label:'Classes / Sections',value:'4/8 vs 4/8',helper:'Readiness comparison',a:av,b:bv},{label:'Recommendation',value:'Ready',helper:'Timetable notes',a:av,b:bv}]; return [{label:'Attendance',value:'0% vs 0%',helper:'Current day signal',a:av,b:bv},{label:'Risk Students',value:'0 vs 0',helper:'Risk signals',a:av,b:bv},{label:'Coverage',value:'100% vs 100%',helper:'Timetable readiness',a:av,b:bv},{label:'Recommendation',value:'Review',helper:'Intervention notes',a:av,b:bv}]; }
+function DetailModal({ metric, a, b, onClose }: { metric: Metric | null; a?: Option; b?: Option; onClose: () => void }) { if(!metric) return null; const parts=metric.value.split(' vs '); return <Modal transparent visible animationType="fade"><View style={styles.modalOverlay}><View style={styles.modalCard}><Text style={styles.modalEyebrow}>COMPARISON DETAIL</Text><Text style={styles.modalTitle}>{metric.label} Detail</Text><Text style={styles.modalSubtitle}>{a?.label} vs {b?.label}</Text>{[['Metric', parts[0] || 'Review', parts[1] || 'Review'],['Selection', a?.label || '-', b?.label || '-'],['Action', 'Review', 'Review']].map((r)=><View key={r[0]} style={styles.detailRow}><Text style={styles.detailMetric}>{r[0]}</Text><Text style={styles.detailValue}>{r[1]}</Text><Text style={styles.detailValue}>{r[2]}</Text></View>)}<Text style={styles.modalNote}>{metric.helper}</Text><TouchableOpacity style={styles.closeButton} onPress={onClose}><Text style={styles.closeText}>Close</Text></TouchableOpacity></View></View></Modal>; }
 
-function ComparisonCard({ card }: { card: ComparisonCard }) {
-    return (
-        <View style={styles.comparisonCard}>
-            <View style={styles.compareHeaderRow}>
-                <Text style={styles.compareEyebrow}>COMPARE</Text>
-                <Text style={styles.drillPill}>DRILL</Text>
-            </View>
-            <Text style={styles.compareTitle}>{card.title}</Text>
-            <Text style={styles.compareSubtitle}>{card.subtitle}</Text>
-            <View style={styles.compareFooter}>
-                <Text style={styles.compareSignal}>{card.signal}</Text>
-                <Text style={styles.compareAction}>{card.action}</Text>
-            </View>
-        </View>
-    );
-}
-
-const styles = StyleSheet.create({
-    background: { flex: 1 },
-    safeArea: { flex: 1 },
-    content: { paddingHorizontal: 18, paddingTop: 18, paddingBottom: 34, gap: 16 },
-    headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
-    iconButton: { width: 54, height: 54, borderRadius: 27, borderWidth: 2, borderColor: 'rgba(255,255,255,0.8)', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.18)' },
-    iconButtonText: { color: '#0b2f57', fontSize: 38, fontWeight: '900', marginTop: -4 },
-    homeIcon: { color: '#0b2f57', fontSize: 28, fontWeight: '900' },
-    headerCenter: { flex: 1, alignItems: 'center' },
-    headerEyebrow: { color: '#8f5a05', fontSize: 12, fontWeight: '900', letterSpacing: 4, textAlign: 'center' },
-    headerTitle: { color: '#082747', fontSize: 27, fontWeight: '900', textAlign: 'center' },
-    headerSubtitle: { color: '#39485b', fontSize: 14, fontWeight: '800', textAlign: 'center', lineHeight: 20 },
-    heroCard: { backgroundColor: 'rgba(255,255,255,0.92)', borderRadius: 28, padding: 22, borderWidth: 1.5, borderColor: '#eed690' },
-    heroEyebrow: { color: '#94420f', fontSize: 13, fontWeight: '900', letterSpacing: 4, marginBottom: 10 },
-    heroTitle: { color: '#082747', fontSize: 28, fontWeight: '900', lineHeight: 34 },
-    heroBody: { color: '#576276', fontSize: 16, fontWeight: '800', lineHeight: 24, marginTop: 12 },
-    summaryCard: { backgroundColor: 'rgba(255,255,255,0.94)', borderRadius: 28, padding: 18, borderWidth: 1.5, borderColor: '#eed690' },
-    analyticsCard: { backgroundColor: 'rgba(255,255,255,0.94)', borderRadius: 28, padding: 18, borderWidth: 1.5, borderColor: '#eed690' },
-    sectionHeaderRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 },
-    sectionHeaderText: { flex: 1 },
-    sectionEyebrow: { color: '#94420f', fontSize: 13, fontWeight: '900', letterSpacing: 3, marginBottom: 6 },
-    sectionTitle: { color: '#082747', fontSize: 24, fontWeight: '900', lineHeight: 30 },
-    sectionDescription: { color: '#657186', fontSize: 15, fontWeight: '800', lineHeight: 22, marginTop: 8 },
-    livePill: { overflow: 'hidden', backgroundColor: '#123a63', color: '#fff8de', borderRadius: 18, paddingHorizontal: 17, paddingVertical: 7, fontSize: 13, fontWeight: '900', letterSpacing: 2 },
-    metricGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginTop: 16 },
-    metricCard: { width: '48%', minHeight: 132, borderRadius: 22, backgroundColor: 'rgba(255,251,239,0.88)', borderWidth: 1.5, borderColor: '#efd986', padding: 14, justifyContent: 'space-between' },
-    darkMetricCard: { backgroundColor: '#071421', borderColor: '#b99b47' },
-    metricLabel: { color: '#687386', fontSize: 13, fontWeight: '900' },
-    darkMetricLabel: { color: '#d9bd42', letterSpacing: 3 },
-    metricValue: { color: '#0b3158', fontSize: 30, fontWeight: '900', marginTop: 8 },
-    darkMetricValue: { color: '#fff8de' },
-    metricHelper: { color: '#93420f', fontSize: 13, fontWeight: '900', lineHeight: 18, marginTop: 6 },
-    darkMetricHelper: { color: 'rgba(255,248,222,0.72)' },
-    comparisonGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginTop: 16 },
-    comparisonCard: { width: '48%', minHeight: 188, borderRadius: 22, backgroundColor: '#071421', borderWidth: 1.5, borderColor: '#b99b47', padding: 14 },
-    compareHeaderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
-    compareEyebrow: { color: '#d9bd42', fontSize: 11, fontWeight: '900', letterSpacing: 2 },
-    drillPill: { overflow: 'hidden', backgroundColor: '#123a63', color: '#fff8de', borderRadius: 12, paddingHorizontal: 8, paddingVertical: 4, fontSize: 10, fontWeight: '900' },
-    compareTitle: { color: '#fff8de', fontSize: 21, fontWeight: '900', lineHeight: 26, marginTop: 12 },
-    compareSubtitle: { color: 'rgba(255,248,222,0.72)', fontSize: 13, fontWeight: '800', lineHeight: 18, marginTop: 8 },
-    compareFooter: { marginTop: 'auto', paddingTop: 14 },
-    compareSignal: { color: '#fff8de', fontSize: 13, fontWeight: '900', lineHeight: 18 },
-    compareAction: { color: '#d9bd42', fontSize: 12, fontWeight: '900', lineHeight: 17, marginTop: 4 },
-});
+const styles = StyleSheet.create({ background:{flex:1}, safeArea:{flex:1}, content:{padding:18,paddingBottom:40}, headerRow:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',marginTop:10}, iconButton:{width:58,height:58,borderRadius:29,borderWidth:2,borderColor:'#fff8de',alignItems:'center',justifyContent:'center'}, iconText:{fontSize:42,color:'#0b315f',fontWeight:'900'}, homeText:{fontSize:32,color:'#0b315f',fontWeight:'900'}, headerCenter:{flex:1,alignItems:'center',paddingHorizontal:12}, headerEyebrow:{fontSize:14,fontWeight:'900',letterSpacing:7,color:'#8b6508'}, headerTitle:{fontSize:32,fontWeight:'900',color:'#082344',textAlign:'center'}, headerSubtitle:{fontSize:17,fontWeight:'800',color:'#415064',textAlign:'center'}, heroCard:{backgroundColor:'rgba(255,252,238,0.94)',borderRadius:28,padding:24,marginTop:24,borderWidth:1,borderColor:'#e6c75f'}, heroEyebrow:{fontSize:14,fontWeight:'900',letterSpacing:7,color:'#934411'}, heroTitle:{fontSize:30,fontWeight:'900',color:'#082344'}, heroBody:{marginTop:12,fontSize:18,lineHeight:27,fontWeight:'800',color:'#667085'}, summaryCard:{backgroundColor:'rgba(255,252,238,0.94)',borderRadius:28,padding:22,marginTop:18}, card:{backgroundColor:'rgba(255,252,238,0.94)',borderRadius:28,padding:22,marginTop:18}, sectionEyebrow:{fontSize:14,fontWeight:'900',letterSpacing:6,color:'#934411'}, sectionTitle:{fontSize:28,fontWeight:'900',color:'#082344',marginTop:8}, sectionDescription:{fontSize:17,lineHeight:25,fontWeight:'800',color:'#667085',marginTop:8}, metricGrid:{flexDirection:'row',flexWrap:'wrap',gap:14,marginTop:18}, metricCard:{width:150,minHeight:132,borderWidth:2,borderColor:'#eed77a',borderRadius:22,padding:14,backgroundColor:'rgba(255,252,238,0.7)'}, darkMetricCard:{backgroundColor:'#061321'}, metricLabel:{fontSize:15,fontWeight:'900',color:'#667085'}, metricValue:{fontSize:32,fontWeight:'900',color:'#0b315f',marginTop:12}, metricHelper:{fontSize:15,fontWeight:'800',color:'#934411',marginTop:8}, compareGrid:{flexDirection:'row',flexWrap:'wrap',gap:14,marginTop:18}, compareCard:{width:150,minHeight:190,borderRadius:22,borderWidth:2,borderColor:'#d7b94a',backgroundColor:'#061321',padding:14}, compareCardActive:{backgroundColor:'#08aeca'}, compareEyebrow:{fontSize:12,fontWeight:'900',letterSpacing:4,color:'#e6c75f'}, compareTitle:{fontSize:24,fontWeight:'900',color:'#fff8de',marginTop:12}, compareSubtitle:{fontSize:15,fontWeight:'800',color:'#d1d5db',marginTop:10}, compareAction:{fontSize:13,fontWeight:'900',color:'#e6c75f',marginTop:14}, selector:{borderWidth:2,borderColor:'#e6c75f',borderRadius:22,padding:14,marginTop:16,backgroundColor:'rgba(255,252,238,0.55)'}, selectorLabel:{fontSize:14,fontWeight:'900',letterSpacing:3,color:'#934411'}, searchInput:{marginTop:10,borderWidth:1,borderColor:'#d7b94a',borderRadius:14,padding:12,fontSize:16,fontWeight:'800',color:'#082344',backgroundColor:'#fff'}, optionList:{maxHeight:220,marginTop:10}, optionRow:{padding:12,borderBottomWidth:1,borderBottomColor:'#eadcaa'}, optionRowActive:{backgroundColor:'#dff6fb'}, optionLabel:{fontSize:16,fontWeight:'900',color:'#082344'}, optionHelper:{fontSize:13,fontWeight:'800',color:'#667085',marginTop:2}, countText:{fontSize:12,fontWeight:'800',color:'#667085',marginTop:8}, waitingText:{fontSize:16,fontWeight:'900',color:'#667085',marginTop:16}, readyTitle:{fontSize:21,fontWeight:'900',color:'#082344',marginTop:18}, openDetail:{fontSize:12,fontWeight:'900',color:'#934411',marginTop:-24,marginLeft:16}, modalOverlay:{flex:1,backgroundColor:'rgba(0,0,0,0.7)',alignItems:'center',justifyContent:'center',padding:18}, modalCard:{backgroundColor:'#0d1724',borderRadius:24,borderWidth:1,borderColor:'#d4af37',padding:18,width:'100%'}, modalEyebrow:{fontSize:12,fontWeight:'900',letterSpacing:4,color:'#d4af37'}, modalTitle:{fontSize:26,fontWeight:'900',color:'#fff8de',marginTop:8}, modalSubtitle:{fontSize:14,fontWeight:'800',color:'#d1d5db',marginTop:6}, detailRow:{flexDirection:'row',gap:8,borderTopWidth:1,borderTopColor:'#2b3848',paddingVertical:10}, detailMetric:{flex:1,fontWeight:'900',color:'#d4af37'}, detailValue:{flex:1,fontWeight:'800',color:'#fff8de'}, modalNote:{fontSize:14,fontWeight:'800',color:'#d1d5db',marginTop:12}, closeButton:{alignSelf:'flex-end',backgroundColor:'#08aeca',paddingHorizontal:18,paddingVertical:10,borderRadius:18,marginTop:18}, closeText:{fontWeight:'900',color:'#fff'} });
