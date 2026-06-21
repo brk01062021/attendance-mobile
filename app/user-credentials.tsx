@@ -1,6 +1,6 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, Linking, Platform, RefreshControl, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import MobileWorkflowHeader from '../components/layout/MobileWorkflowHeader';
 import MobileWorkflowScreen from '../components/layout/MobileWorkflowScreen';
 import { getSession, normalizeSchoolId } from '../src/services/sessionService';
@@ -17,6 +17,7 @@ export default function UserCredentialsScreen() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
+  const [query, setQuery] = useState('');
 
   const canAccess = useMemo(() => sourceRole === 'ADMIN' || sourceRole === 'PRINCIPAL', [sourceRole]);
 
@@ -36,7 +37,8 @@ export default function UserCredentialsScreen() {
       setCredentials(rows);
       setMessage(`${rows.length} ${nextRole.toLowerCase()} credential${rows.length === 1 ? '' : 's'} ready. Parents activate separately with OTP.`);
     } catch (err: any) {
-      setError(err?.response?.data?.message || err?.response?.data || err?.message || 'Unable to load credentials.');
+      const apiMessage = err?.response?.data?.message || err?.message;
+      setError(typeof apiMessage === 'string' ? apiMessage : 'Unable to load credentials.');
       setCredentials([]);
     } finally {
       setLoading(false);
@@ -47,9 +49,92 @@ export default function UserCredentialsScreen() {
     load('TEACHER');
   }, [load]);
 
+  const filteredCredentials = useMemo(() => {
+    const search = query.trim().toLowerCase();
+    if (!search) return credentials;
+    return credentials.filter((item) => [item.displayName, item.username, item.linkedReference]
+      .some((value) => String(value || '').toLowerCase().includes(search)));
+  }, [credentials, query]);
+
   const switchRole = (nextRole: CredentialRole) => {
     setRole(nextRole);
+    setQuery('');
     load(nextRole);
+  };
+
+  const selectedCountLabel = `${credentials.length} ${role.toLowerCase()} record${credentials.length === 1 ? '' : 's'} loaded`;
+
+  const exportRows = useMemo(() => credentials.map((credential) => ({
+    Role: credential.role || role,
+    Name: credential.displayName || '',
+    Username: credential.username || '',
+    'Temporary Password': credential.temporaryPassword || '',
+    Reference: credential.linkedReference || '',
+    'First Login Rule': 'Use temporary password for first login, then create a new password.',
+  })), [credentials, role]);
+
+  const csvCell = (value: string | undefined | null) => `"${String(value ?? '').replace(/"/g, '""')}"`;
+  const htmlCell = (value: string | undefined | null) => String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+
+  const openDataDownload = async (content: string, mimeType: string, extension: 'csv' | 'xls') => {
+    const fileName = `${schoolId}-${role.toLowerCase()}-credentials.${extension}`;
+
+    const webDocument = (globalThis as any).document;
+    const webUrl = (globalThis as any).URL;
+    const webBlob = (globalThis as any).Blob;
+    if (Platform.OS === 'web' && webDocument && webUrl && webBlob) {
+      const blob = new webBlob([content], { type: `${mimeType};charset=utf-8;` });
+      const url = webUrl.createObjectURL(blob);
+      const link = webDocument.createElement('a');
+      link.href = url;
+      link.download = fileName;
+      webDocument.body.appendChild(link);
+      link.click();
+      webDocument.body.removeChild(link);
+      webUrl.revokeObjectURL(url);
+      return;
+    }
+
+    const dataUrl = `data:${mimeType};charset=utf-8,${encodeURIComponent(content)}`;
+    const supported = await Linking.canOpenURL(dataUrl);
+    if (!supported) {
+      setError('Download is not available on this device. Please use the web portal download if sharing is blocked by the phone.');
+      return;
+    }
+    await Linking.openURL(dataUrl);
+  };
+
+  const downloadCsv = async () => {
+    if (!exportRows.length) return;
+    const header = ['Role', 'Name', 'Username', 'Temporary Password', 'Reference', 'First Login Rule'];
+    const lines = [
+      header.map(csvCell).join(','),
+      ...exportRows.map((row) => header.map((key) => csvCell(row[key as keyof typeof row])).join(',')),
+    ];
+    await openDataDownload(lines.join('\n'), 'text/csv', 'csv');
+  };
+
+  const downloadExcel = async () => {
+    if (!exportRows.length) return;
+    const header = ['Role', 'Name', 'Username', 'Temporary Password', 'Reference', 'First Login Rule'];
+    const html = `<!doctype html><html><head><meta charset="utf-8" /></head><body><table><thead><tr>${header.map((column) => `<th>${column}</th>`).join('')}</tr></thead><tbody>${exportRows.map((row) => `<tr>${header.map((key) => `<td>${htmlCell(row[key as keyof typeof row])}</td>`).join('')}</tr>`).join('')}</tbody></table></body></html>`;
+    await openDataDownload(html, 'application/vnd.ms-excel', 'xls');
+  };
+
+  const chooseDownloadFormat = () => {
+    if (!credentials.length || loading) return;
+    Alert.alert(
+      'Download credentials',
+      `Choose a format for ${role.toLowerCase()} credentials.`,
+      [
+        { text: 'CSV', onPress: downloadCsv },
+        { text: 'Excel', onPress: downloadExcel },
+        { text: 'Cancel', style: 'cancel' },
+      ],
+    );
   };
 
   return (
@@ -67,20 +152,36 @@ export default function UserCredentialsScreen() {
         <Text style={styles.eyebrow}>Production Login Rule</Text>
         <Text style={styles.heroTitle}>Teacher & Student Credentials</Text>
         <Text style={styles.heroText}>
-          Downloaded credentials are only for imported teachers and students. They use a temporary password first, then create a new password during first login.
+          Real {schoolId} teacher and student credentials are shown here for secure first-login sharing. Parents activate separately with Student ID and parent mobile OTP.
         </Text>
       </View>
 
       <View style={styles.ruleGrid}>
-        <View style={styles.ruleCard}>
-          <Text style={styles.ruleLabel}>Teacher</Text>
-          <Text style={styles.ruleBody}>Temporary password + first-login password change.</Text>
-        </View>
+        <TouchableOpacity
+          style={[styles.ruleCard, role === 'TEACHER' && styles.ruleCardActive]}
+          onPress={() => switchRole('TEACHER')}
+          disabled={loading}
+          activeOpacity={0.85}
+        >
+          <Text style={[styles.ruleLabel, role === 'TEACHER' && styles.ruleLabelActive]}>Teacher</Text>
+          <Text style={[styles.ruleBody, role === 'TEACHER' && styles.ruleBodyActive]}>
+            {role === 'TEACHER' ? selectedCountLabel : 'Tap to view teacher records.'}
+          </Text>
+          <Text style={[styles.ruleMeta, role === 'TEACHER' && styles.ruleMetaActive]}>Temporary password + first-login password change.</Text>
+        </TouchableOpacity>
 
-        <View style={styles.ruleCard}>
-          <Text style={styles.ruleLabel}>Student</Text>
-          <Text style={styles.ruleBody}>Temporary password + first-login password change.</Text>
-        </View>
+        <TouchableOpacity
+          style={[styles.ruleCard, role === 'STUDENT' && styles.ruleCardActive]}
+          onPress={() => switchRole('STUDENT')}
+          disabled={loading}
+          activeOpacity={0.85}
+        >
+          <Text style={[styles.ruleLabel, role === 'STUDENT' && styles.ruleLabelActive]}>Student</Text>
+          <Text style={[styles.ruleBody, role === 'STUDENT' && styles.ruleBodyActive]}>
+            {role === 'STUDENT' ? selectedCountLabel : 'Tap to view student records.'}
+          </Text>
+          <Text style={[styles.ruleMeta, role === 'STUDENT' && styles.ruleMetaActive]}>Temporary password + first-login password change.</Text>
+        </TouchableOpacity>
 
         <View style={styles.ruleCardWide}>
           <Text style={styles.ruleLabel}>Parent</Text>
@@ -90,11 +191,19 @@ export default function UserCredentialsScreen() {
 
       <View style={styles.card}>
         <View style={styles.cardHeader}>
-          <View>
+          <View style={styles.cardTitleBlock}>
             <Text style={styles.eyebrow}>Downloads</Text>
             <Text style={styles.sectionTitle}>{role === 'TEACHER' ? 'Teacher Credentials' : 'Student Credentials'}</Text>
-            <Text style={styles.schoolText}>School: {schoolId}</Text>
+            <Text style={styles.schoolText}>School: {schoolId} · Loaded: {credentials.length}</Text>
           </View>
+          <TouchableOpacity
+            style={[styles.downloadButton, (!credentials.length || loading) && styles.downloadButtonDisabled]}
+            onPress={chooseDownloadFormat}
+            disabled={!credentials.length || loading}
+            activeOpacity={0.85}
+          >
+            <Text style={styles.downloadButtonText}>Download</Text>
+          </TouchableOpacity>
         </View>
 
         <View style={styles.tabs}>
@@ -115,6 +224,14 @@ export default function UserCredentialsScreen() {
           </TouchableOpacity>
         </View>
 
+        <TextInput
+          value={query}
+          onChangeText={setQuery}
+          placeholder="Search name, username, reference"
+          placeholderTextColor={colors.slateText}
+          style={styles.searchInput}
+        />
+
         {loading ? <ActivityIndicator color={colors.deepGold} style={styles.loader} /> : null}
         {message ? <Text style={styles.successText}>{message}</Text> : null}
         {error ? <Text style={styles.errorText}>{error}</Text> : null}
@@ -133,7 +250,7 @@ export default function UserCredentialsScreen() {
               <Text style={styles.th}>Reference</Text>
             </View>
 
-            {credentials.map((item) => (
+            {filteredCredentials.map((item) => (
               <View style={styles.tableRow} key={`${item.role}-${item.username}`}>
                 <Text style={[styles.td, styles.nameCell]} numberOfLines={2}>
                   {item.displayName || '-'}
@@ -144,10 +261,10 @@ export default function UserCredentialsScreen() {
               </View>
             ))}
 
-            {!credentials.length && !loading ? (
+            {!filteredCredentials.length && !loading ? (
               <View style={styles.emptyBox}>
-                <Text style={styles.emptyTitle}>No credentials found</Text>
-                <Text style={styles.emptyText}>Commit school import data first, then refresh this page.</Text>
+                <Text style={styles.emptyTitle}>No matching credentials found</Text>
+                <Text style={styles.emptyText}>Refresh after school import commit/recommit, or clear the search filter.</Text>
               </View>
             ) : null}
           </View>
@@ -208,8 +325,13 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.cardGoldBorder,
   },
+  ruleCardActive: { backgroundColor: colors.primaryNavy, borderColor: colors.primaryNavy },
   ruleLabel: { color: colors.primaryNavy, fontSize: 16, fontWeight: '900' },
-  ruleBody: { color: colors.slateText, fontSize: 12, lineHeight: 17, fontWeight: '700', marginTop: 4 },
+  ruleLabelActive: { color: '#fffdf7' },
+  ruleBody: { color: colors.slateText, fontSize: 12, lineHeight: 17, fontWeight: '800', marginTop: 4 },
+  ruleBodyActive: { color: '#fffdf7' },
+  ruleMeta: { color: colors.slateText, fontSize: 11, lineHeight: 15, fontWeight: '700', marginTop: 5 },
+  ruleMetaActive: { color: 'rgba(255,253,247,0.86)' },
   card: {
     marginTop: 14,
     backgroundColor: 'rgba(255,253,247,0.98)',
@@ -220,6 +342,10 @@ const styles = StyleSheet.create({
     ...shadows.soft,
   },
   cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 },
+  cardTitleBlock: { flex: 1 },
+  downloadButton: { borderRadius: 14, backgroundColor: colors.primaryNavy, paddingHorizontal: 14, paddingVertical: 11, alignItems: 'center', justifyContent: 'center' },
+  downloadButtonDisabled: { opacity: 0.5 },
+  downloadButtonText: { color: '#fffdf7', fontWeight: '900', fontSize: 12 },
   sectionTitle: { color: colors.primaryNavy, fontSize: 22, fontWeight: '900', marginTop: 6 },
   schoolText: { color: colors.slateText, fontSize: 12, fontWeight: '800', marginTop: 4 },
   tabs: { flexDirection: 'row', gap: 10, marginTop: 16 },
@@ -235,6 +361,7 @@ const styles = StyleSheet.create({
   tabActive: { backgroundColor: colors.primaryNavy, borderColor: colors.primaryNavy },
   tabText: { color: colors.primaryNavy, fontWeight: '900' },
   tabTextActive: { color: '#fffdf7' },
+  searchInput: { marginTop: 14, borderWidth: 1, borderColor: colors.cardGoldBorder, borderRadius: 16, paddingHorizontal: 14, paddingVertical: 12, color: colors.primaryNavy, backgroundColor: '#fffdf7', fontWeight: '800' },
   loader: { marginVertical: 16 },
   successText: { color: '#166534', fontWeight: '800', marginTop: 12, lineHeight: 18 },
   errorText: { color: '#b42318', fontWeight: '800', marginTop: 12, lineHeight: 18 },
