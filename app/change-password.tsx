@@ -5,12 +5,24 @@ import { authResponseToSession, changeTemporaryPassword } from '../src/services/
 import { normalizeSchoolId, saveSession, VidyaSetuRole } from '../src/services/sessionService';
 import { colors, shadows, spacing, typography } from '../src/theme';
 
-function homeRouteForRole(role: VidyaSetuRole) {
-  if (role === 'ADMIN') return '/admin-dashboard';
-  if (role === 'PRINCIPAL') return '/principal-home';
-  if (role === 'TEACHER') return '/teacher-dashboard';
-  if (role === 'PARENT') return '/parent-dashboard';
-  return '/student-dashboard';
+function routeAfterPasswordChange(session: ReturnType<typeof authResponseToSession>) {
+  if (session.role === 'ADMIN') {
+    router.replace({ pathname: '/admin-dashboard', params: { role: session.role, adminName: session.displayName || 'Admin', userId: session.userId, schoolId: session.schoolId } } as any);
+    return;
+  }
+  if (session.role === 'PRINCIPAL') {
+    router.replace({ pathname: '/principal-home', params: { role: session.role, principalName: session.displayName || 'Principal', userId: session.userId, schoolId: session.schoolId } } as any);
+    return;
+  }
+  if (session.role === 'TEACHER') {
+    router.replace({ pathname: '/teacher-dashboard', params: { role: session.role, teacherId: String(session.teacherId || session.userId || '1'), teacherName: session.displayName || 'Teacher', schoolId: session.schoolId } } as any);
+    return;
+  }
+  if (session.role === 'PARENT') {
+    router.replace({ pathname: '/parent-dashboard', params: { role: session.role, parentId: session.userId || '1', parentName: session.displayName || 'Parent', studentId: String(session.studentId || '1'), studentName: session.studentName || 'Student', schoolId: session.schoolId } } as any);
+    return;
+  }
+  router.replace({ pathname: '/student-dashboard', params: { role: session.role, studentId: String(session.studentId || session.userId || '1'), studentName: session.studentName || session.displayName || 'Student', schoolId: session.schoolId } } as any);
 }
 
 export default function ChangePasswordScreen() {
@@ -53,7 +65,7 @@ export default function ChangePasswordScreen() {
       const session = authResponseToSession(response, role, username, schoolId);
       saveSession({ ...session, forcePasswordChange: false });
       Alert.alert('Password Updated', 'Your password has been changed successfully.', [
-        { text: 'Continue', onPress: () => router.replace({ pathname: homeRouteForRole(session.role), params: { role: session.role, schoolId: session.schoolId, userId: session.userId } } as any) },
+        { text: 'Continue', onPress: () => routeAfterPasswordChange(session) },
       ]);
     } catch (error: any) {
       Alert.alert('Password Change Failed', error?.response?.data?.message || error?.response?.data || error?.message || 'Unable to update password.');
