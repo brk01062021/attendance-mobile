@@ -66,7 +66,7 @@ export default function LoginScreen() {
         try {
             const response = await requestParentOtp({ schoolId: cleanSchoolId, studentId: parentStudentId, parentMobile });
             setParentOtpRequested(true);
-            Alert.alert('OTP Generated', `${response.message}${response.devOtp ? `\nTest OTP: ${response.devOtp}` : ''}`);
+            Alert.alert('OTP Sent', response.message || `OTP sent to registered parent mobile${response.maskedMobile ? ` ${response.maskedMobile}` : ''}.`);
         } catch (error: any) {
             Alert.alert('OTP Request Failed', error?.response?.data?.message || error?.response?.data || error?.message || 'Student and parent mobile mapping could not be verified.');
         }
@@ -235,7 +235,7 @@ Use Check Registration Status with your reference ID.`));
                         {selectedRole === 'PARENT' ? (
                             <View style={styles.parentSetupBox}>
                                 <Text style={styles.parentSetupTitle}>First-time Parent OTP Setup</Text>
-                                <Text style={styles.parentSetupText}>Use Student ID and parent mobile from school import data. After OTP verification, create the parent password. Future login uses school ID + mobile + password.</Text>
+                                <Text style={styles.parentSetupText}>Use Student ID and parent mobile from school import data. The OTP will be sent to the registered parent mobile. After OTP verification, create the parent password. Future login uses school ID + mobile + password.</Text>
 
                                 <Text style={styles.label}>Student ID</Text>
                                 <TextInput
@@ -477,8 +477,8 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(230, 180, 91, 0.10)',
         padding: spacing.md,
     },
-    parentSetupTitle: { ...typography.subtitle, color: colors.premiumGold, marginBottom: 6 },
-    parentSetupText: { ...typography.small, color: colors.softCream, lineHeight: 19 },
+    parentSetupTitle: { ...typography.subtitle, color: colors.primaryNavy, marginBottom: 6, fontWeight: '900' },
+    parentSetupText: { ...typography.small, color: colors.primaryNavy, lineHeight: 19, fontWeight: '700' },
     secondaryActionButton: {
         marginTop: spacing.md,
         minHeight: 48,
@@ -488,7 +488,7 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: 'rgba(230, 180, 91, 0.60)',
     },
-    secondaryActionText: { ...typography.button, color: colors.premiumGold },
+    secondaryActionText: { ...typography.button, color: colors.primaryNavy },
     linksRow: {
         flexDirection: 'row',
         justifyContent: 'center',

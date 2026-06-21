@@ -95,21 +95,27 @@ export async function changeTemporaryPassword(payload: ChangePasswordPayload) {
 
 
 export async function requestParentOtp(payload: ParentOtpPayload) {
+  const schoolId = normalizeSchoolId(payload.schoolId);
   const response = await api.post('/auth/parent/request-otp', {
-    schoolId: normalizeSchoolId(payload.schoolId),
+    schoolId,
     studentId: payload.studentId.trim(),
     parentMobile: payload.parentMobile.trim(),
+  }, {
+    headers: { 'X-School-Id': schoolId },
   });
-  return response.data as { success: boolean; message: string; maskedMobile?: string; devOtp?: string };
+  return response.data as { success: boolean; message: string; maskedMobile?: string };
 }
 
 export async function activateParentLogin(payload: ParentActivatePayload) {
+  const schoolId = normalizeSchoolId(payload.schoolId);
   const response = await api.post<AuthResponse>('/auth/parent/activate', {
-    schoolId: normalizeSchoolId(payload.schoolId),
+    schoolId,
     studentId: payload.studentId.trim(),
     parentMobile: payload.parentMobile.trim(),
     otp: payload.otp.trim(),
     newPassword: payload.newPassword,
+  }, {
+    headers: { 'X-School-Id': schoolId },
   });
   return response.data;
 }
