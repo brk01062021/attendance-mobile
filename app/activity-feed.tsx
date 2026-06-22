@@ -4,13 +4,13 @@ import {
   ActivityIndicator,
   ImageBackground,
   RefreshControl,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MobileWorkflowHeader from '../components/layout/MobileWorkflowHeader';
 import { Activity, fetchActivityFeed } from '../src/services/activityApi';
 import { getSession } from '../src/services/sessionService';
@@ -30,6 +30,7 @@ function statusLabel(status?: string) {
 }
 
 export default function ActivityFeedScreen() {
+  const insets = useSafeAreaInsets();
   const session = getSession();
   const role = session?.role || 'PARENT';
   const schoolId = session?.schoolId || 'TST2';
@@ -65,9 +66,8 @@ export default function ActivityFeedScreen() {
 
   return (
     <ImageBackground source={require('../assets/branding/splash-gold.png')} style={styles.background} resizeMode="cover">
-      <SafeAreaView style={styles.safeArea}>
       <ScrollView
-        contentContainerStyle={styles.container}
+        contentContainerStyle={[styles.container, { paddingTop: Math.max(insets.top + 14, 60) }]}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => loadFeed(true)} />}
         showsVerticalScrollIndicator={false}
       >
@@ -86,15 +86,15 @@ export default function ActivityFeedScreen() {
             Private school timeline for celebrations, achievements, classroom activities and campus memories.
           </Text>
           <View style={styles.heroActions}>
-            <TouchableOpacity style={[styles.headerPill, styles.headerPillGold]} onPress={() => setShowAll(false)} activeOpacity={0.9}>
-              <Text style={styles.headerPillGoldText}>Recent Feed</Text>
+            <TouchableOpacity style={styles.headerPill} onPress={() => setShowAll(false)} activeOpacity={0.9}>
+              <Text style={styles.headerPillText}>Recent Feed</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.headerPill} onPress={() => router.push('/activity-gallery' as any)} activeOpacity={0.9}>
               <Text style={styles.headerPillText}>Gallery</Text>
             </TouchableOpacity>
             {canCreate ? (
-              <TouchableOpacity style={styles.headerPill} onPress={() => router.push('/create-activity' as any)} activeOpacity={0.9}>
-                <Text style={styles.headerPillText}>Create New</Text>
+              <TouchableOpacity style={[styles.headerPill, styles.headerPillGold]} onPress={() => router.push('/create-activity' as any)} activeOpacity={0.9}>
+                <Text style={styles.headerPillGoldText}>Create New</Text>
               </TouchableOpacity>
             ) : null}
           </View>
@@ -154,15 +154,13 @@ export default function ActivityFeedScreen() {
           </>
         )}
       </ScrollView>
-      </SafeAreaView>
     </ImageBackground>
   );
 }
 
 const styles = StyleSheet.create({
   background: { flex: 1, backgroundColor: '#F5BC42' },
-  safeArea: { flex: 1 },
-  container: { paddingHorizontal: spacing.lg, paddingTop: 72, paddingBottom: spacing.xxl },
+  container: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xxl },
   heroCard: {
     backgroundColor: 'rgba(9, 28, 50, 0.92)',
     borderRadius: 24,

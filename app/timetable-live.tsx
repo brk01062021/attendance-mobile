@@ -1,6 +1,7 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, ImageBackground, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MobileWorkflowHeader from '../components/layout/MobileWorkflowHeader';
 import { getSession, normalizeSchoolId } from '../src/services/sessionService';
 import { getLiveTimetable, getTimetableRoleNotifications } from '../src/services/timetableOperationsApi';
@@ -12,6 +13,7 @@ const todayIndex = new Date().getDay() - 1;
 const defaultDay = days[todayIndex >= 0 && todayIndex < days.length ? todayIndex : 0];
 
 export default function TimetableLiveScreen() {
+    const insets = useSafeAreaInsets();
     const params = useLocalSearchParams();
     const session = getSession();
     const role = String(params.role || session?.role || 'TEACHER').toUpperCase();
@@ -57,7 +59,7 @@ export default function TimetableLiveScreen() {
     const title = role.includes('PARENT') ? 'Child Timetable' : role.includes('STUDENT') ? 'Student Timetable' : 'My Timetable';
 
     return <ImageBackground source={require('../assets/branding/splash-gold.png')} style={styles.bg} resizeMode="cover">
-        <ScrollView contentContainerStyle={styles.container}>
+        <ScrollView contentContainerStyle={[styles.container, { paddingTop: Math.max(insets.top + 14, 60) }]}>
             <MobileWorkflowHeader
                 title={title}
                 eyebrow="Published Timetable Only"
@@ -132,7 +134,7 @@ function Pill({ text }: { text: string }) { return <View style={styles.pill}><Te
 
 const styles = StyleSheet.create({
     bg: { flex: 1 },
-    container: { paddingHorizontal: spacing.lg, paddingTop: 72, paddingBottom: 34 },
+    container: { paddingHorizontal: spacing.lg, paddingBottom: 34 },
     headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14, gap: 8 },
     circleButton: { width: 40, height: 40, borderRadius: 20, borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.78)', backgroundColor: 'rgba(255,255,255,0.12)', alignItems: 'center', justifyContent: 'center' },
     backText: { color: colors.primaryNavy, fontSize: 28, fontWeight: '900', marginTop: -2 },

@@ -2,6 +2,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, ImageBackground, RefreshControl, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { Calendar } from 'react-native-calendars';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MobileWorkflowHeader from '../components/layout/MobileWorkflowHeader';
 import { images } from '../src/constants/images';
 import { getTeacherLeaveEnquiryHistory, submitTeacherLeaveEnquiry } from '../src/services/day4AutomationApi';
@@ -41,6 +42,7 @@ const statusStyle = (status: string) => {
 export default function TeacherLeaveRequestScreen() {
     const params = useLocalSearchParams();
     const session = getSession();
+    const insets = useSafeAreaInsets();
     const teacherId = Number(params.teacherId || session?.teacherId || params.userId || session?.userId || 0);
     const rawTeacherName = String(params.teacherName || session?.displayName || params.name || 'Teacher');
     const teacherName = /admin/i.test(rawTeacherName) ? 'Teacher' : rawTeacherName;
@@ -125,7 +127,7 @@ export default function TeacherLeaveRequestScreen() {
     return (
         <ImageBackground source={images.splashGold} style={styles.background} resizeMode="cover">
             <ScrollView
-                contentContainerStyle={styles.container}
+                contentContainerStyle={[styles.container, { paddingTop: Math.max(insets.top + 14, 60) }]}
                 showsVerticalScrollIndicator={false}
                 refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => loadHistory(true)} />}
             >
@@ -225,7 +227,7 @@ function TypePill({ title, active, onPress }: { title: string; active: boolean; 
 
 const styles = StyleSheet.create({
     background: { flex: 1 },
-    container: { padding: 20, paddingTop: 60, paddingBottom: 44 },
+    container: { paddingHorizontal: 18, paddingBottom: 44 },
     backButton: { alignSelf: 'flex-start', backgroundColor: 'rgba(255,255,255,0.82)', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 18, marginBottom: 16 },
     backText: { color: '#3b2a05', fontWeight: '900' },
     eyebrow: { color: '#7a5200', fontWeight: '900', letterSpacing: 1, textTransform: 'uppercase' },

@@ -13,6 +13,7 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MobileWorkflowHeader from '../components/layout/MobileWorkflowHeader';
 import { images } from '../src/constants/images';
 import { getSession, normalizeSchoolId } from '../src/services/sessionService';
@@ -86,6 +87,7 @@ const getRangeText = (item: TeacherSchedule) => {
 };
 
 export default function TeacherReplacementsScreen() {
+    const insets = useSafeAreaInsets();
     const { teacherId, teacherName, role, schoolId, tab } = useLocalSearchParams();
     const session = getSession();
 
@@ -182,7 +184,7 @@ export default function TeacherReplacementsScreen() {
         <ImageBackground source={images.splashGold} style={styles.screen} resizeMode="cover">
             <View style={styles.overlay}>
                 <ScrollView
-                    contentContainerStyle={styles.container}
+                    contentContainerStyle={[styles.container, { paddingTop: Math.max(insets.top + 14, 60) }]}
                     showsVerticalScrollIndicator={false}
                     refreshControl={
                         <RefreshControl refreshing={refreshing} onRefresh={() => loadReplacements(true)} />
@@ -397,8 +399,7 @@ const styles = StyleSheet.create({
         marginTop: -2,
     },
     container: {
-        paddingHorizontal: 24,
-        paddingTop: 72,
+        paddingHorizontal: 18,
         paddingBottom: 36,
     },
     titleBlock: {

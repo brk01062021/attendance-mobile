@@ -12,9 +12,13 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MobileWorkflowHeader from '../components/layout/MobileWorkflowHeader';
 import { images } from '../src/constants/images';
+import { getSession, normalizeSchoolId } from '../src/services/sessionService';
+import { getLiveTimetable } from '../src/services/timetableOperationsApi';
 import { colors, shadows, spacing } from '../src/theme';
+import { TimetableEntry } from '../src/types/timetable';
 
 type AdminStudentAttendance = {
     studentId: number;
@@ -28,7 +32,13 @@ type AdminStudentAttendance = {
 };
 
 export default function HomeScreen() {
+    const insets = useSafeAreaInsets();
     const { teacherId, teacherName, role, sourceRole, originRole, returnTo, schoolId, name } = useLocalSearchParams();
+    const session = getSession();
+    const activeSchoolId = normalizeSchoolId(String(schoolId || session?.schoolId || ''));
+    const teacherCodeFromUsername = String(session?.username || '').trim().toUpperCase().startsWith('T') ? String(session?.username || '').trim() : '';
+    const activeTeacherId = String(teacherCodeFromUsername || session?.teacherId || teacherId || session?.userId || '').trim();
+    const activeTeacherName = String(teacherName || session?.displayName || name || '').trim();
 
     const userRole = String(role || 'TEACHER').toUpperCase();
     const originRoleValue = String(sourceRole || originRole || role || 'teacher').toLowerCase();
@@ -50,7 +60,7 @@ export default function HomeScreen() {
         sourceRole: originRoleValue,
         originRole: originRoleValue,
         returnTo: getOriginDashboardPath(),
-        schoolId,
+        schoolId: activeSchoolId,
         name,
     });
 
@@ -346,20 +356,65 @@ export default function HomeScreen() {
         }
     };
 
+    const cleanClassName = (value: string) => String(value || '').replace(/^Class\s+/i, '').trim();
+
+    const uniqueValues = (values: string[]) => Array.from(new Set(values.map((item) => String(item || '').trim()).filter(Boolean)));
+
+    const extractOptions = (data: any, key: 'subjectName' | 'className' | 'section') => {
+        const raw = Array.isArray(data) ? data : Array.isArray(data?.data) ? data.data : Array.isArray(data?.items) ? data.items : [];
+
+        return uniqueValues(raw.map((item: any) => {
+            if (typeof item === 'string' || typeof item === 'number') return String(item);
+            return String(item?.[key] || item?.name || item?.value || item?.label || '');
+        }).map((item: string) => key === 'className' ? cleanClassName(item) : item.replace(/^Section\s+/i, '').trim()));
+    };
+
+    const loadPublishedTimetableEntries = async () => {
+        const response = await getLiveTimetable({
+            role: 'TEACHER',
+            teacherName: activeTeacherName || undefined,
+            schoolId: activeSchoolId,
+        });
+
+        const entries = Array.isArray(response?.entries) ? response.entries : [];
+        const normalizedTeacherName = activeTeacherName.toLowerCase();
+
+        if (!normalizedTeacherName) return entries;
+
+        const matchingEntries = entries.filter((entry: TimetableEntry) =>
+            String(entry.teacherName || '').trim().toLowerCase() === normalizedTeacherName
+        );
+
+        return matchingEntries.length > 0 ? matchingEntries : entries;
+    };
+
     const loadSubjects = async () => {
         try {
             setLoading(true);
 
             const response = await fetch(
-                `${API_ENDPOINTS.teacherSubjects}?teacherId=${teacherId}`
+                `${API_ENDPOINTS.teacherSubjects}?teacherId=${encodeURIComponent(activeTeacherId)}&teacherName=${encodeURIComponent(activeTeacherName)}&schoolId=${encodeURIComponent(activeSchoolId)}`,
+                { headers: { 'X-School-Id': activeSchoolId } }
             );
 
             const data = await response.json();
-            setSubjects(Array.isArray(data) ? data : []);
+            let nextSubjects = extractOptions(data, 'subjectName');
+
+            if (nextSubjects.length === 0) {
+                const entries = await loadPublishedTimetableEntries();
+                nextSubjects = uniqueValues(entries.map((entry: TimetableEntry) => entry.subjectName));
+            }
+
+            setSubjects(nextSubjects);
         } catch (error) {
             console.log(error);
-            Alert.alert('Error', 'Unable to load subjects');
-            setSubjects([]);
+            try {
+                const entries = await loadPublishedTimetableEntries();
+                setSubjects(uniqueValues(entries.map((entry: TimetableEntry) => entry.subjectName)));
+            } catch {
+                setSubjects([]);
+                Alert.alert('Error', 'Unable to load subjects');
+            }
         } finally {
             setLoading(false);
         }
@@ -368,30 +423,64 @@ export default function HomeScreen() {
     const loadClasses = async () => {
         try {
             const response = await fetch(
-                `${API_ENDPOINTS.teacherClasses}?teacherId=${teacherId}&subjectName=${subject}`
+                `${API_ENDPOINTS.teacherClasses}?teacherId=${encodeURIComponent(activeTeacherId)}&teacherName=${encodeURIComponent(activeTeacherName)}&subjectName=${encodeURIComponent(subject)}&schoolId=${encodeURIComponent(activeSchoolId)}`,
+                { headers: { 'X-School-Id': activeSchoolId } }
             );
 
             const data = await response.json();
-            setClasses(Array.isArray(data) ? data : []);
+            let nextClasses = extractOptions(data, 'className');
+
+            if (nextClasses.length === 0) {
+                const entries = await loadPublishedTimetableEntries();
+                nextClasses = uniqueValues(entries
+                    .filter((entry: TimetableEntry) => String(entry.subjectName || '') === subject)
+                    .map((entry: TimetableEntry) => cleanClassName(entry.className)));
+            }
+
+            setClasses(nextClasses);
         } catch (error) {
             console.log(error);
-            Alert.alert('Error', 'Unable to load classes');
-            setClasses([]);
+            try {
+                const entries = await loadPublishedTimetableEntries();
+                setClasses(uniqueValues(entries
+                    .filter((entry: TimetableEntry) => String(entry.subjectName || '') === subject)
+                    .map((entry: TimetableEntry) => cleanClassName(entry.className))));
+            } catch {
+                setClasses([]);
+                Alert.alert('Error', 'Unable to load classes');
+            }
         }
     };
 
     const loadSections = async () => {
         try {
             const response = await fetch(
-                `${API_ENDPOINTS.teacherSections}?teacherId=${teacherId}&subjectName=${subject}&className=${className}`
+                `${API_ENDPOINTS.teacherSections}?teacherId=${encodeURIComponent(activeTeacherId)}&teacherName=${encodeURIComponent(activeTeacherName)}&subjectName=${encodeURIComponent(subject)}&className=${encodeURIComponent(className)}&schoolId=${encodeURIComponent(activeSchoolId)}`,
+                { headers: { 'X-School-Id': activeSchoolId } }
             );
 
             const data = await response.json();
-            setSections(Array.isArray(data) ? data : []);
+            let nextSections = extractOptions(data, 'section');
+
+            if (nextSections.length === 0) {
+                const entries = await loadPublishedTimetableEntries();
+                nextSections = uniqueValues(entries
+                    .filter((entry: TimetableEntry) => String(entry.subjectName || '') === subject && cleanClassName(entry.className) === className)
+                    .map((entry: TimetableEntry) => entry.section));
+            }
+
+            setSections(nextSections);
         } catch (error) {
             console.log(error);
-            Alert.alert('Error', 'Unable to load sections');
-            setSections([]);
+            try {
+                const entries = await loadPublishedTimetableEntries();
+                setSections(uniqueValues(entries
+                    .filter((entry: TimetableEntry) => String(entry.subjectName || '') === subject && cleanClassName(entry.className) === className)
+                    .map((entry: TimetableEntry) => entry.section)));
+            } catch {
+                setSections([]);
+                Alert.alert('Error', 'Unable to load sections');
+            }
         }
     };
 
@@ -405,8 +494,8 @@ export default function HomeScreen() {
             pathname: '/attendance',
             params: {
                 ...getRoleSafeParams(),
-                teacherId,
-                teacherName,
+                teacherId: activeTeacherId,
+                teacherName: activeTeacherName || teacherName,
                 subject,
                 className,
                 section,
@@ -513,7 +602,7 @@ export default function HomeScreen() {
             >
                 <View style={styles.goldOverlay}>
                     <View style={styles.hero}>
-                        <View style={styles.heroOverlay}>
+                        <View style={[styles.heroOverlay, { paddingTop: Math.max(insets.top + 14, 60) }]}>
                             <MobileWorkflowHeader
                                 title={isAdmin ? 'Student Dashboard' : 'Load Students'}
                                 eyebrow={userRole === 'ADMIN' ? 'Admin Workspace' : userRole === 'PRINCIPAL' ? 'Principal Attendance' : 'Teacher Workspace'}
@@ -874,9 +963,9 @@ export default function HomeScreen() {
                             visible={showClassModal}
                             title="Select Class"
                             options={classes}
-                            getLabel={(item) => `Class ${item}`}
+                            getLabel={(item) => String(item).match(/^Class\s+/i) ? String(item) : `Class ${item}`}
                             onSelect={(item) => {
-                                setClassName(item);
+                                setClassName(cleanClassName(item));
                                 setShowClassModal(false);
                             }}
                             onClose={() => setShowClassModal(false)}
@@ -886,7 +975,7 @@ export default function HomeScreen() {
                             visible={showSectionModal}
                             title="Select Section"
                             options={sections}
-                            getLabel={(item) => `Section ${item}`}
+                            getLabel={(item) => String(item).match(/^Section\s+/i) ? String(item) : `Section ${item}`}
                             onSelect={(item) => {
                                 setSection(item);
                                 setShowSectionModal(false);
@@ -985,7 +1074,7 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(255,255,255,0.15)',
     },
     hero: {
-        height: 230,
+        height: 218,
     },
     heroImage: {
         width: '100%',
@@ -994,8 +1083,7 @@ const styles = StyleSheet.create({
     heroOverlay: {
         flex: 1,
         backgroundColor: 'transparent',
-        paddingTop: 46,
-        paddingHorizontal: 22,
+        paddingHorizontal: 18,
     },
     heroTopRow: {
         flexDirection: 'row',
@@ -1053,7 +1141,7 @@ const styles = StyleSheet.create({
     },
     container: {
         flex: 1,
-        marginTop: 10,
+        marginTop: 0,
     },
     scrollContent: {
         paddingHorizontal: 18,

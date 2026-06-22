@@ -17,7 +17,7 @@ export default function MobileWorkflowScreen({ children, backgroundSource = gold
     <ImageBackground source={backgroundSource} style={styles.background} resizeMode="cover">
       <ScrollView
         keyboardShouldPersistTaps="handled"
-        contentContainerStyle={[styles.container, { paddingTop: Math.max(insets.top + 20, 72) }, contentContainerStyle]}
+        contentContainerStyle={[styles.container, { paddingTop: Math.max(insets.top + 14, 60) }, contentContainerStyle]}
       >
         {children}
       </ScrollView>
@@ -27,7 +27,7 @@ export default function MobileWorkflowScreen({ children, backgroundSource = gold
 
 export const mobileWorkflowSpacing = {
   screenPaddingHorizontal: spacing.lg,
-  topOffset: 72,
+  topOffset: 60,
   headerGap: 14,
   sectionGap: 14,
   cardGap: 10,

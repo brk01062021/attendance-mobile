@@ -13,7 +13,9 @@ import {
 import DashboardHeader from '../components/dashboard/DashboardHeader';
 import { API_BASE_URL, DEV_DEFAULTS } from '../src/services/api';
 import { getSession, normalizeSchoolId } from '../src/services/sessionService';
+import { getLiveTimetable } from '../src/services/timetableOperationsApi';
 import { colors, shadows, spacing } from '../src/theme';
+import { TimetableEntry } from '../src/types/timetable';
 import { resolveSchoolName } from '../src/utils/schoolUtils';
 
 
@@ -21,6 +23,8 @@ import { resolveSchoolName } from '../src/utils/schoolUtils';
 // Temporary test date because your current sample attendance data exists on 2026-04-27.
 // For production/current-day data, change this to an empty string: ''
 const DEV_TEST_ATTENDANCE_DATE = DEV_DEFAULTS.dashboardDate;
+
+const days = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
 
 const formatDateForApi = (date: Date) => {
     const year = date.getFullYear();
@@ -54,7 +58,8 @@ export default function TeacherDashboard() {
     const params = useLocalSearchParams();
 
     const session = getSession();
-    const teacherId = params.teacherId || session?.teacherId || session?.userId;
+    const teacherCodeFromUsername = String(session?.username || '').trim().toUpperCase().startsWith('T') ? String(session?.username || '').trim() : '';
+    const teacherId = teacherCodeFromUsername || session?.teacherId || params.teacherId || session?.userId;
     const teacherName = params.teacherName || session?.displayName;
     const role = 'TEACHER';
     const schoolId = normalizeSchoolId(String(params.schoolId || session?.schoolId || ''));
@@ -71,6 +76,8 @@ export default function TeacherDashboard() {
     const [dashboardStats, setDashboardStats] = useState<TeacherDashboardStats>(defaultStats);
     const [loadingStats, setLoadingStats] = useState(false);
     const [statsError, setStatsError] = useState('');
+    const [scheduleEntries, setScheduleEntries] = useState<TimetableEntry[]>([]);
+    const [loadingSchedule, setLoadingSchedule] = useState(false);
 
     const todayDate = useMemo(() => DEV_TEST_ATTENDANCE_DATE || formatDateForApi(new Date()), []);
 
@@ -120,6 +127,37 @@ export default function TeacherDashboard() {
 
         loadTeacherDashboard();
     }, [teacherId, todayDate, schoolId]);
+
+    useEffect(() => {
+        const loadTeacherSchedule = async () => {
+            const safeTeacherId = String(teacherId || '').trim();
+
+            if (!safeTeacherId) {
+                setScheduleEntries([]);
+                return;
+            }
+
+            setLoadingSchedule(true);
+            try {
+                const response = await getLiveTimetable({
+                    role: 'TEACHER',
+                    teacherName: displayTeacherName,
+                    schoolId,
+                });
+                const currentDay = days[new Date().getDay()];
+                const entries = (response.entries || [])
+                    .filter((entry) => String(entry.dayOfWeek || '').toUpperCase() === currentDay)
+                    .sort((a, b) => Number(a.periodNumber || 0) - Number(b.periodNumber || 0));
+                setScheduleEntries(entries);
+            } catch (error) {
+                setScheduleEntries([]);
+            } finally {
+                setLoadingSchedule(false);
+            }
+        };
+
+        loadTeacherSchedule();
+    }, [teacherId, displayTeacherName, schoolId]);
 
     const todayStats = useMemo(() => {
         const totalMarked =
@@ -190,27 +228,24 @@ export default function TeacherDashboard() {
                     <Text style={styles.sectionEyebrow}>My Classes</Text>
                     <Text style={styles.sectionTitle}>Today&apos;s Schedule</Text>
 
-                    <ScheduleRow
-                        time="09:00 AM"
-                        subject="Mathematics"
-                        className="Class 8 - A"
-                        status="Attendance Done"
-                        done
-                    />
-
-                    <ScheduleRow
-                        time="10:00 AM"
-                        subject="Science"
-                        className="Class 7 - B"
-                        status="Pending"
-                    />
-
-                    <ScheduleRow
-                        time="11:30 AM"
-                        subject="English"
-                        className="Class 9 - A"
-                        status="Pending"
-                    />
+                    {loadingSchedule ? (
+                        <View style={styles.loadingBox}>
+                            <ActivityIndicator />
+                            <Text style={styles.loadingText}>Loading live schedule...</Text>
+                        </View>
+                    ) : scheduleEntries.length === 0 ? (
+                        <Text style={styles.errorText}>No published classes assigned for today.</Text>
+                    ) : (
+                        scheduleEntries.slice(0, 3).map((entry) => (
+                            <ScheduleRow
+                                key={`${entry.id}-${entry.periodNumber}`}
+                                time={formatScheduleTime(entry.startTime)}
+                                subject={entry.subjectName || 'Subject'}
+                                className={`${entry.className || '-'} - ${entry.section || '-'}`}
+                                status="Pending"
+                            />
+                        ))
+                    )}
                 </View>
 
                 <TouchableOpacity
@@ -354,6 +389,18 @@ function StatCard({
             <Text style={styles.statLabel}>{label}</Text>
         </View>
     );
+}
+
+function formatScheduleTime(value?: string) {
+    if (!value) return '--';
+    const parts = value.split(':');
+    if (parts.length < 2) return value;
+    const hour24 = Number(parts[0]);
+    const minute = parts[1];
+    if (Number.isNaN(hour24)) return value;
+    const period = hour24 >= 12 ? 'PM' : 'AM';
+    const hour12 = hour24 % 12 || 12;
+    return `${hour12}:${minute} ${period}`;
 }
 
 function ScheduleRow({

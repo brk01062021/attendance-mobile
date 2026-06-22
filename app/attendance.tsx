@@ -15,6 +15,7 @@ import {
     View,
 } from 'react-native';
 import { images } from '../src/constants/images';
+import { getSession, normalizeSchoolId } from '../src/services/sessionService';
 
 type AttendanceStatus = 'Present' | 'Absent' | 'Late';
 
@@ -34,6 +35,11 @@ export default function AttendanceScreen() {
     const { teacherId, teacherName, subject, className, section, role, sourceRole, originRole, returnTo, schoolId, name } =
         useLocalSearchParams();
 
+    const session = getSession();
+    const activeSchoolId = normalizeSchoolId(String(schoolId || session?.schoolId || ''));
+    const activeTeacherName = String(teacherName || session?.displayName || name || '').trim();
+    const activeTeacherId = String(teacherId || session?.teacherId || session?.username || session?.userId || '').trim();
+
     const userRole = String(role || 'TEACHER').toUpperCase();
     const originRoleValue = String(sourceRole || originRole || role || 'teacher').toLowerCase();
 
@@ -47,13 +53,13 @@ export default function AttendanceScreen() {
     };
 
     const getRoleSafeParams = () => ({
-        teacherId,
-        teacherName,
+        teacherId: activeTeacherId || teacherId,
+        teacherName: activeTeacherName || teacherName,
         role: userRole,
         sourceRole: originRoleValue,
         originRole: originRoleValue,
         returnTo: getOriginDashboardPath(),
-        schoolId,
+        schoolId: activeSchoolId,
         name,
     });
 
@@ -96,7 +102,8 @@ export default function AttendanceScreen() {
         try {
             setLoading(true);
             const response = await fetch(
-                `${API_ENDPOINTS.loadStudents}?className=${className}&section=${section}`
+                `${API_ENDPOINTS.loadStudents}?className=${encodeURIComponent(String(className || ''))}&section=${encodeURIComponent(String(section || ''))}&schoolId=${encodeURIComponent(activeSchoolId)}`,
+                { headers: { 'X-School-Id': activeSchoolId } }
             );
             const data = await response.json();
             const safeData = Array.isArray(data) ? data : [];
@@ -147,8 +154,9 @@ export default function AttendanceScreen() {
             const payload = {
                 attendanceList: students.map((student) => ({
                     studentId: student.id,
-                    teacherId: Number(teacherId),
-                    teacherName,
+                    teacherId: Number(activeTeacherId) || 0,
+                    teacherCode: activeTeacherId,
+                    teacherName: activeTeacherName || teacherName,
                     subjectName: subject,
                     className,
                     section,
@@ -159,7 +167,7 @@ export default function AttendanceScreen() {
 
             await fetch(`${API_ENDPOINTS.submitAttendance}/bulk`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', 'X-School-Id': activeSchoolId },
                 body: JSON.stringify(payload),
             });
 

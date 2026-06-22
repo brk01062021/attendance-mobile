@@ -8,12 +8,14 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MobileWorkflowHeader from '../components/layout/MobileWorkflowHeader';
 import { getSession, normalizeSchoolId } from '../src/services/sessionService';
 import { colors, spacing } from '../src/theme';
 import { resolveSchoolName } from '../src/utils/schoolUtils';
 
 export default function SchoolActivitiesMenuScreen() {
+  const insets = useSafeAreaInsets();
   const params = useLocalSearchParams();
   const session = getSession();
 
@@ -40,7 +42,7 @@ export default function SchoolActivitiesMenuScreen() {
       style={styles.background}
       resizeMode="cover"
     >
-      <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={[styles.container, { paddingTop: Math.max(insets.top + 14, 60) }]} showsVerticalScrollIndicator={false}>
         <MobileWorkflowHeader
           title="School Activities"
           eyebrow="Teacher Workspace"
@@ -92,7 +94,6 @@ const styles = StyleSheet.create({
   },
   container: {
     paddingHorizontal: spacing.screenPadding,
-    paddingTop: 72,
     paddingBottom: 120,
   },
   headerRow: {
