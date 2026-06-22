@@ -13,6 +13,7 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
+import MobileWorkflowHeader from '../components/layout/MobileWorkflowHeader';
 import { images } from '../src/constants/images';
 import { getSession, normalizeSchoolId } from '../src/services/sessionService';
 
@@ -85,7 +86,7 @@ const getRangeText = (item: TeacherSchedule) => {
 };
 
 export default function TeacherReplacementsScreen() {
-    const { teacherId, teacherName, role, schoolId } = useLocalSearchParams();
+    const { teacherId, teacherName, role, schoolId, tab } = useLocalSearchParams();
     const session = getSession();
 
     const numericTeacherId = Number(teacherId || session?.teacherId || session?.userId || 0);
@@ -94,7 +95,8 @@ export default function TeacherReplacementsScreen() {
     const safeSchoolId = normalizeSchoolId(String(schoolId || session?.schoolId || ''));
     const today = formatLocalDate(new Date());
 
-    const [activeTab, setActiveTab] = useState<ReplacementTab>('TODAY');
+    const initialTab = String(tab || 'TODAY').toUpperCase() as ReplacementTab;
+    const [activeTab, setActiveTab] = useState<ReplacementTab>(['TODAY', 'UPCOMING', 'HISTORY'].includes(initialTab) ? initialTab : 'TODAY');
     const [replacements, setReplacements] = useState<TeacherSchedule[]>([]);
     const [loading, setLoading] = useState(false);
     const [refreshing, setRefreshing] = useState(false);
@@ -179,16 +181,6 @@ export default function TeacherReplacementsScreen() {
     return (
         <ImageBackground source={images.splashGold} style={styles.screen} resizeMode="cover">
             <View style={styles.overlay}>
-                <View style={styles.topBar}>
-                    <TouchableOpacity style={styles.circleButton} onPress={goBackToDashboard} activeOpacity={0.85}>
-                        <Text style={styles.backButtonText}>‹</Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity style={styles.circleButton} onPress={() => loadReplacements(true)} activeOpacity={0.85}>
-                        <Text style={styles.refreshButtonText}>↻</Text>
-                    </TouchableOpacity>
-                </View>
-
                 <ScrollView
                     contentContainerStyle={styles.container}
                     showsVerticalScrollIndicator={false}
@@ -196,11 +188,13 @@ export default function TeacherReplacementsScreen() {
                         <RefreshControl refreshing={refreshing} onRefresh={() => loadReplacements(true)} />
                     }
                 >
-                    <View style={styles.titleBlock}>
-                        <Text style={styles.workspaceTitle}>Teacher Workspace</Text>
-                        <Text style={styles.pageTitle}>Teacher Replacements</Text>
-                        <Text style={styles.welcomeText}>Welcome, {displayTeacherName}</Text>
-                    </View>
+                    <MobileWorkflowHeader
+                        title="Assigned Replacements"
+                        eyebrow="Replacement Classes"
+                        subtitle={`Welcome, ${displayTeacherName}`}
+                        sourceRole="teacher"
+                        onBackPress={goBackToDashboard}
+                    />
 
                     <View style={styles.mainCard}>
                         <View style={styles.cardHeaderBlock}>

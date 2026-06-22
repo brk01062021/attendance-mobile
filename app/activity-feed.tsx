@@ -72,28 +72,29 @@ export default function ActivityFeedScreen() {
         showsVerticalScrollIndicator={false}
       >
           <MobileWorkflowHeader
-            title={schoolName}
+            title="School Activities"
             eyebrow="VidyaSetu ERP • School Activities"
+            subtitle={schoolName}
             sourceRole={role}
             onBackPress={() => router.back()}
           />
 
         <View style={styles.heroCard}>
-          <Text style={styles.eyebrow}>School Memories</Text>
-          <Text style={styles.heroTitle}>Activities Feed</Text>
+          <Text style={styles.eyebrow}>Recent Feed</Text>
+          <Text style={styles.heroTitle}>School Activities</Text>
           <Text style={styles.heroText}>
             Private school timeline for celebrations, achievements, classroom activities and campus memories.
           </Text>
           <View style={styles.heroActions}>
-            <TouchableOpacity style={styles.headerPill} onPress={() => router.push('/school-memories' as any)} activeOpacity={0.9}>
-              <Text style={styles.headerPillText}>Memories</Text>
+            <TouchableOpacity style={[styles.headerPill, styles.headerPillGold]} onPress={() => setShowAll(false)} activeOpacity={0.9}>
+              <Text style={styles.headerPillGoldText}>Recent Feed</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.headerPill} onPress={() => router.push('/activity-gallery' as any)} activeOpacity={0.9}>
               <Text style={styles.headerPillText}>Gallery</Text>
             </TouchableOpacity>
             {canCreate ? (
-              <TouchableOpacity style={[styles.headerPill, styles.headerPillGold]} onPress={() => router.push('/create-activity' as any)} activeOpacity={0.9}>
-                <Text style={styles.headerPillGoldText}>Create New</Text>
+              <TouchableOpacity style={styles.headerPill} onPress={() => router.push('/create-activity' as any)} activeOpacity={0.9}>
+                <Text style={styles.headerPillText}>Create New</Text>
               </TouchableOpacity>
             ) : null}
           </View>

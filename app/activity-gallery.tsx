@@ -51,8 +51,9 @@ export default function ActivityGalleryScreen() {
       <SafeAreaView style={styles.safeArea}>
       <ScrollView contentContainerStyle={styles.container} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => load(true)} />} showsVerticalScrollIndicator={false}>
           <MobileWorkflowHeader
-            title={resolveSchoolName(schoolId)}
-            eyebrow="VidyaSetu ERP • Activity Gallery"
+            title="School Gallery"
+            eyebrow="Photos & Videos"
+            subtitle={resolveSchoolName(schoolId)}
             sourceRole={role}
             onBackPress={() => router.back()}
           />

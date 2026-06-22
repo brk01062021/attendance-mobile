@@ -126,8 +126,9 @@ export default function CreateActivityScreen() {
         <SafeAreaView style={styles.safeArea}>
         <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
           <MobileWorkflowHeader
-            title={resolveSchoolName(schoolId)}
+            title="Create Activity"
             eyebrow="VidyaSetu ERP • Create Activity"
+            subtitle={resolveSchoolName(schoolId)}
             sourceRole={role}
             onBackPress={() => router.back()}
           />

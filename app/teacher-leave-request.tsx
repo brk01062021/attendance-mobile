@@ -2,6 +2,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, ImageBackground, RefreshControl, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { Calendar } from 'react-native-calendars';
+import MobileWorkflowHeader from '../components/layout/MobileWorkflowHeader';
 import { images } from '../src/constants/images';
 import { getTeacherLeaveEnquiryHistory, submitTeacherLeaveEnquiry } from '../src/services/day4AutomationApi';
 import { getSession } from '../src/services/sessionService';
@@ -128,13 +129,18 @@ export default function TeacherLeaveRequestScreen() {
                 showsVerticalScrollIndicator={false}
                 refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => loadHistory(true)} />}
             >
-                <TouchableOpacity style={styles.backButton} onPress={() => router.replace({ pathname: '/teacher-dashboard', params: { teacherId, teacherName, role: 'TEACHER' } } as any)}>
-                    <Text style={styles.backText}>Back</Text>
-                </TouchableOpacity>
+                <MobileWorkflowHeader
+                    title="Request Leave"
+                    eyebrow="Teacher Leave"
+                    subtitle="Leave Enquiry"
+                    sourceRole="teacher"
+                    onBackPress={() => router.replace({ pathname: '/teacher-dashboard', params: { teacherId, teacherName, role: 'TEACHER' } } as any)}
+                />
 
-                <Text style={styles.eyebrow}>Teacher Leave</Text>
-                <Text style={styles.title}>Request Leave / Leave Enquiry</Text>
-                <Text style={styles.subtitle}>Submit a leave enquiry only. Admin or Principal will approve/reject it and replacement planning starts after approval.</Text>
+                <View style={styles.heroCard}>
+                    <Text style={styles.heroTitle}>Request Leave / Leave Enquiry</Text>
+                    <Text style={styles.heroText}>Submit a leave enquiry only. Admin or Principal will approve or reject it, and replacement planning starts after approval.</Text>
+                </View>
 
                 <View style={styles.card}>
                     <Text style={styles.label}>Teacher</Text>
@@ -225,6 +231,28 @@ const styles = StyleSheet.create({
     eyebrow: { color: '#7a5200', fontWeight: '900', letterSpacing: 1, textTransform: 'uppercase' },
     title: { fontSize: 28, fontWeight: '900', color: '#2f2106', marginTop: 6 },
     subtitle: { color: '#5b4515', marginTop: 8, marginBottom: 18, lineHeight: 20, fontWeight: '700' },
+    heroCard: {
+        backgroundColor: '#071B33',
+        borderRadius: 32,
+        padding: 24,
+        marginBottom: 22,
+    },
+
+    heroTitle: {
+        color: '#FFFFFF',
+        fontSize: 28,
+        lineHeight: 34,
+        fontWeight: '900',
+    },
+
+    heroText: {
+        color: 'rgba(255,255,255,0.82)',
+        fontSize: 16,
+        lineHeight: 23,
+        fontWeight: '800',
+        marginTop: 10,
+    },
+
     card: { backgroundColor: 'rgba(255,255,255,0.94)', borderRadius: 20, padding: 16, borderWidth: 1, borderColor: 'rgba(116,83,15,0.2)' },
     label: { color: '#6b551f', fontWeight: '900', marginTop: 14, marginBottom: 8 },
     teacherName: { color: '#2f2106', fontSize: 18, fontWeight: '900' },

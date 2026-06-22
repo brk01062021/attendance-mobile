@@ -66,6 +66,8 @@ export default function TeacherDashboard() {
     }, [teacherName]);
 
     const [menuVisible, setMenuVisible] = useState(false);
+    const [schoolActivitiesExpanded, setSchoolActivitiesExpanded] = useState(false);
+    const [replacementsExpanded, setReplacementsExpanded] = useState(false);
     const [dashboardStats, setDashboardStats] = useState<TeacherDashboardStats>(defaultStats);
     const [loadingStats, setLoadingStats] = useState(false);
     const [statsError, setStatsError] = useState('');
@@ -130,6 +132,22 @@ export default function TeacherDashboard() {
             attendancePercent: `${Math.round(dashboardStats.attendancePercentage || 0)}%`,
         };
     }, [dashboardStats]);
+
+    const closeMenuAndRoute = (pathname: string, extraParams: Record<string, any> = {}) => {
+        setMenuVisible(false);
+        router.push({
+            pathname: pathname as any,
+            params: {
+                teacherId,
+                teacherName: displayTeacherName,
+                role,
+                sourceRole: 'teacher',
+                originRole: 'teacher',
+                schoolId,
+                ...extraParams,
+            },
+        } as any);
+    };
 
     const goToTakeAttendance = () => {
         setMenuVisible(false);
@@ -287,40 +305,28 @@ export default function TeacherDashboard() {
                             <MenuSectionTitle title="Daily Work" />
                             <MenuItem
                                 title="Leave Enquiry"
-                                onPress={() => {
-                                    setMenuVisible(false);
-                                    router.push({ pathname: '/teacher-leave-request', params: { teacherId, teacherName: displayTeacherName, role: 'TEACHER', sourceRole: 'teacher', schoolId } } as any);
-                                }}
+                                onPress={() => closeMenuAndRoute('/teacher-leave-request')}
                             />
                             <MenuItem title="Take Attendance" onPress={goToTakeAttendance} />
                             <MenuItem
                                 title="My Timetable"
-                                onPress={() => {
-                                    setMenuVisible(false);
-                                    router.push({ pathname: '/timetable-live', params: { role: 'TEACHER', teacherId, sourceRole: 'teacher', schoolId } } as any);
-                                }}
+                                onPress={() => closeMenuAndRoute('/timetable-live', { role: 'TEACHER' })}
                             />
                             <MenuItem
-                                title="Bulk Attendance"
-                                onPress={() => {
-                                    setMenuVisible(false);
-                                    router.push({ pathname: '/recover-missed-attendance', params: { teacherId, teacherName: displayTeacherName, role, sourceRole: 'teacher', schoolId } } as any);
-                                }}
+                                title="Assigned Replacements"
+                                onPress={() => closeMenuAndRoute('/teacher-replacements', { tab: 'TODAY' })}
                             />
                             <MenuItem
                                 title="School Activities"
-                                onPress={() => {
-                                    setMenuVisible(false);
-                                    router.push({ pathname: '/school-activities', params: { teacherId, teacherName: displayTeacherName, role, sourceRole: 'teacher', schoolId } } as any);
-                                }}
+                                onPress={() => closeMenuAndRoute('/activity-feed')}
                             />
 
                             <MenuSectionTitle title="Reports" />
                             <MenuItem
-                                title="Results Submission"
+                                title="Reports"
                                 onPress={() => {
                                     setMenuVisible(false);
-                                    router.push({ pathname: '/teacher-results', params: { teacherId, teacherName: displayTeacherName, role, sourceRole: 'teacher', schoolId } } as any);
+                                    router.push({ pathname: '/attendance-report', params: { teacherId, teacherName: displayTeacherName, role, sourceRole: 'teacher', schoolId } } as any);
                                 }}
                             />
 
@@ -417,6 +423,33 @@ function MenuItem({
             <Text style={[styles.menuItemArrow, danger && styles.menuItemTextDanger]}>
                 ›
             </Text>
+        </TouchableOpacity>
+    );
+}
+
+function ExpandableMenuItem({
+    title,
+    expanded,
+    onPress,
+}: {
+    title: string;
+    expanded: boolean;
+    onPress: () => void;
+}) {
+    return (
+        <TouchableOpacity style={styles.menuItem} onPress={onPress} activeOpacity={0.85}>
+            <Text style={styles.menuItemText}>{title}</Text>
+            <Text style={styles.menuItemArrow}>{expanded ? '⌃' : '⌄'}</Text>
+        </TouchableOpacity>
+    );
+}
+
+function SubMenuItem({ title, onPress }: { title: string; onPress: () => void }) {
+    return (
+        <TouchableOpacity style={styles.subMenuItem} onPress={onPress} activeOpacity={0.85}>
+            <Text style={styles.subMenuBullet}>•</Text>
+            <Text style={styles.subMenuItemText}>{title}</Text>
+            <Text style={styles.subMenuArrow}>›</Text>
         </TouchableOpacity>
     );
 }
@@ -828,6 +861,44 @@ const styles = StyleSheet.create({
     menuItemArrow: {
         color: colors.primaryNavy,
         fontSize: 22,
+        fontWeight: '900',
+    },
+
+    subMenuGroup: {
+        marginTop: -4,
+        marginBottom: 8,
+        paddingLeft: 16,
+        gap: 8,
+    },
+
+    subMenuItem: {
+        minHeight: 50,
+        borderRadius: 16,
+        borderWidth: 1,
+        borderColor: '#F0E4C8',
+        backgroundColor: '#FFF8E8',
+        paddingHorizontal: 14,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+    },
+
+    subMenuBullet: {
+        color: colors.deepGold,
+        fontSize: 16,
+        fontWeight: '900',
+    },
+
+    subMenuItemText: {
+        flex: 1,
+        color: colors.primaryNavy,
+        fontSize: 14,
+        fontWeight: '900',
+    },
+
+    subMenuArrow: {
+        color: colors.primaryNavy,
+        fontSize: 20,
         fontWeight: '900',
     },
 

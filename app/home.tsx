@@ -12,6 +12,7 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
+import MobileWorkflowHeader from '../components/layout/MobileWorkflowHeader';
 import { images } from '../src/constants/images';
 import { colors, shadows, spacing } from '../src/theme';
 
@@ -513,35 +514,15 @@ export default function HomeScreen() {
                 <View style={styles.goldOverlay}>
                     <View style={styles.hero}>
                         <View style={styles.heroOverlay}>
-                            <View style={styles.heroTopRow}>
-                                <TouchableOpacity
-                                    style={styles.backButton}
-                                    onPress={goOriginHome}
-                                >
-                                    <Text style={styles.backButtonText}>‹</Text>
-                                </TouchableOpacity>
-
-                                <TouchableOpacity
-                                    style={styles.menuIconButton}
-                                    onPress={() => setShowMenuModal(true)}
-                                >
-                                    <Text style={styles.menuIcon}>☰</Text>
-                                </TouchableOpacity>
-                            </View>
-
-                            <Text style={styles.heroSmallText}>
-                                {userRole === 'ADMIN' ? 'Admin Workspace' : userRole === 'PRINCIPAL' ? 'Principal Attendance Support' : 'Teacher Workspace'}
-                            </Text>
-
-                            <Text style={styles.heroTitle}>
-                                {isAdmin ? 'Student Dashboard' : 'Load Students'}
-                            </Text>
-
-                            <Text style={styles.heroSubtitle}>
-                                {isAdmin
-                                    ? 'Filter attendance and review attention-needed students'
-                                    : `Welcome, ${teacherName || 'Teacher'}`}
-                            </Text>
+                            <MobileWorkflowHeader
+                                title={isAdmin ? 'Student Dashboard' : 'Load Students'}
+                                eyebrow={userRole === 'ADMIN' ? 'Admin Workspace' : userRole === 'PRINCIPAL' ? 'Principal Attendance' : 'Teacher Workspace'}
+                                subtitle={isAdmin ? 'Filtered attendance review' : `Welcome, ${teacherName || 'Teacher'}`}
+                                sourceRole={originRoleValue}
+                                onBackPress={goOriginHome}
+                                rightAction="menu"
+                                onRightPress={() => setShowMenuModal(true)}
+                            />
                         </View>
                     </View>
 

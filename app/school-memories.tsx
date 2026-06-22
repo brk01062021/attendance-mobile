@@ -62,8 +62,9 @@ export default function SchoolMemoriesScreen() {
       <SafeAreaView style={styles.safeArea}>
       <ScrollView contentContainerStyle={styles.container} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => load(true)} />} showsVerticalScrollIndicator={false}>
           <MobileWorkflowHeader
-            title={resolveSchoolName(schoolId)}
-            eyebrow="VidyaSetu ERP • School Memories"
+            title="School Memories"
+            eyebrow="Digital Yearbook"
+            subtitle={resolveSchoolName(schoolId)}
             sourceRole={role}
             onBackPress={() => router.back()}
           />

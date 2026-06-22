@@ -35,10 +35,10 @@ export default function MobileHeaderActionButton({ icon, onPress, accessibilityL
 }
 
 export const mobileHeaderActionStyles = {
-  size: 40,
-  radius: 20,
-  iconSize: 20,
-  touchTarget: 44,
+  size: 56,
+  radius: 28,
+  iconSize: 24,
+  touchTarget: 56,
 };
 
 const styles = StyleSheet.create({
@@ -47,8 +47,8 @@ const styles = StyleSheet.create({
     height: mobileHeaderActionStyles.size,
     borderRadius: mobileHeaderActionStyles.radius,
     borderWidth: 1.5,
-    borderColor: 'rgba(255,255,255,0.78)',
-    backgroundColor: 'rgba(255,255,255,0.12)',
+    borderColor: 'rgba(255,255,255,0.92)',
+    backgroundColor: 'rgba(255,255,255,0.24)',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -60,12 +60,12 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   backIcon: {
-    fontSize: 28,
-    lineHeight: 30,
+    fontSize: 38,
+    lineHeight: 40,
     marginTop: -2,
   },
   homeIcon: {
-    fontSize: 21,
-    lineHeight: 24,
+    fontSize: 28,
+    lineHeight: 30,
   },
 });

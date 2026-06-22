@@ -13,7 +13,7 @@ type Props = {
   sourceRole?: string;
   onBackPress?: () => void;
   onHomePress?: () => void;
-  rightAction?: 'home' | 'refresh' | 'logout' | 'none';
+  rightAction?: 'home' | 'menu' | 'refresh' | 'logout' | 'none';
   onRightPress?: () => void;
 };
 
@@ -53,7 +53,7 @@ export default function MobileWorkflowHeader({
         {subtitle ? <Text style={styles.subtitle} numberOfLines={2}>{subtitle}</Text> : null}
       </View>
       {rightAction === 'none' ? <View style={styles.placeholder} /> : (
-        <MobileHeaderActionButton icon={rightAction} onPress={handleHome} accessibilityLabel={rightAction === 'home' ? 'Go home' : rightAction} />
+        <MobileHeaderActionButton icon={rightAction} onPress={handleHome} accessibilityLabel={rightAction === 'home' ? 'Go home' : rightAction === 'menu' ? 'Open menu' : rightAction} />
       )}
     </View>
   );
@@ -64,25 +64,25 @@ export const mobileWorkflowHeaderStyles = {
     flexDirection: 'row' as const,
     alignItems: 'center' as const,
     justifyContent: 'space-between' as const,
-    minHeight: 44,
-    marginBottom: 14,
-    gap: 8,
+    minHeight: 64,
+    marginBottom: 24,
+    gap: 10,
   },
   title: {
     color: colors.primaryNavy,
-    fontSize: 20,
-    lineHeight: 24,
+    fontSize: 30,
+    lineHeight: 36,
     fontWeight: '900' as const,
     textAlign: 'center' as const,
-    letterSpacing: -0.3,
+    letterSpacing: -0.5,
   },
 };
 
 const styles = StyleSheet.create({
   headerRow: mobileWorkflowHeaderStyles.headerRow,
-  headerTextWrap: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4 },
-  eyebrow: { color: colors.deepGold, fontWeight: '900', fontSize: 9, lineHeight: 12, letterSpacing: 1.2, textAlign: 'center', textTransform: 'uppercase' },
+  headerTextWrap: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 6 },
+  eyebrow: { color: colors.deepGold, fontWeight: '900', fontSize: 12, lineHeight: 15, letterSpacing: 2.4, textAlign: 'center', textTransform: 'uppercase' },
   title: mobileWorkflowHeaderStyles.title,
-  subtitle: { marginTop: 3, color: colors.slateText, fontSize: 11, lineHeight: 15, fontWeight: '800', textAlign: 'center' },
-  placeholder: { width: 40, height: 40 },
+  subtitle: { marginTop: 4, color: colors.slateText, fontSize: 13, lineHeight: 18, fontWeight: '800', textAlign: 'center' },
+  placeholder: { width: 56, height: 56 },
 });
