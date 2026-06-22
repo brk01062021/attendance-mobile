@@ -398,7 +398,7 @@ const styles = StyleSheet.create({
     },
     container: {
         paddingHorizontal: 24,
-        paddingTop: 26,
+        paddingTop: 18,
         paddingBottom: 36,
     },
     titleBlock: {
@@ -425,10 +425,10 @@ const styles = StyleSheet.create({
     },
     mainCard: {
         backgroundColor: 'rgba(255, 248, 225, 0.18)',
-        borderRadius: 30,
-        paddingHorizontal: 22,
-        paddingTop: 26,
-        paddingBottom: 24,
+        borderRadius: 26,
+        paddingHorizontal: 20,
+        paddingTop: 22,
+        paddingBottom: 22,
         borderWidth: 1,
         borderColor: 'rgba(230, 202, 129, 0.75)',
         shadowColor: '#000',
@@ -442,15 +442,15 @@ const styles = StyleSheet.create({
     },
     sectionTitle: {
         color: '#071B35',
-        fontSize: 27,
+        fontSize: 24,
         fontWeight: '900',
-        lineHeight: 32,
+        lineHeight: 30,
     },
     sectionSubtitle: {
         color: '#6B7280',
-        fontSize: 16,
-        fontWeight: '700',
-        lineHeight: 23,
+        fontSize: 15,
+        fontWeight: '800',
+        lineHeight: 22,
         marginTop: 8,
     },
     summaryRow: {

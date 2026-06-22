@@ -49,7 +49,7 @@ export default function MobileWorkflowHeader({
       <MobileHeaderActionButton icon="back" onPress={handleBack} accessibilityLabel="Go back" />
       <View style={styles.headerTextWrap}>
         {eyebrow ? <Text style={styles.eyebrow}>{eyebrow}</Text> : null}
-        <Text style={styles.title} numberOfLines={2}>{title}</Text>
+        <Text style={styles.title} numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.78}>{title}</Text>
         {subtitle ? <Text style={styles.subtitle} numberOfLines={2}>{subtitle}</Text> : null}
       </View>
       {rightAction === 'none' ? <View style={styles.placeholder} /> : (
@@ -65,24 +65,24 @@ export const mobileWorkflowHeaderStyles = {
     alignItems: 'center' as const,
     justifyContent: 'space-between' as const,
     minHeight: 64,
-    marginBottom: 24,
-    gap: 10,
+    marginBottom: 18,
+    gap: 12,
   },
   title: {
     color: colors.primaryNavy,
-    fontSize: 30,
-    lineHeight: 36,
+    fontSize: 24,
+    lineHeight: 30,
     fontWeight: '900' as const,
     textAlign: 'center' as const,
-    letterSpacing: -0.5,
+    letterSpacing: -0.25,
   },
 };
 
 const styles = StyleSheet.create({
   headerRow: mobileWorkflowHeaderStyles.headerRow,
-  headerTextWrap: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 6 },
-  eyebrow: { color: colors.deepGold, fontWeight: '900', fontSize: 12, lineHeight: 15, letterSpacing: 2.4, textAlign: 'center', textTransform: 'uppercase' },
+  headerTextWrap: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4 },
+  eyebrow: { color: colors.deepGold, fontWeight: '900', fontSize: 11, lineHeight: 14, letterSpacing: 2.2, textAlign: 'center', textTransform: 'uppercase' },
   title: mobileWorkflowHeaderStyles.title,
-  subtitle: { marginTop: 4, color: colors.slateText, fontSize: 13, lineHeight: 18, fontWeight: '800', textAlign: 'center' },
+  subtitle: { marginTop: 4, color: colors.slateText, fontSize: 13, lineHeight: 17, fontWeight: '800', textAlign: 'center' },
   placeholder: { width: 56, height: 56 },
 });

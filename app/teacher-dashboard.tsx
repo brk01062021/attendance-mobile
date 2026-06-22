@@ -321,14 +321,6 @@ export default function TeacherDashboard() {
                                 onPress={() => closeMenuAndRoute('/activity-feed')}
                             />
 
-                            <MenuSectionTitle title="Reports" />
-                            <MenuItem
-                                title="Reports"
-                                onPress={() => {
-                                    setMenuVisible(false);
-                                    router.push({ pathname: '/attendance-report', params: { teacherId, teacherName: displayTeacherName, role, sourceRole: 'teacher', schoolId } } as any);
-                                }}
-                            />
 
                             <MenuItem
                                 title="Logout"

@@ -1,6 +1,7 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, ImageBackground, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import MobileWorkflowHeader from '../components/layout/MobileWorkflowHeader';
 import { getSession, normalizeSchoolId } from '../src/services/sessionService';
 import { getLiveTimetable, getTimetableRoleNotifications } from '../src/services/timetableOperationsApi';
 import { colors, shadows, spacing } from '../src/theme';
@@ -57,11 +58,13 @@ export default function TimetableLiveScreen() {
 
     return <ImageBackground source={require('../assets/branding/splash-gold.png')} style={styles.bg} resizeMode="cover">
         <ScrollView contentContainerStyle={styles.container}>
-            <View style={styles.headerRow}>
-                <TouchableOpacity style={styles.circleButton} onPress={() => router.back()}><Text style={styles.backText}>‹</Text></TouchableOpacity>
-                <View style={styles.headerTextWrap}><Text style={styles.eyebrow}>PUBLISHED TIMETABLE ONLY</Text><Text style={styles.title}>{title}</Text></View>
-                <TouchableOpacity style={styles.circleButton} onPress={() => router.replace(homeRouteForRole(String(params.sourceRole || role)) as any)}><Text style={styles.homeIcon}>⌂</Text></TouchableOpacity>
-            </View>
+            <MobileWorkflowHeader
+                title={title}
+                eyebrow="Published Timetable Only"
+                sourceRole={String(params.sourceRole || role)}
+                onBackPress={() => router.back()}
+                onHomePress={() => router.replace(homeRouteForRole(String(params.sourceRole || role)) as any)}
+            />
 
             <View style={styles.heroCard}>
                 <Text style={styles.heroTitle}>{data?.published ? 'Live Published Schedule' : 'Timetable Hidden Until Publish'}</Text>
