@@ -284,24 +284,15 @@ export default function TeacherDashboard() {
                             <MenuSectionTitle title="Home" />
                             <MenuItem title="Home" onPress={() => setMenuVisible(false)} />
 
-                            <MenuSectionTitle title="Attendance" />
+                            <MenuSectionTitle title="Daily Work" />
+                            <MenuItem
+                                title="Leave Enquiry"
+                                onPress={() => {
+                                    setMenuVisible(false);
+                                    router.push({ pathname: '/teacher-leave-request', params: { teacherId, teacherName: displayTeacherName, role: 'TEACHER', sourceRole: 'teacher', schoolId } } as any);
+                                }}
+                            />
                             <MenuItem title="Take Attendance" onPress={goToTakeAttendance} />
-                            <MenuItem
-                                title="Date Summary"
-                                onPress={() => {
-                                    setMenuVisible(false);
-                                    router.push({ pathname: '/date-summary', params: { teacherId, teacherName: displayTeacherName, role, schoolId } } as any);
-                                }}
-                            />
-                            <MenuItem
-                                title="Reports"
-                                onPress={() => {
-                                    setMenuVisible(false);
-                                    router.push({ pathname: '/attendance-report', params: { teacherId, teacherName: displayTeacherName, role, sourceRole: 'teacher', schoolId } } as any);
-                                }}
-                            />
-
-                            <MenuSectionTitle title="Planning" />
                             <MenuItem
                                 title="My Timetable"
                                 onPress={() => {
@@ -310,38 +301,26 @@ export default function TeacherDashboard() {
                                 }}
                             />
                             <MenuItem
-                                title="Create Activity"
+                                title="Bulk Attendance"
                                 onPress={() => {
                                     setMenuVisible(false);
-                                    router.push('/create-activity' as any);
+                                    router.push({ pathname: '/recover-missed-attendance', params: { teacherId, teacherName: displayTeacherName, role, sourceRole: 'teacher', schoolId } } as any);
                                 }}
                             />
                             <MenuItem
-                                title="Activity Feed"
+                                title="School Activities"
                                 onPress={() => {
                                     setMenuVisible(false);
-                                    router.push('/activity-feed' as any);
+                                    router.push({ pathname: '/school-activities', params: { teacherId, teacherName: displayTeacherName, role, sourceRole: 'teacher', schoolId } } as any);
                                 }}
                             />
+
+                            <MenuSectionTitle title="Reports" />
                             <MenuItem
-                                title="School Memories"
+                                title="Results Submission"
                                 onPress={() => {
                                     setMenuVisible(false);
-                                    router.push('/school-memories' as any);
-                                }}
-                            />
-                            <MenuItem
-                                title="Request Leave / Leave Enquiry"
-                                onPress={() => {
-                                    setMenuVisible(false);
-                                    router.push({ pathname: '/teacher-leave-request', params: { teacherId, teacherName: displayTeacherName, role: 'TEACHER', sourceRole: 'teacher', schoolId } } as any);
-                                }}
-                            />
-                            <MenuItem
-                                title="Assigned Replacements"
-                                onPress={() => {
-                                    setMenuVisible(false);
-                                    router.push({ pathname: '/teacher-replacements', params: { teacherId, teacherName: displayTeacherName, role, schoolId } } as any);
+                                    router.push({ pathname: '/teacher-results', params: { teacherId, teacherName: displayTeacherName, role, sourceRole: 'teacher', schoolId } } as any);
                                 }}
                             />
 
