@@ -225,7 +225,7 @@ function TypePill({ title, active, onPress }: { title: string; active: boolean; 
 
 const styles = StyleSheet.create({
     background: { flex: 1 },
-    container: { padding: 20, paddingTop: 72, paddingBottom: 44 },
+    container: { padding: 20, paddingTop: 60, paddingBottom: 44 },
     backButton: { alignSelf: 'flex-start', backgroundColor: 'rgba(255,255,255,0.82)', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 18, marginBottom: 16 },
     backText: { color: '#3b2a05', fontWeight: '900' },
     eyebrow: { color: '#7a5200', fontWeight: '900', letterSpacing: 1, textTransform: 'uppercase' },

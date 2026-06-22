@@ -1,13 +1,14 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useMemo } from 'react';
 import {
-    ImageBackground,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ImageBackground,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
+import MobileWorkflowHeader from '../components/layout/MobileWorkflowHeader';
 import { getSession, normalizeSchoolId } from '../src/services/sessionService';
 import { colors, spacing } from '../src/theme';
 import { resolveSchoolName } from '../src/utils/schoolUtils';
@@ -40,18 +41,14 @@ export default function SchoolActivitiesMenuScreen() {
       resizeMode="cover"
     >
       <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
-        <View style={styles.headerRow}>
-          <TouchableOpacity style={styles.circleButton} onPress={() => router.back()} activeOpacity={0.85}>
-            <Text style={styles.circleIcon}>‹</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.circleButton} onPress={() => router.replace({ pathname: '/teacher-dashboard', params: commonParams } as any)} activeOpacity={0.85}>
-            <Text style={styles.circleIcon}>⌂</Text>
-          </TouchableOpacity>
-        </View>
-
-        <Text style={styles.eyebrow}>{schoolName}</Text>
-        <Text style={styles.title}>School Activities</Text>
-        <Text style={styles.subtitle}>Create activities, review the activity feed, and open school memories from one teacher workspace.</Text>
+        <MobileWorkflowHeader
+          title="School Activities"
+          eyebrow="Teacher Workspace"
+          subtitle={schoolName}
+          sourceRole="teacher"
+          onBackPress={() => router.back()}
+          onHomePress={() => router.replace({ pathname: '/teacher-dashboard', params: commonParams } as any)}
+        />
 
         <View style={styles.card}>
           <ActionRow
@@ -95,7 +92,7 @@ const styles = StyleSheet.create({
   },
   container: {
     paddingHorizontal: spacing.screenPadding,
-    paddingTop: 74,
+    paddingTop: 72,
     paddingBottom: 120,
   },
   headerRow: {
@@ -130,15 +127,15 @@ const styles = StyleSheet.create({
   },
   title: {
     color: colors.primaryNavy,
-    fontSize: 44,
+    fontSize: 20,
     fontWeight: '900',
-    lineHeight: 50,
+    lineHeight: 24,
     marginBottom: spacing.sm,
   },
   subtitle: {
     color: '#2C3444',
-    fontSize: 18,
-    lineHeight: 28,
+    fontSize: 13,
+    lineHeight: 16,
     fontWeight: '700',
     marginBottom: spacing.xl,
   },

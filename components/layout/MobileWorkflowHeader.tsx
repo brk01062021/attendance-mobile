@@ -64,9 +64,9 @@ export const mobileWorkflowHeaderStyles = {
     flexDirection: 'row' as const,
     alignItems: 'center' as const,
     justifyContent: 'space-between' as const,
-    minHeight: 64,
-    marginBottom: 18,
-    gap: 12,
+    minHeight: 56,
+    marginBottom: 16,
+    gap: 10,
   },
   title: {
     color: colors.primaryNavy,
@@ -84,5 +84,5 @@ const styles = StyleSheet.create({
   eyebrow: { color: colors.deepGold, fontWeight: '900', fontSize: 11, lineHeight: 14, letterSpacing: 2.2, textAlign: 'center', textTransform: 'uppercase' },
   title: mobileWorkflowHeaderStyles.title,
   subtitle: { marginTop: 4, color: colors.slateText, fontSize: 13, lineHeight: 17, fontWeight: '800', textAlign: 'center' },
-  placeholder: { width: 56, height: 56 },
+  placeholder: { width: 50, height: 50 },
 });

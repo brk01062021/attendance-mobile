@@ -398,7 +398,7 @@ const styles = StyleSheet.create({
     },
     container: {
         paddingHorizontal: 24,
-        paddingTop: 18,
+        paddingTop: 72,
         paddingBottom: 36,
     },
     titleBlock: {
@@ -424,11 +424,11 @@ const styles = StyleSheet.create({
         marginTop: 18,
     },
     mainCard: {
-        backgroundColor: 'rgba(255, 248, 225, 0.18)',
-        borderRadius: 26,
-        paddingHorizontal: 20,
-        paddingTop: 22,
-        paddingBottom: 22,
+        backgroundColor: 'rgba(255,253,247,0.94)',
+        borderRadius: 24,
+        paddingHorizontal: 18,
+        paddingTop: 18,
+        paddingBottom: 18,
         borderWidth: 1,
         borderColor: 'rgba(230, 202, 129, 0.75)',
         shadowColor: '#000',
@@ -442,15 +442,15 @@ const styles = StyleSheet.create({
     },
     sectionTitle: {
         color: '#071B35',
-        fontSize: 24,
+        fontSize: 21,
         fontWeight: '900',
-        lineHeight: 30,
+        lineHeight: 27,
     },
     sectionSubtitle: {
         color: '#6B7280',
-        fontSize: 15,
+        fontSize: 14,
         fontWeight: '800',
-        lineHeight: 22,
+        lineHeight: 20,
         marginTop: 8,
     },
     summaryRow: {
@@ -461,15 +461,15 @@ const styles = StyleSheet.create({
     summaryCard: {
         flex: 1,
         backgroundColor: '#FFFDF4',
-        borderRadius: 17,
-        paddingVertical: 14,
+        borderRadius: 15,
+        paddingVertical: 12,
         alignItems: 'center',
         borderWidth: 1,
         borderColor: '#E8D28B',
     },
     summaryValue: {
         color: '#4B2E00',
-        fontSize: 23,
+        fontSize: 21,
         fontWeight: '900',
     },
     summaryLabel: {
@@ -481,17 +481,17 @@ const styles = StyleSheet.create({
     tabRow: {
         flexDirection: 'row',
         backgroundColor: '#FFFDF4',
-        borderRadius: 18,
-        padding: 5,
+        borderRadius: 16,
+        padding: 4,
         marginTop: 16,
         borderWidth: 1,
         borderColor: '#E8D28B',
     },
     tabButton: {
         flex: 1,
-        paddingVertical: 11,
+        paddingVertical: 10,
         alignItems: 'center',
-        borderRadius: 14,
+        borderRadius: 13,
     },
     activeTabButton: {
         backgroundColor: '#4B2E00',
@@ -695,8 +695,8 @@ const styles = StyleSheet.create({
     closeButton: {
         marginTop: 18,
         backgroundColor: '#3D2500',
-        borderRadius: 17,
-        paddingVertical: 14,
+        borderRadius: 15,
+        paddingVertical: 12,
         alignItems: 'center',
     },
     closeButtonText: {
