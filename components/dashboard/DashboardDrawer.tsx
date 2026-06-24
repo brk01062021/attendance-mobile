@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { dashboardTheme } from '../../theme/dashboardTheme';
 import DashboardMenuItem from './DashboardMenuItem';
@@ -14,6 +14,11 @@ type Props = {
 };
 
 export default function DashboardDrawer({ visible, role, title, subtitle, onClose, onSelect }: Props) {
+    const handleSelect = useCallback((item: DashboardMenuConfig) => {
+        onClose();
+        setTimeout(() => onSelect(item), 0);
+    }, [onClose, onSelect]);
+
     return (
         <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
             <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={onClose}>
@@ -24,7 +29,7 @@ export default function DashboardDrawer({ visible, role, title, subtitle, onClos
                     {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
                     <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.menuList}>
                         {roleMenus[role].map((item) => (
-                            <DashboardMenuItem key={`${item.label}-${item.route || item.action}`} item={item} onPress={onSelect} />
+                            <DashboardMenuItem key={`${item.label}-${item.route || item.action}`} item={item} onPress={handleSelect} />
                         ))}
                     </ScrollView>
                 </TouchableOpacity>

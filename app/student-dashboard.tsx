@@ -63,6 +63,59 @@ const EMPTY_ATTENDANCE: AttendanceSummary = {
     records: [],
 };
 
+function cleanText(value: any): string {
+    return String(value ?? '').trim();
+}
+
+function isLikelyStudentCode(value: any): boolean {
+    const text = cleanText(value).toUpperCase();
+    return /^ST\d+/.test(text) || /^[A-Z]{1,4}\d{2,}$/.test(text);
+}
+
+function normalizeClassName(value: any): string | null {
+    const text = cleanText(value);
+    if (!text) return null;
+    const compact = text.replace(/^class\s+/i, '').trim();
+    return compact || null;
+}
+
+function normalizeSectionName(value: any): string | null {
+    const text = cleanText(value);
+    if (!text) return null;
+    const compact = text.replace(/^section\s+/i, '').trim();
+    return compact || null;
+}
+
+function firstPresent(...values: any[]): string {
+    for (const value of values) {
+        const text = cleanText(value);
+        if (text) return text;
+    }
+    return '';
+}
+
+function sessionStudentLookupId(params: Record<string, any>, session: ReturnType<typeof getSession>): string {
+    const explicitParam = cleanText(params.studentId);
+    if (explicitParam) return explicitParam;
+
+    const username = cleanText(session?.username);
+    if (isLikelyStudentCode(username)) return username;
+
+    const sessionStudentId = cleanText(session?.studentId);
+    if (isLikelyStudentCode(sessionStudentId)) return sessionStudentId;
+
+    return sessionStudentId || username || cleanText(session?.userId);
+}
+
+function mapStudentProfile(item: any, fallback: StudentProfile): StudentProfile {
+    return {
+        studentId: firstPresent(item?.studentId, item?.admissionNo, item?.admissionNumber, item?.rollNumber, item?.username, item?.id, fallback.studentId),
+        studentName: firstPresent(item?.studentName, item?.name, item?.fullName, item?.displayName, fallback.studentName),
+        className: normalizeClassName(firstPresent(item?.className, item?.class_name, item?.standard, item?.grade, item?.classGrade, fallback.className)),
+        section: normalizeSectionName(firstPresent(item?.section, item?.sectionName, item?.section_name, item?.classSection, fallback.section)),
+    };
+}
+
 function asArray(value: any): any[] {
     if (Array.isArray(value)) return value;
     if (Array.isArray(value?.data)) return value.data;
@@ -136,65 +189,71 @@ function buildAttendanceSummary(records: AttendanceRecord[]): AttendanceSummary 
 
 async function loadStudentProfile(params: Record<string, any>, schoolId: string): Promise<StudentProfile> {
     const session = getSession();
-    const studentId = String(params.studentId || session?.studentId || session?.userId || '').trim();
-    const fallbackName = String(params.studentName || session?.studentName || session?.displayName || 'Student');
-    const fallbackClassName = String(params.className || session?.className || '').trim() || null;
-    const fallbackSection = String(params.section || session?.section || '').trim() || null;
+    const studentId = sessionStudentLookupId(params, session);
+    const fallbackName = firstPresent(params.studentName, session?.studentName, session?.displayName, session?.username, 'Student');
+    const fallbackClassName = normalizeClassName(firstPresent(params.className, session?.className));
+    const fallbackSection = normalizeSectionName(firstPresent(params.section, session?.section));
 
     const fallback: StudentProfile = {
-        studentId: studentId || String(session?.userId || '1'),
+        studentId: studentId || firstPresent(session?.username, session?.userId, '1'),
         studentName: fallbackName,
         className: fallbackClassName,
         section: fallbackSection,
     };
 
-    if (!studentId && !fallbackName) return fallback;
+    const lookupValues = [studentId, cleanText(session?.username), fallbackName]
+        .filter(Boolean)
+        .filter((value, index, list) => list.indexOf(value) === index);
 
-    const queries = [studentId, fallbackName].filter(Boolean);
-    for (const query of queries) {
+    for (const query of lookupValues) {
         try {
             const response = await api.get('/students/search', { params: { query, schoolId } });
-            const match = asArray(response.data).find((item: any) => {
-                const candidateId = String(item?.studentId || item?.admissionNo || item?.rollNumber || item?.username || item?.id || '');
-                const candidateName = String(item?.studentName || item?.name || item?.fullName || '');
-                return candidateId === studentId || candidateName.toLowerCase() === fallbackName.toLowerCase();
-            }) || asArray(response.data)[0];
+            const students = asArray(response.data);
+            const normalizedQuery = query.toLowerCase();
+            const match = students.find((item: any) => {
+                const candidateIds = [item?.studentId, item?.admissionNo, item?.admissionNumber, item?.rollNumber, item?.username, item?.id]
+                    .map((value) => cleanText(value).toLowerCase())
+                    .filter(Boolean);
+                const candidateNames = [item?.studentName, item?.name, item?.fullName, item?.displayName]
+                    .map((value) => cleanText(value).toLowerCase())
+                    .filter(Boolean);
 
-            if (match) {
-                return {
-                    studentId: String(match.studentId || match.admissionNo || match.rollNumber || match.username || match.id || fallback.studentId),
-                    studentName: String(match.studentName || match.name || match.fullName || fallback.studentName),
-                    className: String(match.className || match.class_name || match.classGrade || match.grade || fallback.className || '').trim() || null,
-                    section: String(match.section || match.sectionName || match.classSection || fallback.section || '').trim() || null,
-                };
-            }
+                return candidateIds.includes(normalizedQuery) || candidateNames.includes(normalizedQuery);
+            });
+
+            if (match) return mapStudentProfile(match, fallback);
         } catch {
-            // Keep fallback if student search is unavailable.
+            // Continue to the next lookup. The dashboard must not fall back to demo class/section.
         }
     }
 
     return fallback;
 }
 
-async function loadAttendance(studentId: string): Promise<AttendanceSummary> {
+async function loadAttendance(studentId: string, schoolId: string): Promise<AttendanceSummary> {
     if (!studentId) return EMPTY_ATTENDANCE;
     const today = new Date();
     const start = new Date(today);
     start.setDate(today.getDate() - 45);
-    try {
-        const response = await api.get('/attendance/student-report', {
-            params: { studentId, fromDate: toDateOnly(start), toDate: toDateOnly(today), rangeType: 'CUSTOM' },
-        });
-        const records = asArray(response.data).map((item: any): AttendanceRecord => ({
-            date: attendanceDate(item),
-            subject: item?.subject || item?.subjectName || null,
-            status: normalizeStatus(item?.status || item?.attendanceStatus || item?.presentStatus),
-        })).filter((item) => Boolean(item.date));
+    const requestParams = { studentId, fromDate: toDateOnly(start), toDate: toDateOnly(today), rangeType: 'CUSTOM', schoolId };
+    const endpoints = ['/attendance/student-report', '/attendance/report'];
 
-        return buildAttendanceSummary(records);
-    } catch {
-        return EMPTY_ATTENDANCE;
+    for (const endpoint of endpoints) {
+        try {
+            const response = await api.get(endpoint, { params: requestParams });
+            const records = asArray(response.data).map((item: any): AttendanceRecord => ({
+                date: attendanceDate(item),
+                subject: item?.subject || item?.subjectName || null,
+                status: normalizeStatus(item?.status || item?.attendanceStatus || item?.presentStatus),
+            })).filter((item) => Boolean(item.date));
+
+            if (records.length > 0) return buildAttendanceSummary(records);
+        } catch {
+            // Try the next live attendance endpoint before showing the empty state.
+        }
     }
+
+    return EMPTY_ATTENDANCE;
 }
 
 async function loadSchoolNotices(schoolId: string): Promise<SchoolNotice[]> {
@@ -218,10 +277,10 @@ export default function StudentDashboard() {
     const schoolName = resolveSchoolName(schoolId, session?.schoolName);
 
     const [studentProfile, setStudentProfile] = useState<StudentProfile>({
-        studentId: String(params.studentId || session?.studentId || session?.userId || '1'),
-        studentName: String(params.studentName || session?.studentName || session?.displayName || 'Student'),
-        className: String(params.className || session?.className || '').trim() || null,
-        section: String(params.section || session?.section || '').trim() || null,
+        studentId: sessionStudentLookupId(params, session) || firstPresent(session?.username, session?.userId, '1'),
+        studentName: firstPresent(params.studentName, session?.studentName, session?.displayName, session?.username, 'Student'),
+        className: normalizeClassName(firstPresent(params.className, session?.className)),
+        section: normalizeSectionName(firstPresent(params.section, session?.section)),
     });
     const [attendanceSummary, setAttendanceSummary] = useState<AttendanceSummary>(EMPTY_ATTENDANCE);
     const [notices, setNotices] = useState<SchoolNotice[]>([]);
@@ -240,7 +299,7 @@ export default function StudentDashboard() {
             setDashboardLoading(true);
             const profile = await loadStudentProfile(params, schoolId);
             const [attendance, schoolNotices] = await Promise.all([
-                loadAttendance(profile.studentId),
+                loadAttendance(profile.studentId, schoolId),
                 loadSchoolNotices(schoolId),
             ]);
             if (!mounted) return;
@@ -275,7 +334,7 @@ export default function StudentDashboard() {
     const closeMenu = useCallback(() => setMenuOpen(false), []);
     const goLogin = useCallback(() => {
         setMenuOpen(false);
-        router.replace('/login' as any);
+        setTimeout(() => router.replace('/login' as any), 0);
     }, []);
 
     const goHome = useCallback(() => {
@@ -304,21 +363,23 @@ export default function StudentDashboard() {
 
     const openTimetable = useCallback(() => {
         setMenuOpen(false);
-        router.push({
-            pathname: '/timetable-live',
-            params: {
-                role: 'STUDENT',
-                className: studentProfile.className || '',
-                section: studentProfile.section || '',
-                sourceRole: 'student',
-                schoolId,
-            },
-        } as any);
+        setTimeout(() => {
+            router.push({
+                pathname: '/timetable-live',
+                params: {
+                    role: 'STUDENT',
+                    className: studentProfile.className || '',
+                    section: studentProfile.section || '',
+                    sourceRole: 'student',
+                    schoolId,
+                },
+            } as any);
+        }, 0);
     }, [schoolId, studentProfile.className, studentProfile.section]);
 
     const openRouteAndClose = useCallback((route: string) => {
         setMenuOpen(false);
-        router.push(route as any);
+        setTimeout(() => router.push(route as any), 0);
     }, []);
 
     const handleWorkflowBack = useCallback(() => {
@@ -371,7 +432,7 @@ export default function StudentDashboard() {
 
             <Modal transparent visible={menuOpen} animationType="slide" onRequestClose={closeMenu}>
                 <TouchableOpacity style={styles.menuOverlay} activeOpacity={1} onPress={closeMenu}>
-                    <View style={styles.menuCard}>
+                    <TouchableOpacity style={styles.menuCard} activeOpacity={1} onPress={() => {}}>
                         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.menuScrollContent}>
                             <Text style={styles.menuTitle}>Student Menu</Text>
 
@@ -388,7 +449,7 @@ export default function StudentDashboard() {
                             <MenuSectionTitle title="Account" />
                             <MenuItem title="Logout" danger onPress={goLogin} />
                         </ScrollView>
-                    </View>
+                    </TouchableOpacity>
                 </TouchableOpacity>
             </Modal>
         </ImageBackground>
