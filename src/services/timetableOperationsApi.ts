@@ -29,6 +29,7 @@ export async function getLiveTimetable(params: {
     className?: string;
     section?: string;
     schoolId?: string;
+    token?: string;
 }): Promise<TimetableLiveResponse> {
     const query = new URLSearchParams();
 
@@ -39,8 +40,20 @@ export async function getLiveTimetable(params: {
     if (params.className) query.append('className', params.className);
     if (params.section) query.append('section', params.section);
 
-    const response = await fetch(`${API_BASE_URL}/timetable/operations/live?${query.toString()}`, {
-        headers: params.schoolId ? { 'X-School-Id': params.schoolId } : undefined,
+    const role = String(params.role || '').toUpperCase();
+    const path = role === 'STUDENT'
+        ? '/timetable/live/student'
+        : role === 'PARENT'
+            ? '/timetable/live/parent'
+            : role === 'TEACHER'
+                ? '/timetable/live/teacher'
+                : '/timetable/operations/live';
+    const headers: Record<string, string> = {};
+    if (params.schoolId) headers['X-School-Id'] = params.schoolId;
+    if (params.token) headers.Authorization = `Bearer ${params.token}`;
+
+    const response = await fetch(`${API_BASE_URL}${path}?${query.toString()}`, {
+        headers: Object.keys(headers).length ? headers : undefined,
     });
     return safeJson<TimetableLiveResponse>(response);
 }

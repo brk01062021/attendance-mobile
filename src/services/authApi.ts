@@ -19,6 +19,8 @@ export type AuthResponse = {
   teacherName?: string | null;
   studentId?: number | string | null;
   studentName?: string | null;
+  className?: string | null;
+  section?: string | null;
   displayName?: string | null;
   schoolName?: string | null;
   role: VidyaSetuRole | string;
@@ -69,6 +71,8 @@ export function authResponseToSession(response: AuthResponse, requestedRole: Vid
     teacherId: role === 'TEACHER' ? response.teacherId || response.userId || '1' : null,
     studentId: role === 'STUDENT' || role === 'PARENT' ? response.studentId || (role === 'STUDENT' ? response.userId : null) : null,
     studentName: response.studentName || (role === 'STUDENT' ? displayName : null),
+    className: role === 'STUDENT' || role === 'PARENT' ? response.className || null : null,
+    section: role === 'STUDENT' || role === 'PARENT' ? response.section || null : null,
     forcePasswordChange: Boolean(response.forcePasswordChange),
   };
 }

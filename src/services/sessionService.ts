@@ -12,6 +12,8 @@ export type VidyaSetuSession = {
   teacherId?: string | number | null;
   studentId?: string | number | null;
   studentName?: string | null;
+  className?: string | null;
+  section?: string | null;
 };
 
 let activeSession: VidyaSetuSession | null = null;

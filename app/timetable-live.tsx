@@ -19,8 +19,8 @@ export default function TimetableLiveScreen() {
     const role = String(params.role || session?.role || 'TEACHER').toUpperCase();
     const schoolId = normalizeSchoolId(String(params.schoolId || session?.schoolId || ''));
     const teacherId = Number(params.teacherId || session?.teacherId || (role === 'TEACHER' ? session?.userId : 0) || 0) || undefined;
-    const className = String(params.className || '10');
-    const section = String(params.section || 'A');
+    const className = String(params.className || session?.className || '');
+    const section = String(params.section || session?.section || '');
 
     const [data, setData] = useState<TimetableLiveResponse | null>(null);
     const [loading, setLoading] = useState(false);
@@ -39,6 +39,7 @@ export default function TimetableLiveScreen() {
                 className: role === 'TEACHER' ? undefined : className,
                 section: role === 'TEACHER' ? undefined : section,
                 schoolId,
+                token: session?.token,
             });
             setData(response);
             setMessage(response.message);
